@@ -1,0 +1,4066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SwinkPay Reconciliation Portal - Automated Daily Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #ffffff;
+      --surface-card: #ffffff;
+      --surface-inset: #f8fafc;
+      --surface-border: #e2e8f0;
+      --surface-border-subtle: #f1f5f9;
+      --surface-border-focus: #3b82f6;
+      --primary: #1a73e8;
+      --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+      --primary-hover: #1557b0;
+      --primary-glow: rgba(26, 115, 232, 0.22);
+      --brand-red: #d32027;
+      --brand-red-gradient: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      --success: #059669;
+      --success-gradient: linear-gradient(135deg, #059669 0%, #047857 100%);
+      --success-bg: #ecfdf5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --text-main: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Custom Modern Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(26, 115, 232, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(211, 32, 39, 0.04) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(5, 150, 105, 0.04) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-body);
+      min-height: 100vh;
+      padding-bottom: 80px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Top Navbar */
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--surface-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1.15rem;
+    }
+
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      padding: 2px 4px;
+      border-radius: 8px;
+    }
+
+    .brand-logo {
+      height: 46px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 38px;
+      background: #e2e8f0;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .brand-text h1 {
+      font-size: 1.22rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .brand-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #059669;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
+      text-decoration: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn-sm {
+      padding: 0.42rem 0.85rem;
+      font-size: 0.78rem;
+      border-radius: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 2px 8px var(--primary-glow);
+      border: 1px solid rgba(26, 115, 232, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.35);
+      filter: brightness(1.03);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #334155;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    .btn-success {
+      background: var(--success-gradient);
+      color: white;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.6rem;
+      box-shadow: 0 3px 12px rgba(5, 150, 105, 0.25);
+      border: 1px solid rgba(5, 150, 105, 0.3);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 18px rgba(5, 150, 105, 0.35);
+      filter: brightness(1.03);
+    }
+
+    .btn-disabled {
+      opacity: 0.55 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+      background: #f1f5f9 !important;
+      border-color: #e2e8f0 !important;
+      color: #94a3b8 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1240px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Upload Card */
+    .upload-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .upload-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-header h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+      color: var(--text-main);
+    }
+
+    .upload-header p {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Segmented Upload Tabs */
+    .upload-tabs {
+      display: inline-flex;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 1.75rem;
+    }
+
+    .upload-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.65rem 1.25rem;
+      border-radius: 9px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .upload-tab:hover:not(.active) {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .upload-tab.active {
+      background: #ffffff;
+      color: var(--primary);
+      border-color: #cbd5e1;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 2.75rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--primary);
+      background: #eff6ff;
+      box-shadow: 0 0 20px rgba(26, 115, 232, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .dropzone-icon {
+      font-size: 2.8rem;
+      margin-bottom: 0.75rem;
+      filter: drop-shadow(0 2px 6px rgba(26, 115, 232, 0.2));
+    }
+
+    .dropzone h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .dropzone p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .dropzone * {
+      pointer-events: none;
+    }
+
+    .dropzone input[type="file"] {
+      display: none;
+    }
+
+    /* Uploaded Files Chips */
+    .files-container {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+
+    .file-chip {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .file-chip .remove-btn {
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      padding: 0 4px;
+      font-size: 1rem;
+      line-height: 1;
+      border-radius: 4px;
+      transition: color 0.15s ease;
+    }
+
+    .file-chip .remove-btn:hover {
+      color: var(--danger);
+      background: #fee2e2;
+    }
+
+    /* Visual 5-Slot Smart Dropzone Grid */
+    .slots-header-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .slots-header-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .slot-card {
+      background: #ffffff;
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 130px;
+    }
+
+    .slot-card:hover {
+      border-color: #94a3b8;
+      background: #f8fafc;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .slot-card.dragover {
+      border-color: var(--primary) !important;
+      background: #eff6ff !important;
+      box-shadow: 0 0 12px rgba(26, 115, 232, 0.2);
+    }
+
+    .slot-card.filled {
+      border-style: solid;
+      border-color: #10b981;
+      background: #f0fdf4;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+    }
+
+    .slot-card.missing {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    .slot-card * {
+      pointer-events: none;
+    }
+
+    .slot-card .slot-remove-btn {
+      pointer-events: auto;
+    }
+
+    .slot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+
+    .slot-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+    }
+
+    .slot-label-cms { background: #eff6ff; color: #1d4ed8; }
+    .slot-label-smms { background: #fdf4ff; color: #a21caf; }
+    .slot-label-cf { background: #eff6ff; color: #1e40af; }
+    .slot-label-eb { background: #fffbeb; color: #b45309; }
+    .slot-label-air { background: #fdf2f8; color: #be185d; }
+
+    .slot-status-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
+    }
+
+    .badge-missing { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-detected { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+    .slot-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .slot-filename {
+      font-size: 0.76rem;
+      color: #065f46;
+      font-weight: 600;
+      word-break: break-all;
+      line-height: 1.3;
+      margin-bottom: 0.25rem;
+    }
+
+    .slot-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .slot-remove-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+
+    .slot-remove-btn:hover {
+      background: #dc2626;
+      color: #ffffff;
+    }
+
+    .slot-summary-bar {
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-size: 0.84rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .slot-bar-ready {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+
+    .slot-bar-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    /* Operations Email Summary Card */
+    .email-summary-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .email-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .email-title-wrap h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-main);
+      margin-bottom: 0.2rem;
+    }
+
+    .email-title-wrap p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .email-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .email-preview-container {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 1.5rem;
+      font-family: Calibri, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    .email-preview-meta {
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+
+    .email-table-render {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 13px;
+    }
+
+    .email-table-render th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 700;
+      border: 1px solid #cbd5e1;
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    .email-table-render td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 10px;
+      color: #334155;
+    }
+
+    .email-table-render .tot-row td {
+      background: #e2e8f0;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* Settlement Date Control */
+    .settlement-control {
+      margin-top: 1.5rem;
+      padding: 1.15rem 1.35rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .settlement-control-info label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.25rem;
+      color: var(--text-main);
+    }
+
+    .settlement-control-info p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .settlement-control-inputs {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .settlement-control-inputs input[type="date"],
+    .date-settle-input-wrap input[type="date"],
+    .consolidated-settle-row input[type="date"] {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-main);
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .settlement-control-inputs input[type="date"]:focus,
+    .date-settle-input-wrap input[type="date"]:focus,
+    .consolidated-settle-row input[type="date"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+    }
+
+    .action-bar {
+      margin-top: 1.75rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    /* Error Message */
+    .alert-error {
+      display: none;
+      margin-top: 1.25rem;
+      padding: 1.15rem 1.35rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      color: #b91c1c;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+    }
+
+    /* Spinner / Status */
+    .loading-overlay {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border: 3.5px solid #e2e8f0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+      margin: 0 auto 1.25rem auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Results Section */
+    .results-section {
+      display: none;
+    }
+
+    /* Banners */
+    .success-banner {
+      background: linear-gradient(135deg, #ecfdf5 0%, #eff6ff 100%);
+      border: 1px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      box-shadow: 0 2px 10px -2px rgba(5, 150, 105, 0.1);
+    }
+
+    .success-banner-text h3 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #065f46;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+    }
+
+    .success-banner-text p {
+      font-size: 0.86rem;
+      color: #374151;
+      line-height: 1.4;
+    }
+
+    /* XCD Section */
+    .xcd-section {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .xcd-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .xcd-title-wrap h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 0.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    .xcd-title-wrap p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .badge-date {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      font-family: var(--font-mono);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Gate Banner */
+    .xcd-gate-banner {
+      border-radius: 14px;
+      padding: 1.35rem 1.6rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .xcd-gate-pass {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+    }
+
+    .xcd-gate-pass h4 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #065f46;
+    }
+
+    .xcd-gate-pass p {
+      font-size: 0.84rem;
+      color: #047857;
+      line-height: 1.45;
+    }
+
+    .xcd-gate-blocked {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+
+    .xcd-gate-blocked h4 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #991b1b;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .xcd-gate-blocked ul {
+      margin-left: 1.35rem;
+      font-size: 0.84rem;
+      color: #b91c1c;
+    }
+
+    .xcd-gate-blocked li {
+      margin-top: 0.3rem;
+    }
+
+    .xcd-gate-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .xcd-gate-warning h4 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #b45309;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .xcd-gate-warning p {
+      font-size: 0.84rem;
+      color: #92400e;
+      line-height: 1.45;
+    }
+
+    /* Date Filter / Checkbox Selection Box */
+    .xcd-date-filter-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .date-filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .date-quick-actions {
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .date-checkboxes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .date-check-item {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .date-check-item:hover {
+      border-color: #93c5fd;
+      background: #ffffff;
+    }
+
+    .date-check-item.selected {
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 4px 14px -2px rgba(26, 115, 232, 0.12);
+    }
+
+    .date-check-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      cursor: pointer;
+    }
+
+    .date-check-title {
+      font-size: 0.92rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-date-count {
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .date-partner-mini-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini-tag {
+      font-weight: 700;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      letter-spacing: 0.03em;
+    }
+
+    .date-net-pill {
+      margin-left: auto;
+      color: var(--success);
+      font-weight: 800;
+      font-size: 0.78rem;
+    }
+
+    .date-settle-input-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .date-settle-input-wrap span {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .consolidated-settle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      padding: 1rem 1.25rem;
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px dashed #cbd5e1;
+    }
+
+    /* XCD 3 Cards Grid */
+    .xcd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      gap: 1.35rem;
+    }
+
+    .xcd-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .xcd-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+    }
+
+    .xcd-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    #card-cf::before { background: linear-gradient(90deg, #1a73e8, #60a5fa); }
+    #card-eb::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    #card-air::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
+
+    .xcd-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.65rem;
+    }
+
+    .xcd-partner-tag {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .tag-cf {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .tag-eb {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    .tag-air {
+      background: #fdf2f8;
+      color: #be185d;
+      border: 1px solid #fbcfe8;
+    }
+
+    .xcd-source-pill {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      background: #f1f5f9;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .xcd-card h4 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+      margin-bottom: 0.85rem;
+    }
+
+    .xcd-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      padding: 0.85rem 0.75rem;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .xcd-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    .xcd-stat-lbl {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .xcd-stat-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .xcd-btn {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    #btn-download-cf {
+      background: linear-gradient(135deg, #1a73e8, #1557b0);
+      border-color: rgba(26, 115, 232, 0.4);
+    }
+    #btn-download-eb {
+      background: linear-gradient(135deg, #d97706, #b45309);
+      border-color: rgba(217, 119, 6, 0.4);
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
+    }
+    #btn-download-air {
+      background: linear-gradient(135deg, #db2777, #be185d);
+      border-color: rgba(219, 39, 119, 0.4);
+      box-shadow: 0 2px 8px rgba(219, 39, 119, 0.25);
+    }
+
+    /* Executive KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 1.35rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: #cbd5e1;
+      box-shadow: 0 6px 16px -3px rgba(0, 0, 0, 0.08);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .kpi-card:nth-child(1)::before { background: linear-gradient(90deg, #1a73e8, #60a5fa); }
+    .kpi-card:nth-child(2)::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+    .kpi-card:nth-child(3)::before { background: linear-gradient(90deg, #059669, #34d399); }
+    .kpi-card:nth-child(4)::before { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+    .kpi-title {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.45rem;
+      font-weight: 700;
+    }
+
+    .kpi-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-sub {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      margin-top: 0.35rem;
+    }
+
+    /* Table Cards */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 1.65rem;
+      margin-bottom: 2rem;
+      overflow-x: auto;
+      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    .table-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-main);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      padding: 0.85rem 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--surface-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap;
+      color: var(--text-main);
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .total-row td {
+      background: #eff6ff;
+      font-weight: 800;
+      border-top: 2px solid #93c5fd;
+      border-bottom: 2px solid #93c5fd;
+      color: #1e3a8a;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-pass {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .badge-fail {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
+    /* Tab Badges */
+    .tab-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.12rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-left: 0.35rem;
+      line-height: 1.2;
+    }
+    .tab-badge-active {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .tab-badge-info {
+      background: #e0f2fe;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    /* Postman Telemetry Live Feedback Inspector */
+    .postman-inspector-card {
+      margin-top: 1.5rem;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+      transition: all 0.2s ease;
+    }
+    .postman-inspector-header {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .postman-inspector-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .postman-badges-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .postman-status-tag {
+      background: #059669;
+      color: #ffffff;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .postman-status-tag.error {
+      background: #dc2626;
+    }
+    .postman-time-tag {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      border: 1px solid #334155;
+    }
+    .postman-net-tag {
+      background: #1e293b;
+      color: #94a3b8;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+    }
+    .postman-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+      padding: 1.15rem 1.25rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .postman-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .postman-meta-lbl {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .postman-meta-val {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-all;
+    }
+    .postman-json-viewer-wrap {
+      position: relative;
+    }
+    .postman-json-box {
+      background: #020617;
+      color: #38bdf8;
+      padding: 1.25rem;
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .postman-copy-btn {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .postman-copy-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    /* Terminal Mappings Table & Search */
+    .terminal-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      padding: 1rem 1.25rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+    .terminal-search-wrap {
+      flex: 1;
+      min-width: 260px;
+    }
+    .terminal-search-input {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .terminal-search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+    }
+    .terminal-stats-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    /* API Settings Bar */
+    .api-settings-bar {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .api-settings-inputs {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .api-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .api-field-group label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .api-field-input {
+      padding: 0.4rem 0.65rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      background: #ffffff;
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-logo-wrap">
+        <img src="/logo.jpg" alt="SwinkPay Logo" class="brand-logo" />
+      </div>
+      <div class="brand-divider"></div>
+      <div class="brand-text">
+        <div class="brand-title-wrap">
+          <h1>Reconciliation Portal</h1>
+          <span class="status-indicator"><span class="pulse-dot"></span>Engine Active</span>
+        </div>
+        <p>Automated Multi-Gateway Daily Settlement &amp; Balancing Engine</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btn-sample-run">⚡ Run Sample Daily Reports</button>
+      <a href="#" class="btn btn-secondary" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">Top</a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Upload Card -->
+    <section class="upload-card">
+      <!-- Upload Mode Tabs -->
+      <div class="upload-tabs">
+        <button type="button" class="upload-tab active" id="tab-btn-daily" onclick="switchUploadMode('daily')">
+          <span>📊</span> Reconcile Daily Reports (5 Files)
+        </button>
+        <button type="button" class="upload-tab" id="tab-btn-recon-file" onclick="switchUploadMode('recon-file')">
+          <span>📁</span> Completed Recon Workbook (.xlsx)
+        </button>
+        <button type="button" class="upload-tab" id="tab-btn-pull" onclick="switchUploadMode('pull')">
+          <span>⚡</span> Pull Missing Transactions
+          <span id="tab-pull-badge" class="tab-badge tab-badge-active" style="display: none;">0</span>
+        </button>
+        <button type="button" class="upload-tab" id="tab-btn-terminal" onclick="switchUploadMode('terminal')">
+          <span>📋</span> Terminal Mappings (TID_FILE)
+          <span id="tab-terminal-badge" class="tab-badge tab-badge-info">0</span>
+        </button>
+      </div>
+
+      <!-- Panel 1: Reconcile Daily Reports -->
+      <div id="panel-daily">
+        <div class="upload-header">
+          <h2>Upload Daily Transaction Reports</h2>
+          <p>Drop all 5 daily reports into the master dropzone below, or drop them directly onto each slot. The engine detects file types by column headers in milliseconds.</p>
+        </div>
+
+        <!-- Master Batch Dropzone -->
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">📁</div>
+          <h3>Drop all 5 daily reports here, or click to browse</h3>
+          <p>Files auto-classify instantly into CMS, SMMS, Cashfree, Easebuzz, &amp; Airtel Bank slots</p>
+          <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
+        </div>
+
+        <!-- 5-Slot Verification Grid -->
+        <div class="slots-header-wrap">
+          <div class="slots-header-title">
+            <span>🎯</span> 5-Report Verification Slots &amp; Status
+          </div>
+          <div id="slot-overall-pill" class="slot-status-badge badge-missing">0 / 5 Loaded</div>
+        </div>
+
+        <div class="slots-grid" id="slots-grid">
+          <!-- Slot 1: CMS -->
+          <div class="slot-card missing" id="slot-card-CMS" onclick="triggerSlotUpload('CMS')">
+            <input type="file" id="slot-input-CMS" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('CMS', this.files[0])" />
+            <div>
+              <div class="slot-top">
+                <span class="slot-label slot-label-cms">Internal CMS</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-CMS">⚠️ Missing</span>
+              </div>
+              <div class="slot-title">CMS Report</div>
+              <div class="slot-filename" id="slot-file-CMS">No file uploaded</div>
+              <div class="slot-meta" id="slot-meta-CMS">Drop file here or click</div>
+            </div>
+            <button type="button" class="slot-remove-btn" id="slot-remove-CMS" style="display: none;" onclick="removeSlotFile('CMS', event)" title="Remove file">×</button>
+          </div>
+
+          <!-- Slot 2: SMMS -->
+          <div class="slot-card missing" id="slot-card-SMMS" onclick="triggerSlotUpload('SMMS')">
+            <input type="file" id="slot-input-SMMS" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('SMMS', this.files[0])" />
+            <div>
+              <div class="slot-top">
+                <span class="slot-label slot-label-smms">Settlement Master</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-SMMS">⚠️ Missing</span>
+              </div>
+              <div class="slot-title">SMMS Settlement Report</div>
+              <div class="slot-filename" id="slot-file-SMMS">No file uploaded</div>
+              <div class="slot-meta" id="slot-meta-SMMS">Drop file here or click</div>
+            </div>
+            <button type="button" class="slot-remove-btn" id="slot-remove-SMMS" style="display: none;" onclick="removeSlotFile('SMMS', event)" title="Remove file">×</button>
+          </div>
+
+          <!-- Slot 3: Cashfree -->
+          <div class="slot-card missing" id="slot-card-CASHFREE" onclick="triggerSlotUpload('CASHFREE')">
+            <input type="file" id="slot-input-CASHFREE" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('CASHFREE', this.files[0])" />
+            <div>
+              <div class="slot-top">
+                <span class="slot-label slot-label-cf">Payment Gateway</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-CASHFREE">⚠️ Missing</span>
+              </div>
+              <div class="slot-title">Cashfree Report</div>
+              <div class="slot-filename" id="slot-file-CASHFREE">No file uploaded</div>
+              <div class="slot-meta" id="slot-meta-CASHFREE">Drop file here or click</div>
+            </div>
+            <button type="button" class="slot-remove-btn" id="slot-remove-CASHFREE" style="display: none;" onclick="removeSlotFile('CASHFREE', event)" title="Remove file">×</button>
+          </div>
+
+          <!-- Slot 4: Easebuzz -->
+          <div class="slot-card missing" id="slot-card-EASEBUZZ" onclick="triggerSlotUpload('EASEBUZZ')">
+            <input type="file" id="slot-input-EASEBUZZ" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('EASEBUZZ', this.files[0])" />
+            <div>
+              <div class="slot-top">
+                <span class="slot-label slot-label-eb">Payment Gateway</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-EASEBUZZ">⚠️ Missing</span>
+              </div>
+              <div class="slot-title">Easebuzz Report</div>
+              <div class="slot-filename" id="slot-file-EASEBUZZ">No file uploaded</div>
+              <div class="slot-meta" id="slot-meta-EASEBUZZ">Drop file here or click</div>
+            </div>
+            <button type="button" class="slot-remove-btn" id="slot-remove-EASEBUZZ" style="display: none;" onclick="removeSlotFile('EASEBUZZ', event)" title="Remove file">×</button>
+          </div>
+
+          <!-- Slot 5: Airtel -->
+          <div class="slot-card missing" id="slot-card-AIRTEL" onclick="triggerSlotUpload('AIRTEL')">
+            <input type="file" id="slot-input-AIRTEL" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('AIRTEL', this.files[0])" />
+            <div>
+              <div class="slot-top">
+                <span class="slot-label slot-label-air">Bank Partner</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-AIRTEL">⚠️ Missing</span>
+              </div>
+              <div class="slot-title">Airtel Bank Report</div>
+              <div class="slot-filename" id="slot-file-AIRTEL">No file uploaded</div>
+              <div class="slot-meta" id="slot-meta-AIRTEL">Drop file here or click</div>
+            </div>
+            <button type="button" class="slot-remove-btn" id="slot-remove-AIRTEL" style="display: none;" onclick="removeSlotFile('AIRTEL', event)" title="Remove file">×</button>
+          </div>
+        </div>
+
+        <!-- Slot Summary / Alert Bar -->
+        <div id="slot-status-bar" class="slot-summary-bar slot-bar-warning">
+          <div id="slot-status-text">
+            <strong>⚠️ 5 Reports Missing:</strong> Upload CMS, SMMS, Cashfree, Easebuzz, and Airtel Bank reports to enable automated reconciliation.
+          </div>
+          <div id="slot-auxiliary-container"></div>
+        </div>
+
+        <!-- Auxiliary File Chips (for Airtel Settlement or extras) -->
+        <div class="files-container" id="files-list" style="display: none;"></div>
+
+        <!-- Settlement Date Control -->
+        <div class="settlement-control">
+          <div class="settlement-control-info">
+            <label for="settlement-date-input">📅 Settlement Date (Authoritative Control)</label>
+            <p>Auto-detected from Airtel Settlement / SMMS if left blank. Setting a date here strictly applies to all XCD output files.</p>
+          </div>
+          <div class="settlement-control-inputs">
+            <input type="date" id="settlement-date-input" />
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-date">Clear Date</button>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <button class="btn btn-secondary" id="btn-clear" style="display: none;">Clear All Files</button>
+          <button class="btn btn-primary" id="btn-reconcile" style="display: none;">🚀 Start Reconciliation</button>
+        </div>
+      </div>
+
+      <!-- Panel 2: Upload Completed Reconciliation Workbook -->
+      <div id="panel-recon-file" style="display: none;">
+        <div class="upload-header">
+          <h2>Upload Completed Reconciliation File</h2>
+          <p>Drop a previously reconciled workbook (e.g. <code>Reconciliation_YYYY-MM-DD.xlsx</code>). The engine will extract matched tabs (<code>CMS_CF_Matched</code>, <code>CMS_EB_Matched</code>, <code>CMS_Air_Matched</code>), detect weekend dates, verify network consistency, and generate date-specific XCD input files immediately.</p>
+        </div>
+
+        <div class="dropzone" id="recon-file-dropzone">
+          <div class="dropzone-icon">📑</div>
+          <h3>Drop Reconciliation .xlsx file here, or click to browse</h3>
+          <p>Strictly accepts .xlsx completed reconciliation workbooks</p>
+          <input type="file" id="recon-file-input" accept=".xlsx" />
+        </div>
+
+        <div class="files-container" id="recon-file-chip-container"></div>
+
+        <div class="settlement-control">
+          <div class="settlement-control-info">
+            <label for="recon-settlement-date-input">📅 Settlement Date Override (Optional)</label>
+            <p>If omitted, settlement dates are auto-calculated per transaction date (next calendar day) or extracted from data.</p>
+          </div>
+          <div class="settlement-control-inputs">
+            <input type="date" id="recon-settlement-date-input" />
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('recon-settlement-date-input').value = ''">Clear Date</button>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-secondary" id="btn-recon-file-clear" style="display: none;" onclick="clearReconFile()">Clear File</button>
+          <button class="btn btn-primary" id="btn-process-recon-file" style="display: none;" onclick="processReconFile()">⚡ Process Reconciliation Workbook</button>
+        </div>
+      </div>
+
+      <!-- Panel 3: Pull Missing PG Transactions (Dedicated Tab) -->
+      <div id="panel-pull" style="display: none;">
+        <div class="upload-header">
+          <h2>⚡ Pull Missing PG Transactions (Eliminate Postman)</h2>
+          <p>Directly pull or push transactions that exist in Payment Gateway reports (Cashfree, Easebuzz, Airtel) but are missing from CMS to the SwinkPay Decision API (<code>https://merchants.swinkpay-fintech.com/api/v2/decision/updated</code>) with real-time response telemetry.</p>
+        </div>
+
+        <!-- API Connection & Credentials Drawer -->
+        <div class="api-settings-bar">
+          <div class="api-settings-inputs">
+            <div class="api-field-group" style="flex: 2; min-width: 220px;">
+              <label>API Endpoint Target</label>
+              <input type="text" class="api-field-input" value="https://merchants.swinkpay-fintech.com/api/v2/decision/updated" readonly style="background:#f1f5f9; color:#475569;" />
+            </div>
+            <div class="api-field-group" style="flex: 1.5; min-width: 180px;">
+              <label>Auth Token (auth_token)</label>
+              <input type="password" id="pull-settings-token" class="api-field-input" placeholder="FREFA45D$B2#18842765#992" />
+            </div>
+            <div class="api-field-group" style="width: 90px;">
+              <label>Channel</label>
+              <input type="text" id="pull-settings-channel" class="api-field-input" value="14" />
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleTokenVisibility()">👁️ Show/Hide</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-save-api-settings" onclick="saveApiSettingsFromUI()">💾 Save Credentials</button>
+          </div>
+        </div>
+
+        <!-- Pull Actions Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0;">Missing PG Transactions Queue</h3>
+            <span id="pull-tab-missing-badge" class="badge badge-fail">0 Missing</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-pull-tab-all" onclick="pullAllMissingPgToApi(this)" style="display: none; background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; font-weight: 700; padding: 0.5rem 1.15rem;">⚡ Pull All Missing Transactions</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-pull-tab-copy-all" onclick="copyAllPayloadsJson(this)" style="display: none;">📋 Copy All JSONs</button>
+          </div>
+        </div>
+
+        <!-- Missing PG Table -->
+        <div id="pull-tab-table-wrap" style="overflow-x: auto; display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Gateway</th>
+                <th>Order / Partner Ref ID</th>
+                <th>Middle No. (Ref ID)</th>
+                <th>MMS Terminal ID</th>
+                <th>UTR / Bank Ref</th>
+                <th class="text-right">Amount</th>
+                <th>Date & Time</th>
+                <th style="text-align: center;">Payload</th>
+                <th style="text-align: center;">Action</th>
+                <th style="text-align: center;">API Status</th>
+              </tr>
+            </thead>
+            <tbody id="pull-tab-tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="pull-tab-empty" style="padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-bottom: 1.5rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Pending Missing Transactions</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Run reconciliation in the "Reconcile Daily Reports" tab or upload a completed reconciliation workbook. Any transactions found in PG reports but missing in CMS will automatically appear here for 1-click pulling.</p>
+        </div>
+
+        <!-- Postman Live Telemetry Inspector (renders live output matching Postman screenshot) -->
+        <div id="pull-live-inspector" class="postman-inspector-card" style="display: none;">
+          <div class="postman-inspector-header">
+            <div class="postman-inspector-title">
+              <span>🚀</span>
+              <span>Postman Telemetry Output (Decision Updated API)</span>
+            </div>
+            <div class="postman-badges-wrap">
+              <span id="postman-status-pill" class="postman-status-tag">200 OK</span>
+              <span id="postman-time-pill" class="postman-time-tag">⏱️ 0 ms</span>
+              <span class="postman-net-tag">POST /api/v2/decision/updated</span>
+            </div>
+          </div>
+          
+          <div class="postman-meta-grid">
+            <div class="postman-meta-item">
+              <span class="postman-meta-lbl">Reference No</span>
+              <span id="postman-res-ref" class="postman-meta-val mono" style="color: #1a73e8;">--</span>
+            </div>
+            <div class="postman-meta-item">
+              <span class="postman-meta-lbl">SwinkPay Transaction ID</span>
+              <span id="postman-res-txnid" class="postman-meta-val mono" style="color: #059669;">--</span>
+            </div>
+            <div class="postman-meta-item">
+              <span class="postman-meta-lbl">Status Message</span>
+              <span id="postman-res-statusmsg" class="postman-meta-val" style="color: #059669;">--</span>
+            </div>
+            <div class="postman-meta-item">
+              <span class="postman-meta-lbl">Transaction Date</span>
+              <span id="postman-res-date" class="postman-meta-val mono">--</span>
+            </div>
+            <div class="postman-meta-item">
+              <span class="postman-meta-lbl">Amount</span>
+              <span id="postman-res-amt" class="postman-meta-val mono">--</span>
+            </div>
+          </div>
+
+          <div class="postman-json-viewer-wrap">
+            <button type="button" class="postman-copy-btn" onclick="copyPostmanJson(this)">📋 Copy Response JSON</button>
+            <pre id="postman-json-display" class="postman-json-box">Waiting for execution...</pre>
+          </div>
+        </div>
+
+        <!-- Standalone / Manual Payload Tester Drawer -->
+        <details style="margin-top: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem 1.25rem;">
+          <summary style="font-weight: 700; font-size: 0.86rem; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🛠️</span> Direct Custom Payload Tester (Push raw JSON directly to SwinkPay API)
+          </summary>
+          <div style="margin-top: 1rem;">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Paste any JSON transaction payload below to test pulling directly through the SwinkPay Decision API:</p>
+            <textarea id="manual-payload-input" style="width: 100%; height: 110px; font-family: var(--font-mono); font-size: 0.8rem; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #020617; color: #38bdf8;" placeholder='{\n  "orderId": "330595-4860-...",\n  "terminalId": "X47VVH",\n  "amount": 36.00,\n  "rrn": "626591400167"\n}'></textarea>
+            <div style="margin-top: 0.65rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('manual-payload-input').value = ''">Clear</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="sendManualPayload()">🚀 Push Custom Payload</button>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Panel 4: Terminal Reference Mappings (TID_FILE) -->
+      <div id="panel-terminal" style="display: none;">
+        <div class="upload-header">
+          <h2>📋 Terminal Reference Mappings (TID_FILE)</h2>
+          <p>Auto-resolves Cashfree Order ID middle numbers (e.g. <code>4860</code> from <code>330595-4860-...</code>) against <strong>Partner Ref ID / VPA</strong> to fetch <strong>MMS Terminal ID</strong> and <strong>Terminal ID</strong>. Loaded mappings persist permanently in <code>data/terminal_mappings.json</code>.</p>
+        </div>
+
+        <!-- Terminal Top Action Bar -->
+        <div class="terminal-top-bar">
+          <div class="terminal-search-wrap">
+            <input type="text" class="terminal-search-input" id="terminal-tab-search-input" placeholder="🔍 Search by Middle No., MMS Terminal ID, Terminal ID, or VPA..." oninput="onTerminalSearch(this.value)" />
+          </div>
+          <div class="terminal-stats-group">
+            <span id="terminal-stats-pill" class="badge badge-pass" style="font-size: 0.76rem;">0 Mappings Loaded</span>
+            <input type="file" id="terminal-tab-file-input" style="display: none;" accept=".xlsx,.xls" onchange="handleTerminalUploadFromTab(this.files[0])" />
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('terminal-tab-file-input').click()" id="btn-terminal-tab-upload">
+              📁 Upload Terminal Report (.xlsx)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="confirmResetTerminalMappings()" style="color: #dc2626; border-color: #fca5a5;">
+              🗑️ Reset Mappings
+            </button>
+          </div>
+        </div>
+
+        <!-- Terminal Mappings Table Wrap -->
+        <div id="terminal-tab-table-wrap" style="overflow-x: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Partner Ref ID / Middle No.</th>
+                <th>MMS Terminal ID</th>
+                <th>Terminal ID</th>
+                <th>VPA / Note</th>
+                <th style="text-align: center;">Lookup Status</th>
+              </tr>
+            </thead>
+            <tbody id="terminal-tab-tbody">
+              <!-- Dynamically populated from /api/terminal-mappings -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="terminal-tab-empty" style="display: none; padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 1rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Terminal Mappings Loaded</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Upload your Terminal Report (.xlsx) containing the <code>TID_FILE</code> sheet with columns <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, and <code>Partner Ref ID</code> to enable automated Cashfree middle number resolution.</p>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert-error" id="error-box"></div>
+
+      <!-- Loading State -->
+      <div class="loading-overlay" id="loading-state">
+        <div class="spinner"></div>
+        <h3 id="loading-title" style="font-weight: 600; margin-bottom: 0.25rem;">Processing Transactions...</h3>
+        <p id="loading-sub" style="font-size: 0.85rem; color: var(--text-muted);">Performing multi-way matching, audit checks, and evaluating XCD all-clear gate...</p>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section" id="results-section">
+
+      <!-- Success & Download Banner -->
+      <div class="success-banner">
+        <div class="success-banner-text">
+          <h3 id="banner-title">🎉 Reconciliation Completed Successfully!</h3>
+          <p id="banner-sub">Master population balanced. Full reconciliation workbook generated with all matched, unmatched, and summary sheets.</p>
+        </div>
+        <a id="btn-download" href="#" class="btn btn-success">📥 Download Reconciled Workbook (.xlsx)</a>
+      </div>
+
+      <!-- SMMS Sync Action Card (shown only when cms_not_in_smms > 0) -->
+      <div id="smms-sync-card" style="display: none; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fcd34d; border-radius: 14px; padding: 1.5rem 2rem; margin-bottom: 2rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);">
+        <div class="smms-sync-text">
+          <h3 style="color: #92400e; font-size: 1.15rem; font-weight: 800; margin-bottom: 0.25rem;">🔄 SMMS Synchronization Required (<span id="sync-count">0</span> Transactions)</h3>
+          <p style="font-size: 0.85rem; color: #78350f;">These transactions exist in CMS with sync status <code>false</code> and were not found in SMMS. Download the sync workbook containing <code>SwinkPay Transaction ID</code> to import into SMMS.</p>
+        </div>
+        <a id="btn-download-sync" href="#" class="btn btn-primary" style="background: #d97706; border-color: #b45309; color: #ffffff; font-weight: 700;">📥 Download SMMS Sync File (.xlsx)</a>
+      </div>
+
+      <!-- Change Network Action Card (shown only when network_changes > 0) -->
+      <div id="network-change-card" style="display: none; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border: 1px solid #c7d2fe; border-radius: 14px; padding: 1.5rem 2rem; margin-bottom: 2rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);">
+        <div class="network-change-text">
+          <h3 style="color: #3730a3; font-size: 1.15rem; font-weight: 800; margin-bottom: 0.25rem;">🔄 Network Change Required (<span id="network-count">0</span> Transactions)</h3>
+          <p style="font-size: 0.85rem; color: #4338ca;">Transactions where CMS Network was recorded incorrectly (e.g. <code>RUPAY</code>) and Cashfree report shows the true payment mode (<code>UPI_CREDIT_CARD_OFFLINE_STATIC</code>). Download the <code>Change Network.xlsx</code> file to sync SwinkPay records.</p>
+        </div>
+        <a id="btn-download-network" href="#" class="btn btn-primary" style="background: #4f46e5; border-color: #4338ca; color: #ffffff; font-weight: 700;">📥 Download Change Network File (.xlsx)</a>
+      </div>
+
+      <!-- Controlled XCD Settlement Downloads Section -->
+      <section class="xcd-section" id="xcd-section">
+        <div class="xcd-header">
+          <div class="xcd-title-wrap">
+            <h3>📦 XCD Settlement Files (Controlled Gate)</h3>
+            <p>Populated strictly from matched tabs only (<code>CMS_CF_Matched</code>, <code>CMS_EB_Matched</code>, <code>CMS_Air_Matched</code>). Downloads are disabled if any exception, unmatched record, or amount conflict exists.</p>
+          </div>
+          <div id="xcd-settle-date-badge" class="badge-date">Settlement Date: --</div>
+        </div>
+
+        <!-- Gate Status Banner -->
+        <div id="xcd-gate-banner" class="xcd-gate-banner xcd-gate-pass">
+          <!-- Dynamic content filled by JS -->
+        </div>
+
+        <!-- Multi-Day Date Filter / Checkbox Selection -->
+        <div id="xcd-date-filter-box" class="xcd-date-filter-box" style="display: none;">
+          <div class="date-filter-header">
+            <div>
+              <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-main);">📅 Multi-Day Weekend Date Selection & Settlement Dates</h4>
+              <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-muted);">Select 1 day, 2 days, or 3 days to download date-filtered XCD input files, and set settlement dates.</p>
+            </div>
+            <div class="date-quick-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllDates()">Select All Days</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="clearAllDates()">Deselect All</button>
+            </div>
+          </div>
+
+          <!-- Dynamic Date Checkboxes Grid -->
+          <div id="date-checkboxes-list" class="date-checkboxes-grid"></div>
+
+          <!-- Consolidated Settlement Date Row -->
+          <div class="consolidated-settle-row">
+            <label style="font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="chk-use-single-settle" onchange="toggleSingleSettleDate(this.checked)" style="width: 1.1rem; height: 1.1rem; accent-color: var(--primary);" />
+              <strong>Apply single settlement date for all selected days:</strong>
+            </label>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="date" id="input-single-settle-date" disabled onchange="onSingleSettleDateChange()" style="background: #ffffff; border: 1px solid #cbd5e1; color: var(--text-main); padding: 0.35rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;" />
+              <span style="font-size: 0.75rem; color: var(--text-muted);">(e.g. all days settled together on Monday)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 XCD Cards Grid -->
+        <div class="xcd-grid" id="xcd-cards-grid">
+          <!-- Cashfree Card -->
+          <div class="xcd-card" id="card-cf">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-cf">CashFree</span>
+                <span class="xcd-source-pill">CMS_CF_Matched</span>
+              </div>
+              <h4>XCD Input file (Cashfree)</h4>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono" id="cf-xcd-count">--</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono" id="cf-xcd-amount">--</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settlement</span>
+                  <span class="xcd-stat-val mono" id="cf-xcd-net" style="color: #34d399;">--</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a id="btn-download-cf" href="#" class="btn btn-primary xcd-btn" download>📥 Download Cashfree XCD (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Easebuzz Card -->
+          <div class="xcd-card" id="card-eb">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-eb">EaseBuzz</span>
+                <span class="xcd-source-pill">CMS_EB_Matched</span>
+              </div>
+              <h4>XCD Input file (Easebuzz)</h4>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono" id="eb-xcd-count">--</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono" id="eb-xcd-amount">--</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settlement</span>
+                  <span class="xcd-stat-val mono" id="eb-xcd-net" style="color: #34d399;">--</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a id="btn-download-eb" href="#" class="btn btn-primary xcd-btn" download>📥 Download Easebuzz XCD (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Airtel Card -->
+          <div class="xcd-card" id="card-air">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-air">Airtel Bank</span>
+                <span class="xcd-source-pill">CMS_Air_Matched</span>
+              </div>
+              <h4>XCD Input file (Airtel)</h4>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono" id="air-xcd-count">--</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono" id="air-xcd-amount">--</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settlement</span>
+                  <span class="xcd-stat-val mono" id="air-xcd-net" style="color: #34d399;">--</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a id="btn-download-air" href="#" class="btn btn-primary xcd-btn" download>📥 Download Airtel XCD (.xlsx)</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Executive KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Successful Transactions</div>
+          <div class="kpi-value mono" id="kpi-txns">--</div>
+          <div class="kpi-sub">Master Population (SMMS)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Gross Collection</div>
+          <div class="kpi-value mono" id="kpi-gross">--</div>
+          <div class="kpi-sub">Total Transaction Volume</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Net Settled Amount</div>
+          <div class="kpi-value mono" id="kpi-net">--</div>
+          <div class="kpi-sub">After PSP Fees & GST</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Active Outlets</div>
+          <div class="kpi-value mono" id="kpi-outlets" style="color: #1a73e8;">--</div>
+          <div class="kpi-sub">Merchant MMS Terminal IDs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Failed / Reversed</div>
+          <div class="kpi-value mono" style="color: #dc2626;" id="kpi-failed">--</div>
+          <div class="kpi-sub">Isolated in Failed Tab</div>
+        </div>
+      </div>
+
+      <!-- Daily Operations Email Summary Card -->
+      <div class="email-summary-card" id="email-summary-card" style="display: none;">
+        <div class="email-header">
+          <div class="email-title-wrap">
+            <h3><span>📧</span> Daily Operations Email Summary (Ready to Send)</h3>
+            <p>Formatted matching operations standards. 1-click rich copy to paste directly into Outlook/Gmail with formatted table borders.</p>
+          </div>
+          <div class="email-actions">
+            <button type="button" class="btn btn-primary" id="btn-copy-email-rich" onclick="copyEmailRichHtml(this)">
+              📋 Copy for Outlook / Gmail (Rich Table)
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-copy-email-plain" onclick="copyEmailPlainText(this)">
+              📄 Copy Plain Text
+            </button>
+          </div>
+        </div>
+
+        <div class="email-preview-container" id="email-preview-box">
+          <div class="email-preview-meta">
+            <strong>To:</strong> swinkpay-operations &nbsp;|&nbsp; <strong>Attachment:</strong> <span id="email-preview-attach-name">XCD Recon.xlsx</span>
+          </div>
+          <p style="margin: 0 0 0.75rem 0;">Dear Team,</p>
+          <p style="margin: 0 0 1rem 0;">Please find the attached <span style="background-color: #fef08a; font-weight: 700; padding: 1px 4px; border-radius: 2px;">XCD Recon</span>.</p>
+          <p style="margin: 0 0 0.5rem 0;">
+            <strong>Exception:</strong><br>
+            Transactions happened in <strong id="email-outlet-val" contenteditable="true" style="color: #1a73e8; border-bottom: 1px dashed #1a73e8; cursor: text;" title="Click to edit if needed">0</strong> outlets.<br>
+            <span id="email-cf-pulled-val" contenteditable="true" style="border-bottom: 1px dashed #64748b; cursor: text;" title="Click to edit if needed">1</span> CF Transaction is pulled.
+          </p>
+
+          <table class="email-table-render" id="email-table-render">
+            <thead>
+              <tr>
+                <th>PARTNER</th>
+                <th>Mode</th>
+                <th>Network</th>
+                <th style="text-align: right;">SUCCESS COUNT</th>
+                <th style="text-align: right;">SUM OF TXN AMOUNT</th>
+                <th style="text-align: right;">Sum of net amount</th>
+              </tr>
+            </thead>
+            <tbody id="email-table-tbody"></tbody>
+            <tfoot id="email-table-tfoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Partner Breakdown Table -->
+      <div class="table-card">
+        <div class="table-title">
+          <span>Reconciliation Summary by Partner & Payment Network</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Partner</th>
+              <th>Mode</th>
+              <th>Network</th>
+              <th class="text-right">Success Count</th>
+              <th class="text-right">Gross Amount</th>
+              <th class="text-right">Net Amount</th>
+              <th class="text-right">Matched Count</th>
+              <th>Settlement Status</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Audit Checks Table -->
+      <div class="table-card">
+        <div class="table-title">
+          <span>Audit Controls & Difference-to-Zero Verification Proofs</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Control Check Description</th>
+              <th class="text-right">Expected</th>
+              <th class="text-right">Actual</th>
+              <th class="text-right">Difference</th>
+              <th style="text-align: center;">Audit Status</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Missing PG Transactions (1-Click Pull) Section -->
+      <div class="table-card" id="missing-pg-section" style="margin-top: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem;">
+              <span>📥 Missing PG Transactions (Not in CMS) - 1-Click Pull</span>
+              <span id="missing-pg-badge" class="badge badge-fail">0 Missing</span>
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+              Transactions present in PG reports (Cashfree, Easebuzz, Airtel) but missing from CMS. Click <strong>📥 Pull</strong> to automatically pull/sync directly to <code>https://merchants.swinkpay-fintech.com/api/v2/decision/updated</code> without Postman.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-push-all-payloads" onclick="pullAllMissingPgToApi(this)" style="display: none; background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; font-weight: 700; padding: 0.45rem 1rem;">⚡ Pull All Missing Transactions</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-all-payloads" style="display: none;">📋 Copy All JSONs</button>
+          </div>
+        </div>
+
+        <div id="missing-pg-table-wrap" style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Gateway</th>
+                <th>Order / Ref ID</th>
+                <th>Middle No. (Ref ID)</th>
+                <th>Terminal ID (MMS)</th>
+                <th>UTR / RRN</th>
+                <th class="text-right">Amount</th>
+                <th>Date & Time</th>
+                <th style="text-align: center;">Payload</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="missing-pg-tbody">
+              <!-- Dynamically populated by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="missing-pg-empty" style="display: none; padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+          ✅ No missing PG transactions detected. All gateway transactions exist in CMS.
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const filesList = document.getElementById('files-list');
+    const btnReconcile = document.getElementById('btn-reconcile');
+    const btnClear = document.getElementById('btn-clear');
+    const btnSampleRun = document.getElementById('btn-sample-run');
+    const errorBox = document.getElementById('error-box');
+    const loadingState = document.getElementById('loading-state');
+    const resultsSection = document.getElementById('results-section');
+    const btnDownload = document.getElementById('btn-download');
+    const settlementDateInput = document.getElementById('settlement-date-input');
+    const btnClearDate = document.getElementById('btn-clear-date');
+
+    // XCD elements
+    const xcdGateBanner = document.getElementById('xcd-gate-banner');
+    const xcdSettleDateBadge = document.getElementById('xcd-settle-date-badge');
+    const btnDownloadCf = document.getElementById('btn-download-cf');
+    const btnDownloadEb = document.getElementById('btn-download-eb');
+    const btnDownloadAir = document.getElementById('btn-download-air');
+    const cfXcdCount = document.getElementById('cf-xcd-count');
+    const cfXcdAmount = document.getElementById('cf-xcd-amount');
+    const cfXcdNet = document.getElementById('cf-xcd-net');
+    const ebXcdCount = document.getElementById('eb-xcd-count');
+    const ebXcdAmount = document.getElementById('eb-xcd-amount');
+    const ebXcdNet = document.getElementById('eb-xcd-net');
+    const airXcdCount = document.getElementById('air-xcd-count');
+    const airXcdAmount = document.getElementById('air-xcd-amount');
+    const airXcdNet = document.getElementById('air-xcd-net');
+
+    // SMMS Sync Elements
+    const smmsSyncCard = document.getElementById('smms-sync-card');
+    const syncCount = document.getElementById('sync-count');
+    const btnDownloadSync = document.getElementById('btn-download-sync');
+
+    // Change Network Elements
+    const networkChangeCard = document.getElementById('network-change-card');
+    const networkCount = document.getElementById('network-count');
+    const btnDownloadNetwork = document.getElementById('btn-download-network');
+
+    // Missing PG Elements
+    const missingPgBadge = document.getElementById('missing-pg-badge');
+    const missingPgTableWrap = document.getElementById('missing-pg-table-wrap');
+    const missingPgTbody = document.getElementById('missing-pg-tbody');
+    const missingPgEmpty = document.getElementById('missing-pg-empty');
+    const btnCopyAllPayloads = document.getElementById('btn-copy-all-payloads');
+    let currentMissingPayloads = [];
+
+    let uploadedFiles = [];
+
+    // Mode Switching across all 4 operational tabs
+    window.switchUploadMode = function(mode) {
+      const modeTabs = {
+        'daily': { btn: document.getElementById('tab-btn-daily'), panel: document.getElementById('panel-daily') },
+        'recon-file': { btn: document.getElementById('tab-btn-recon-file'), panel: document.getElementById('panel-recon-file') },
+        'pull': { btn: document.getElementById('tab-btn-pull'), panel: document.getElementById('panel-pull') },
+        'terminal': { btn: document.getElementById('tab-btn-terminal'), panel: document.getElementById('panel-terminal') }
+      };
+
+      Object.keys(modeTabs).forEach(k => {
+        const item = modeTabs[k];
+        if (!item || !item.btn || !item.panel) return;
+        if (k === mode) {
+          item.btn.classList.add('active');
+          item.panel.style.display = 'block';
+        } else {
+          item.btn.classList.remove('active');
+          item.panel.style.display = 'none';
+        }
+      });
+
+      errorBox.style.display = 'none';
+
+      if (mode === 'terminal') {
+        loadTerminalMappingsTable();
+      } else if (mode === 'pull') {
+        loadApiSettings();
+        syncPullTabQueue();
+      }
+    };
+
+    // Single Recon Workbook Upload Elements
+    let uploadedReconFile = null;
+    const reconDropzone = document.getElementById('recon-file-dropzone');
+    const reconFileInput = document.getElementById('recon-file-input');
+    const reconFileChipContainer = document.getElementById('recon-file-chip-container');
+    const btnReconFileClear = document.getElementById('btn-recon-file-clear');
+    const btnProcessReconFile = document.getElementById('btn-process-recon-file');
+
+    reconDropzone.addEventListener('click', () => {
+      reconFileInput.click();
+    });
+
+    reconDropzone.addEventListener('dragenter', e => {
+      e.preventDefault();
+      reconDropzone.classList.add('dragover');
+    }, false);
+
+    reconDropzone.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'copy';
+      }
+      reconDropzone.classList.add('dragover');
+    }, false);
+
+    reconDropzone.addEventListener('dragleave', e => {
+      e.preventDefault();
+      reconDropzone.classList.remove('dragover');
+    }, false);
+
+    reconDropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      reconDropzone.classList.remove('dragover');
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length > 0) {
+        handleReconFile(dt.files[0]);
+      }
+    }, false);
+
+    reconFileInput.addEventListener('change', e => {
+      if (e.target.files.length > 0) {
+        handleReconFile(e.target.files[0]);
+      }
+    });
+
+    function handleReconFile(file) {
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        alert('Please select a valid .xlsx reconciliation file.');
+        return;
+      }
+      uploadedReconFile = file;
+      reconFileChipContainer.innerHTML = `
+        <div class="file-chip">
+          <span>📑 ${file.name} <small style="color:var(--text-dim)">(${(file.size / (1024 * 1024)).toFixed(2)} MB)</small></span>
+          <button class="remove-btn" onclick="clearReconFile()">×</button>
+        </div>
+      `;
+      btnProcessReconFile.style.display = 'inline-flex';
+      btnReconFileClear.style.display = 'inline-flex';
+    }
+
+    window.clearReconFile = function() {
+      uploadedReconFile = null;
+      reconFileInput.value = '';
+      reconFileChipContainer.innerHTML = '';
+      btnProcessReconFile.style.display = 'none';
+      btnReconFileClear.style.display = 'none';
+    };
+
+    window.processReconFile = async function() {
+      if (!uploadedReconFile) return;
+      const formData = new FormData();
+      formData.append('recon_file', uploadedReconFile);
+      const sDate = document.getElementById('recon-settlement-date-input').value.trim();
+      if (sDate) {
+        formData.append('settlement_date', sDate);
+      }
+      document.getElementById('loading-title').textContent = 'Parsing Reconciliation File...';
+      document.getElementById('loading-sub').textContent = 'Extracting matched tabs, detecting dates, checking network consistency...';
+      executeReconciliation('/api/upload-recon-file', formData);
+    };
+
+    // Date Filter State
+    let currentDates = [];
+    let selectedDates = new Set();
+    let dateSettlementMap = {};
+
+    function renderDateFilter(dates) {
+      const filterBox = document.getElementById('xcd-date-filter-box');
+      const container = document.getElementById('date-checkboxes-list');
+      container.innerHTML = '';
+      currentDates = dates || [];
+      selectedDates = new Set();
+      dateSettlementMap = {};
+
+      if (!currentDates || currentDates.length === 0) {
+        filterBox.style.display = 'none';
+        return;
+      }
+
+      filterBox.style.display = 'block';
+
+      currentDates.forEach(d => {
+        selectedDates.add(d.date);
+        dateSettlementMap[d.date] = d.default_settlement_date || '';
+
+        const amtBadge = d.total_gross ? ` • ${formatCurrency(d.total_gross)}` : '';
+        const div = document.createElement('div');
+        div.className = 'date-check-item selected';
+        div.id = `date-item-${d.date}`;
+        div.innerHTML = `
+          <label class="date-check-label">
+            <div class="date-check-title">
+              <input type="checkbox" class="chk-date" value="${d.date}" checked onchange="onDateSelectionChange('${d.date}', this.checked)" style="width:1.15rem; height:1.15rem; accent-color:var(--primary); cursor:pointer;" />
+              <strong>${d.date}</strong>
+              <span style="color:var(--text-muted); font-size:0.8rem; font-weight:500;">(${d.day_name || ''})</span>
+            </div>
+            <span class="badge-date-count">${formatNumber(d.total_count)} txns${amtBadge}</span>
+          </label>
+          <div class="date-partner-mini-stats">
+            <span class="mini-tag tag-cf">CF: ${formatNumber(d.cf_count || 0)}</span>
+            <span class="mini-tag tag-eb">EB: ${formatNumber(d.eb_count || 0)}</span>
+            <span class="mini-tag tag-air">Air: ${formatNumber(d.airtel_count || 0)}</span>
+            <span class="date-net-pill">Net: ${formatCurrency(d.total_net || 0)}</span>
+          </div>
+          <div class="date-settle-input-wrap">
+            <span>Settles on:</span>
+            <input type="date" class="input-date-settle" data-date="${d.date}" value="${d.default_settlement_date || ''}" onchange="onDateSettlementChange('${d.date}', this.value)" />
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      updateXcdDownloadUrls();
+    }
+
+    window.selectAllDates = function() {
+      currentDates.forEach(d => selectedDates.add(d.date));
+      document.querySelectorAll('.chk-date').forEach(cb => cb.checked = true);
+      document.querySelectorAll('.date-check-item').forEach(item => item.classList.add('selected'));
+      updateXcdDownloadUrls();
+    };
+
+    window.clearAllDates = function() {
+      selectedDates.clear();
+      document.querySelectorAll('.chk-date').forEach(cb => cb.checked = false);
+      document.querySelectorAll('.date-check-item').forEach(item => item.classList.remove('selected'));
+      updateXcdDownloadUrls();
+    };
+
+    window.onDateSelectionChange = function(dateStr, isChecked) {
+      const itemEl = document.getElementById(`date-item-${dateStr}`);
+      if (isChecked) {
+        selectedDates.add(dateStr);
+        if (itemEl) itemEl.classList.add('selected');
+      } else {
+        selectedDates.delete(dateStr);
+        if (itemEl) itemEl.classList.remove('selected');
+      }
+      updateXcdDownloadUrls();
+    };
+
+    window.onDateSettlementChange = function(dateStr, val) {
+      dateSettlementMap[dateStr] = val;
+      updateXcdDownloadUrls();
+    };
+
+    window.toggleSingleSettleDate = function(enabled) {
+      const singleInput = document.getElementById('input-single-settle-date');
+      singleInput.disabled = !enabled;
+      if (enabled && !singleInput.value && currentDates.length > 0) {
+        const lastDate = currentDates[currentDates.length - 1];
+        singleInput.value = lastDate.default_settlement_date || '';
+      }
+      updateXcdDownloadUrls();
+    };
+
+    window.onSingleSettleDateChange = function() {
+      updateXcdDownloadUrls();
+    };
+
+    function updateXcdDownloadUrls() {
+      if (!currentSessionId) return;
+
+      const datesArr = Array.from(selectedDates);
+      const datesParam = datesArr.length > 0 ? `dates=${encodeURIComponent(datesArr.join(','))}` : '';
+
+      const chkSingle = document.getElementById('chk-use-single-settle');
+      let settleParam = '';
+      if (chkSingle && chkSingle.checked) {
+        const singleVal = document.getElementById('input-single-settle-date').value;
+        if (singleVal) settleParam = `settlement_date=${encodeURIComponent(singleVal)}`;
+      } else if (Object.keys(dateSettlementMap).length > 0) {
+        settleParam = `settlement_dates=${encodeURIComponent(JSON.stringify(dateSettlementMap))}`;
+      }
+
+      const queryParts = [datesParam, settleParam].filter(p => p.length > 0);
+      const queryStr = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
+      // Sum counts and amounts for selected dates
+      let cfCount = 0, cfGross = 0, cfNet = 0;
+      let ebCount = 0, ebGross = 0, ebNet = 0;
+      let airCount = 0, airGross = 0, airNet = 0;
+
+      if (currentDates && currentDates.length > 0) {
+        currentDates.forEach(d => {
+          if (selectedDates.has(d.date)) {
+            cfCount += d.cf_count || 0;
+            cfGross += d.cf_gross || 0;
+            cfNet += d.cf_net || 0;
+
+            ebCount += d.eb_count || 0;
+            ebGross += d.eb_gross || 0;
+            ebNet += d.eb_net || 0;
+
+            airCount += d.airtel_count || 0;
+            airGross += d.airtel_gross || 0;
+            airNet += d.airtel_net || 0;
+          }
+        });
+      } else if (currentPartnerSubtotals) {
+        cfCount = currentPartnerSubtotals.CashFree ? (currentPartnerSubtotals.CashFree.count || currentPartnerSubtotals.CashFree.matched_count || 0) : 0;
+        cfGross = currentPartnerSubtotals.CashFree ? (currentPartnerSubtotals.CashFree.gross_amount || currentPartnerSubtotals.CashFree.matched_amount || 0) : 0;
+        cfNet = currentPartnerSubtotals.CashFree ? (currentPartnerSubtotals.CashFree.net_amount || 0) : 0;
+
+        ebCount = currentPartnerSubtotals.EaseBuzz ? (currentPartnerSubtotals.EaseBuzz.count || currentPartnerSubtotals.EaseBuzz.matched_count || 0) : 0;
+        ebGross = currentPartnerSubtotals.EaseBuzz ? (currentPartnerSubtotals.EaseBuzz.gross_amount || currentPartnerSubtotals.EaseBuzz.matched_amount || 0) : 0;
+        ebNet = currentPartnerSubtotals.EaseBuzz ? (currentPartnerSubtotals.EaseBuzz.net_amount || 0) : 0;
+
+        airCount = currentPartnerSubtotals['Airtel Bank'] ? (currentPartnerSubtotals['Airtel Bank'].count || currentPartnerSubtotals['Airtel Bank'].matched_count || 0) : 0;
+        airGross = currentPartnerSubtotals['Airtel Bank'] ? (currentPartnerSubtotals['Airtel Bank'].gross_amount || currentPartnerSubtotals['Airtel Bank'].matched_amount || 0) : 0;
+        airNet = currentPartnerSubtotals['Airtel Bank'] ? (currentPartnerSubtotals['Airtel Bank'].net_amount || 0) : 0;
+      }
+
+      // Update partner card displays with exact selected date(s) values
+      cfXcdCount.textContent = formatNumber(cfCount);
+      cfXcdAmount.textContent = formatCurrency(cfGross);
+      if (cfXcdNet) cfXcdNet.textContent = formatCurrency(cfNet);
+
+      ebXcdCount.textContent = formatNumber(ebCount);
+      ebXcdAmount.textContent = formatCurrency(ebGross);
+      if (ebXcdNet) ebXcdNet.textContent = formatCurrency(ebNet);
+
+      airXcdCount.textContent = formatNumber(airCount);
+      airXcdAmount.textContent = formatCurrency(airGross);
+      if (airXcdNet) airXcdNet.textContent = formatCurrency(airNet);
+
+      // Dynamically sync Executive KPIs with selected dates
+      const totCount = cfCount + ebCount + airCount;
+      const totGross = cfGross + ebGross + airGross;
+      const totNet = cfNet + ebNet + airNet;
+      const elKpiTxns = document.getElementById('kpi-txns');
+      const elKpiGross = document.getElementById('kpi-gross');
+      const elKpiNet = document.getElementById('kpi-net');
+      if (elKpiTxns && selectedDates.size > 0) elKpiTxns.textContent = formatNumber(totCount);
+      if (elKpiGross && selectedDates.size > 0) elKpiGross.textContent = formatCurrency(totGross);
+      if (elKpiNet && selectedDates.size > 0) elKpiNet.textContent = formatCurrency(totNet);
+
+      btnDownloadCf.href = `/api/download-xcd/${currentSessionId}/cashfree${queryStr}`;
+      btnDownloadEb.href = `/api/download-xcd/${currentSessionId}/easebuzz${queryStr}`;
+      btnDownloadAir.href = `/api/download-xcd/${currentSessionId}/airtel${queryStr}`;
+    }
+
+    // Clear Date handler
+    btnClearDate.addEventListener('click', () => {
+      settlementDateInput.value = '';
+      if (typeof selectedDates !== 'undefined') {
+        selectedDates.clear();
+      }
+      if (typeof updateDateFilteredStats === 'function') {
+        updateDateFilteredStats();
+      }
+    });
+
+    // 5-Slot Smart Dropzone File State
+    const mandatorySlots = ['CMS', 'SMMS', 'CASHFREE', 'EASEBUZZ', 'AIRTEL'];
+    const slotDisplayNames = {
+      CMS: 'CMS Report',
+      SMMS: 'SMMS Report',
+      CASHFREE: 'Cashfree Report',
+      EASEBUZZ: 'Easebuzz Report',
+      AIRTEL: 'Airtel Bank Report'
+    };
+    let slotFiles = {
+      CMS: null,
+      SMMS: null,
+      CASHFREE: null,
+      EASEBUZZ: null,
+      AIRTEL: null
+    };
+    let slotMeta = {};
+    let auxiliaryFiles = [];
+
+    window.triggerSlotUpload = function(slot) {
+      const inp = document.getElementById('slot-input-' + slot);
+      if (inp) inp.click();
+    };
+
+    window.removeSlotFile = function(slot, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      slotFiles[slot] = null;
+      delete slotMeta[slot];
+      const inp = document.getElementById('slot-input-' + slot);
+      if (inp) inp.value = '';
+      updateSlotsUI();
+    };
+
+    window.handleSingleSlotFile = async function(slot, file) {
+      if (!file) return;
+      slotFiles[slot] = file;
+      slotMeta[slot] = { filename: file.name, file_size: file.size };
+      updateSlotsUI();
+
+      try {
+        const formData = new FormData();
+        formData.append('files', file);
+        const resp = await fetch('/api/detect-files', { method: 'POST', body: formData });
+        const res = await resp.json();
+        if (res.detected && res.detected[slot]) {
+          slotMeta[slot] = res.detected[slot];
+        }
+      } catch (e) {
+        // preserve fallback metadata
+      }
+      updateSlotsUI();
+    };
+
+    // Prevent browser default open-file behavior when dragging anywhere on the page
+    window.addEventListener('dragover', e => {
+      e.preventDefault();
+    }, false);
+
+    window.addEventListener('drop', e => {
+      e.preventDefault();
+    }, false);
+
+    // Slot Drag-and-drop wiring
+    mandatorySlots.forEach(slot => {
+      const card = document.getElementById('slot-card-' + slot);
+      if (!card) return;
+
+      card.addEventListener('dragenter', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.add('dragover');
+      }, false);
+
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'copy';
+        }
+        card.classList.add('dragover');
+      }, false);
+
+      card.addEventListener('dragleave', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('dragover');
+      }, false);
+
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('dragover');
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          handleSingleSlotFile(slot, dt.files[0]);
+        }
+      }, false);
+    });
+
+    // Master Dropzone events
+    dropzone.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    dropzone.addEventListener('dragenter', e => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    }, false);
+
+    dropzone.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'copy';
+      }
+      dropzone.classList.add('dragover');
+    }, false);
+
+    dropzone.addEventListener('dragleave', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    }, false);
+
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+      const dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length > 0) {
+        processAndDetectFiles(dt.files);
+      }
+    }, false);
+
+    fileInput.addEventListener('change', e => {
+      if (e.target.files && e.target.files.length > 0) {
+        processAndDetectFiles(e.target.files);
+      }
+    });
+
+    async function processAndDetectFiles(fileList) {
+      const filesArray = Array.from(fileList);
+      if (filesArray.length === 0) return;
+
+      const formData = new FormData();
+      filesArray.forEach(f => formData.append('files', f));
+
+      const statusText = document.getElementById('slot-status-text');
+      if (statusText) {
+        statusText.innerHTML = `<strong>⏳ Analyzing Reports...</strong> Auto-classifying ${filesArray.length} file(s) into slots.`;
+      }
+
+      try {
+        const resp = await fetch('/api/detect-files', {
+          method: 'POST',
+          body: formData
+        });
+        const res = await resp.json();
+
+        if (res.detected) {
+          Object.keys(res.detected).forEach(slotKey => {
+            if (mandatorySlots.includes(slotKey)) {
+              const det = res.detected[slotKey];
+              const matchedFile = filesArray.find(f => f.name === det.filename);
+              if (matchedFile) {
+                slotFiles[slotKey] = matchedFile;
+                slotMeta[slotKey] = det;
+              }
+            } else if (slotKey === 'AIRTEL_SETTLEMENT') {
+              const det = res.detected[slotKey];
+              const matchedFile = filesArray.find(f => f.name === det.filename);
+              if (matchedFile && !auxiliaryFiles.some(f => f.name === matchedFile.name)) {
+                auxiliaryFiles.push(matchedFile);
+              }
+            }
+          });
+        }
+
+        if (res.unrecognized && res.unrecognized.length > 0) {
+          res.unrecognized.forEach(un => {
+            const matchedFile = filesArray.find(f => f.name === un.filename);
+            if (matchedFile && !auxiliaryFiles.some(f => f.name === matchedFile.name)) {
+              auxiliaryFiles.push(matchedFile);
+            }
+          });
+        }
+      } catch (err) {
+        // Fallback: assign sequentially if backend detection had issue
+        filesArray.forEach(f => {
+          const emptySlot = mandatorySlots.find(s => !slotFiles[s]);
+          if (emptySlot) {
+            slotFiles[emptySlot] = f;
+            slotMeta[emptySlot] = { filename: f.name, file_size: f.size };
+          }
+        });
+      }
+
+      updateSlotsUI();
+    }
+
+    function updateSlotsUI() {
+      let filledCount = 0;
+      let missingSlots = [];
+
+      mandatorySlots.forEach(slot => {
+        const card = document.getElementById('slot-card-' + slot);
+        const badge = document.getElementById('slot-badge-' + slot);
+        const fileEl = document.getElementById('slot-file-' + slot);
+        const metaEl = document.getElementById('slot-meta-' + slot);
+        const removeBtn = document.getElementById('slot-remove-' + slot);
+
+        const file = slotFiles[slot];
+        const meta = slotMeta[slot] || {};
+
+        if (file) {
+          filledCount++;
+          card.className = 'slot-card filled';
+          badge.className = 'slot-status-badge badge-detected';
+          badge.textContent = '✅ Detected';
+          fileEl.textContent = file.name;
+          const sizeKb = (file.size / 1024).toFixed(1);
+          const countStr = meta.record_count !== undefined ? `${formatNumber(meta.record_count)} rows • ` : '';
+          metaEl.textContent = `${countStr}${sizeKb} KB`;
+          if (removeBtn) removeBtn.style.display = 'flex';
+        } else {
+          missingSlots.push(slotDisplayNames[slot]);
+          card.className = 'slot-card missing';
+          badge.className = 'slot-status-badge badge-missing';
+          badge.textContent = '⚠️ Missing';
+          fileEl.textContent = 'No file uploaded';
+          metaEl.textContent = 'Drop file here or click';
+          if (removeBtn) removeBtn.style.display = 'none';
+        }
+      });
+
+      // Update Pill
+      const overallPill = document.getElementById('slot-overall-pill');
+      if (overallPill) {
+        if (filledCount === 5) {
+          overallPill.className = 'slot-status-badge badge-detected';
+          overallPill.textContent = '5 / 5 Ready';
+        } else {
+          overallPill.className = 'slot-status-badge badge-missing';
+          overallPill.textContent = `${filledCount} / 5 Loaded`;
+        }
+      }
+
+      // Update Status Bar
+      const statusBar = document.getElementById('slot-status-bar');
+      const statusText = document.getElementById('slot-status-text');
+      const auxContainer = document.getElementById('slot-auxiliary-container');
+
+      if (statusBar && statusText) {
+        if (filledCount === 5) {
+          statusBar.className = 'slot-summary-bar slot-bar-ready';
+          statusText.innerHTML = '<strong>✅ All 5 Reports Ready:</strong> CMS, SMMS, Cashfree, Easebuzz, and Airtel Bank reports are loaded &amp; validated. Ready to run reconciliation!';
+        } else {
+          statusBar.className = 'slot-summary-bar slot-bar-warning';
+          statusText.innerHTML = `<strong>⚠️ ${missingSlots.length} Report(s) Missing:</strong> ${missingSlots.join(', ')}. Drop files into the master dropzone or onto individual slots above.`;
+        }
+      }
+
+      // Auxiliary files display
+      if (auxContainer) {
+        if (auxiliaryFiles.length > 0) {
+          auxContainer.innerHTML = auxiliaryFiles.map((af, i) => `
+            <span class="file-chip" style="margin: 0; padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+              <span>📎 ${af.name}</span>
+              <button class="remove-btn" onclick="removeAuxFile(${i})">×</button>
+            </span>
+          `).join('');
+        } else {
+          auxContainer.innerHTML = '';
+        }
+      }
+
+      // Action Buttons
+      if (filledCount > 0) {
+        btnReconcile.style.display = 'inline-flex';
+        btnClear.style.display = 'inline-flex';
+      } else {
+        btnReconcile.style.display = 'none';
+        btnClear.style.display = 'none';
+      }
+    }
+
+    window.removeAuxFile = function(idx) {
+      auxiliaryFiles.splice(idx, 1);
+      updateSlotsUI();
+    };
+
+    btnClear.addEventListener('click', () => {
+      mandatorySlots.forEach(slot => {
+        slotFiles[slot] = null;
+        delete slotMeta[slot];
+        const inp = document.getElementById('slot-input-' + slot);
+        if (inp) inp.value = '';
+      });
+      auxiliaryFiles = [];
+      fileInput.value = '';
+      updateSlotsUI();
+      errorBox.style.display = 'none';
+      resultsSection.style.display = 'none';
+    });
+
+    // Reconcile action
+    btnReconcile.addEventListener('click', async () => {
+      const activeFiles = [];
+      mandatorySlots.forEach(s => {
+        if (slotFiles[s]) activeFiles.push(slotFiles[s]);
+      });
+      auxiliaryFiles.forEach(af => activeFiles.push(af));
+
+      if (activeFiles.length === 0) return;
+
+      const formData = new FormData();
+      activeFiles.forEach(f => formData.append('files', f));
+
+      const sDate = settlementDateInput.value.trim();
+      if (sDate) {
+        formData.append('settlement_date', sDate);
+      }
+
+      document.getElementById('loading-title').textContent = 'Processing & Reconciling Transactions...';
+      document.getElementById('loading-sub').textContent = 'Performing multi-way matching, audit checks, and evaluating XCD all-clear gate...';
+      executeReconciliation('/api/reconcile', formData);
+    });
+
+    // Sample run action
+    btnSampleRun.addEventListener('click', async () => {
+      const sDate = settlementDateInput.value.trim();
+      let url = '/api/sample-reconcile';
+      if (sDate) {
+        url += `?settlement_date=${encodeURIComponent(sDate)}`;
+      }
+      document.getElementById('loading-title').textContent = 'Processing & Reconciling Transactions...';
+      document.getElementById('loading-sub').textContent = 'Performing multi-way matching, audit checks, and evaluating XCD all-clear gate...';
+      executeReconciliation(url, null);
+    });
+
+    async function executeReconciliation(endpoint, body) {
+      errorBox.style.display = 'none';
+      loadingState.style.display = 'block';
+      resultsSection.style.display = 'none';
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          body: body
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Reconciliation failed.');
+        }
+
+        renderResults(data);
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+      } finally {
+        loadingState.style.display = 'none';
+      }
+    }
+
+    function formatCurrency(val) {
+      if (val === null || val === undefined) return '₹0.00';
+      return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatNumber(val) {
+      if (val === null || val === undefined) return '0';
+      return Number(val).toLocaleString('en-IN');
+    }
+
+    let currentSessionId = null;
+    let currentPartnerSubtotals = null;
+    let currentEmailData = null;
+
+    function renderResults(data) {
+      currentSessionId = data.session_id;
+      currentPartnerSubtotals = data.partner_subtotals;
+
+      // 1. Banner
+      document.getElementById('banner-title').textContent = `Reconciliation Completed: ${data.output_filename}`;
+      btnDownload.href = data.download_url;
+      btnDownload.download = data.output_filename;
+
+      // 1.5. SMMS Sync File Handling
+      if (data.sync_file && data.sync_file.count > 0) {
+        smmsSyncCard.style.display = 'flex';
+        syncCount.textContent = formatNumber(data.sync_file.count);
+        btnDownloadSync.href = data.sync_file.download_url;
+        btnDownloadSync.download = data.sync_file.filename;
+      } else {
+        smmsSyncCard.style.display = 'none';
+      }
+
+      // 1.6. Change Network File Handling
+      if (data.network_file && data.network_file.count > 0) {
+        networkChangeCard.style.display = 'flex';
+        networkCount.textContent = formatNumber(data.network_file.count);
+        btnDownloadNetwork.href = data.network_file.download_url;
+        btnDownloadNetwork.download = data.network_file.filename || 'Change Network.xlsx';
+      } else {
+        networkChangeCard.style.display = 'none';
+      }
+
+      // 1.7. Multi-Day Date Filter Handling
+      renderDateFilter(data.dates || (data.xcd_status && data.xcd_status.dates) || []);
+
+      // 2. Controlled XCD Section Handling
+      renderXcdSection(data.xcd_status || {});
+
+      // 3. KPIs
+      document.getElementById('kpi-txns').textContent = formatNumber(data.summary.success_count);
+      document.getElementById('kpi-gross').textContent = formatCurrency(data.summary.gross_amount);
+      document.getElementById('kpi-net').textContent = formatCurrency(data.summary.net_amount);
+      document.getElementById('kpi-failed').textContent = formatNumber(data.discrepancies.failed_or_reversed);
+      const elKpiOutlets = document.getElementById('kpi-outlets');
+      if (elKpiOutlets) {
+        elKpiOutlets.textContent = formatNumber(data.outlet_count || 0);
+      }
+
+      // 3.5. Operations Email Summary Card
+      renderEmailSummary(data);
+
+      // 4. Summary Rows
+      const tbody = document.getElementById('summary-tbody');
+      tbody.innerHTML = '';
+
+      data.summary_rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${r.PARTNER || ''}</strong></td>
+          <td>${r.Mode}</td>
+          <td><code>${r.Network}</code></td>
+          <td class="text-right mono">${formatNumber(r['SUCCESS COUNT'])}</td>
+          <td class="text-right mono">${formatCurrency(r['SUM OF TXN AMOUNT'])}</td>
+          <td class="text-right mono">${formatCurrency(r['Sum of net amount'])}</td>
+          <td class="text-right mono">${formatNumber(r['Matched Count'])}</td>
+          <td><span style="font-size:0.75rem; color:var(--text-muted);">${r['Settlement Status']}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Total Row
+      const totTr = document.createElement('tr');
+      totTr.className = 'total-row';
+      totTr.innerHTML = `
+        <td>TOTAL</td>
+        <td></td>
+        <td></td>
+        <td class="text-right mono">${formatNumber(data.summary.success_count)}</td>
+        <td class="text-right mono">${formatCurrency(data.summary.gross_amount)}</td>
+        <td class="text-right mono">${formatCurrency(data.summary.net_amount)}</td>
+        <td class="text-right mono">${formatNumber(data.summary.matched_count)}</td>
+        <td><strong>Reconciled</strong></td>
+      `;
+      tbody.appendChild(totTr);
+
+      // 5. Audit Checks Table
+      const auditTbody = document.getElementById('audit-tbody');
+      auditTbody.innerHTML = '';
+
+      data.control_checks.forEach(chk => {
+        const isPass = chk.status === 'PASS';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${chk.check_name}</td>
+          <td class="text-right mono">${typeof chk.expected === 'number' && chk.expected % 1 !== 0 ? formatCurrency(chk.expected) : formatNumber(chk.expected)}</td>
+          <td class="text-right mono">${typeof chk.actual === 'number' && chk.actual % 1 !== 0 ? formatCurrency(chk.actual) : formatNumber(chk.actual)}</td>
+          <td class="text-right mono">${chk.difference}</td>
+          <td style="text-align: center;"><span class="badge ${isPass ? 'badge-pass' : 'badge-fail'}">${chk.status}</span></td>
+        `;
+        auditTbody.appendChild(tr);
+      });
+
+      // 6. Missing PG Transactions (1-Click Pull Payloads)
+      currentMissingPayloads = data.missing_pg_payloads || [];
+      renderMissingPgSection(currentMissingPayloads);
+
+      resultsSection.style.display = 'block';
+      resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderMissingPgSection(payloads) {
+      currentMissingPayloads = payloads || [];
+      missingPgTbody.innerHTML = '';
+      const btnPullAll = document.getElementById('btn-push-all-payloads');
+
+      if (currentMissingPayloads.length > 0) {
+        missingPgBadge.className = 'badge badge-fail';
+        missingPgBadge.textContent = `${currentMissingPayloads.length} Missing`;
+        missingPgEmpty.style.display = 'none';
+        missingPgTableWrap.style.display = 'block';
+        btnCopyAllPayloads.style.display = 'inline-flex';
+        if (btnPullAll) {
+          btnPullAll.style.display = 'inline-flex';
+          btnPullAll.innerHTML = `⚡ Pull All (${currentMissingPayloads.length})`;
+        }
+
+        currentMissingPayloads.forEach((item, idx) => {
+          const tr = document.createElement('tr');
+          const tagClass = item.gateway === 'Cashfree' ? 'tag-cf' : (item.gateway === 'Easebuzz' ? 'tag-eb' : 'tag-air');
+          const termDisplay = item.terminal_id ? `<strong class="mono" style="color:#1a73e8;">${item.terminal_id}</strong>` : `<span style="color:#dc2626; font-weight:700;">Unresolved</span>`;
+          const midDisplay = item.middle_number ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-family:'JetBrains Mono',monospace; font-size:0.75rem; border:1px solid #fde68a;">${item.middle_number}</span>` : `<span style="color:#94a3b8; font-size:0.75rem;">--</span>`;
+
+          tr.innerHTML = `
+            <td><span class="xcd-partner-tag ${tagClass}">${item.gateway}</span></td>
+            <td><span style="font-size:0.75rem; font-family:'JetBrains Mono',monospace;" title="${item.order_id}">${item.order_id.length > 25 ? item.order_id.substring(0, 25) + '...' : item.order_id}</span></td>
+            <td>${midDisplay}</td>
+            <td>${termDisplay}</td>
+            <td><code class="mono">${item.utr || '--'}</code></td>
+            <td class="text-right mono">${formatCurrency(item.amount)}</td>
+            <td class="mono" style="font-size:0.75rem;">${item.date_and_time || '--'}</td>
+            <td style="text-align: center;">
+              <details style="cursor: pointer; text-align: left;">
+                <summary style="font-size:0.75rem; color:#94a3b8;">View JSON</summary>
+                <pre style="background:#0f172a; padding:0.5rem; border-radius:6px; font-size:0.72rem; color:#38bdf8; max-height:120px; overflow-y:auto; margin-top:0.25rem;">${item.payload_json}</pre>
+              </details>
+            </td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                <button type="button" class="btn btn-primary btn-sm btn-pull-row" id="btn-pull-row-${idx}" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; padding: 0.35rem 0.85rem; font-size: 0.78rem; font-weight: 700;" onclick="pullMissingPgToApi(${idx}, this)">📥 Pull</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="copyPayloadToClipboard(${idx}, this)">📋 Copy</button>
+              </div>
+            </td>
+          `;
+          missingPgTbody.appendChild(tr);
+        });
+      } else {
+        missingPgBadge.className = 'badge badge-pass';
+        missingPgBadge.textContent = '0 Missing';
+        missingPgEmpty.style.display = 'block';
+        missingPgTableWrap.style.display = 'none';
+        btnCopyAllPayloads.style.display = 'none';
+        if (btnPullAll) btnPullAll.style.display = 'none';
+      }
+
+      // Also synchronize into the dedicated Pull Tab queue!
+      syncPullTabQueue();
+    }
+
+    // Synchronizes currentMissingPayloads into the dedicated Pull Tab (Panel 3)
+    function syncPullTabQueue() {
+      const pullTabTbody = document.getElementById('pull-tab-tbody');
+      const pullTabBadge = document.getElementById('pull-tab-missing-badge');
+      const tabPullBadge = document.getElementById('tab-pull-badge');
+      const pullTableWrap = document.getElementById('pull-tab-table-wrap');
+      const pullEmptyWrap = document.getElementById('pull-tab-empty');
+      const btnPullAllMaster = document.getElementById('btn-pull-tab-all');
+      const btnCopyAllMaster = document.getElementById('btn-pull-tab-copy-all');
+
+      if (!pullTabTbody) return;
+
+      pullTabTbody.innerHTML = '';
+      const count = currentMissingPayloads ? currentMissingPayloads.length : 0;
+
+      if (pullTabBadge) {
+        pullTabBadge.className = count > 0 ? 'badge badge-fail' : 'badge badge-pass';
+        pullTabBadge.textContent = `${count} Missing`;
+      }
+      if (tabPullBadge) {
+        tabPullBadge.textContent = count;
+        tabPullBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+
+      if (count > 0) {
+        if (pullTableWrap) pullTableWrap.style.display = 'block';
+        if (pullEmptyWrap) pullEmptyWrap.style.display = 'none';
+        if (btnPullAllMaster) {
+          btnPullAllMaster.style.display = 'inline-flex';
+          btnPullAllMaster.innerHTML = `⚡ Pull All (${count})`;
+        }
+        if (btnCopyAllMaster) btnCopyAllMaster.style.display = 'inline-flex';
+
+        currentMissingPayloads.forEach((item, idx) => {
+          const tr = document.createElement('tr');
+          const tagClass = item.gateway === 'Cashfree' ? 'tag-cf' : (item.gateway === 'Easebuzz' ? 'tag-eb' : 'tag-air');
+          const termDisplay = item.terminal_id ? `<strong class="mono" style="color:#1a73e8;">${item.terminal_id}</strong>` : `<span style="color:#dc2626; font-weight:700;">Unresolved</span>`;
+          const midDisplay = item.middle_number ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-family:'JetBrains Mono',monospace; font-size:0.75rem; border:1px solid #fde68a;">${item.middle_number}</span>` : `<span style="color:#94a3b8; font-size:0.75rem;">--</span>`;
+
+          tr.innerHTML = `
+            <td><span class="xcd-partner-tag ${tagClass}">${item.gateway}</span></td>
+            <td><span style="font-size:0.75rem; font-family:'JetBrains Mono',monospace;" title="${item.order_id}">${item.order_id.length > 25 ? item.order_id.substring(0, 25) + '...' : item.order_id}</span></td>
+            <td>${midDisplay}</td>
+            <td>${termDisplay}</td>
+            <td><code class="mono">${item.utr || '--'}</code></td>
+            <td class="text-right mono">${formatCurrency(item.amount)}</td>
+            <td class="mono" style="font-size:0.75rem;">${item.date_and_time || '--'}</td>
+            <td style="text-align: center;">
+              <details style="cursor: pointer; text-align: left;">
+                <summary style="font-size:0.75rem; color:#94a3b8;">View JSON</summary>
+                <pre style="background:#0f172a; padding:0.5rem; border-radius:6px; font-size:0.72rem; color:#38bdf8; max-height:120px; overflow-y:auto; margin-top:0.25rem;">${item.payload_json}</pre>
+              </details>
+            </td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                <button type="button" class="btn btn-primary btn-sm btn-pull-row" id="btn-pull-tab-row-${idx}" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; padding: 0.35rem 0.85rem; font-size: 0.78rem; font-weight: 700;" onclick="pullMissingPgToApi(${idx}, this)">📥 Pull</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="copyPayloadToClipboard(${idx}, this)">📋 Copy</button>
+              </div>
+            </td>
+            <td style="text-align: center;" id="pull-status-tab-cell-${idx}">
+              <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.72rem;">Ready</span>
+            </td>
+          `;
+          pullTabTbody.appendChild(tr);
+        });
+      } else {
+        if (pullTableWrap) pullTableWrap.style.display = 'none';
+        if (pullEmptyWrap) pullEmptyWrap.style.display = 'block';
+        if (btnPullAllMaster) btnPullAllMaster.style.display = 'none';
+        if (btnCopyAllMaster) btnCopyAllMaster.style.display = 'none';
+      }
+    }
+
+    // Direct 1-Click Pull Handlers with Postman Live Telemetry Feedback
+    window.pullMissingPgToApi = async function(idx, btn) {
+      if (!currentMissingPayloads || !currentMissingPayloads[idx]) return;
+      const item = currentMissingPayloads[idx];
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Pulling...';
+      btn.style.opacity = '0.75';
+
+      const tokEl = document.getElementById('pull-settings-token');
+      const chanEl = document.getElementById('pull-settings-channel');
+      const authToken = tokEl ? tokEl.value.trim() : '';
+      const channel = chanEl ? chanEl.value.trim() : '';
+
+      try {
+        const res = await fetch(`/api/pull-missing-pg/${currentSessionId || 'session'}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index: idx, payload: item.payload, auth_token: authToken, channel: channel })
+        });
+        const data = await res.json();
+
+        // Render live Postman Telemetry inspector matching user screenshot
+        renderPostmanInspector(data);
+
+        if (res.ok && data.success) {
+          btn.innerHTML = '✅ Pulled (200 OK)';
+          btn.style.background = '#059669';
+          btn.style.color = '#fff';
+
+          // Sync other table row if present
+          const otherBtnId = btn.id.includes('tab') ? `btn-pull-row-${idx}` : `btn-pull-tab-row-${idx}`;
+          const otherBtn = document.getElementById(otherBtnId);
+          if (otherBtn) {
+            otherBtn.innerHTML = '✅ Pulled (200 OK)';
+            otherBtn.style.background = '#059669';
+            otherBtn.style.color = '#fff';
+          }
+          const tabCell = document.getElementById(`pull-status-tab-cell-${idx}`);
+          if (tabCell) {
+            tabCell.innerHTML = `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>`;
+          }
+        } else {
+          // Check for API Auth Key requirement
+          const respText = data.response || data.error || data.detail || '';
+          if (respText.includes('Invalid API Auth Key') || data.status_code === 403 || data.status_code === 401) {
+            const enteredKey = prompt('SwinkPay API Auth Key required. Please paste the Auth Key from your Postman collection (it will be saved permanently):');
+            if (enteredKey && enteredKey.trim()) {
+              if (tokEl) tokEl.value = enteredKey.trim();
+              await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auth_token: enteredKey.trim() })
+              });
+              alert('API Auth Token saved! Retrying transaction pull...');
+              btn.disabled = false;
+              return window.pullMissingPgToApi(idx, btn);
+            }
+          }
+
+          btn.innerHTML = `⚠️ ${data.status_code || 'Error'}`;
+          btn.style.background = '#dc2626';
+          btn.style.color = '#fff';
+        }
+      } catch (err) {
+        btn.innerHTML = '⚠️ Failed';
+        btn.style.background = '#dc2626';
+        btn.style.color = '#fff';
+        alert('API Pull Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    };
+    window.pushMissingPgToApi = window.pullMissingPgToApi;
+
+    window.pullAllMissingPgToApi = async function(btn) {
+      if (!currentMissingPayloads || currentMissingPayloads.length === 0) return;
+      if (!confirm(`Are you sure you want to pull all ${currentMissingPayloads.length} missing transaction(s) directly to SwinkPay via API?`)) return;
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `⏳ Pulling ${currentMissingPayloads.length} records...`;
+      btn.style.opacity = '0.75';
+
+      const tokEl = document.getElementById('pull-settings-token');
+      const chanEl = document.getElementById('pull-settings-channel');
+      const authToken = tokEl ? tokEl.value.trim() : '';
+      const channel = chanEl ? chanEl.value.trim() : '';
+
+      try {
+        const res = await fetch(`/api/pull-missing-pg/${currentSessionId || 'session'}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pull_all: true, auth_token: authToken, channel: channel })
+        });
+        const data = await res.json();
+
+        if (data.results && data.results.length > 0) {
+          renderPostmanInspector(data.results[0]);
+        }
+
+        if (res.ok && data.success) {
+          btn.innerHTML = `✅ All ${data.total_pulled} Pulled (200 OK)!`;
+          btn.style.background = '#059669';
+          document.querySelectorAll('.btn-pull-row').forEach(b => {
+            b.innerHTML = '✅ Pulled (200 OK)';
+            b.style.background = '#059669';
+            b.style.color = '#fff';
+          });
+          currentMissingPayloads.forEach((_, idx) => {
+            const tabCell = document.getElementById(`pull-status-tab-cell-${idx}`);
+            if (tabCell) {
+              tabCell.innerHTML = `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>`;
+            }
+          });
+        } else {
+          // Check for API Auth Key requirement
+          const hasAuthErr = data.results && data.results.some(r => (r.response && r.response.includes('Invalid API Auth Key')) || r.status_code === 403 || r.status_code === 401);
+          if (hasAuthErr) {
+            const enteredKey = prompt('SwinkPay API Auth Key required. Please paste the Auth Key from your Postman collection (it will be saved permanently):');
+            if (enteredKey && enteredKey.trim()) {
+              if (tokEl) tokEl.value = enteredKey.trim();
+              await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auth_token: enteredKey.trim() })
+              });
+              alert('API Auth Key saved! Retrying bulk pull...');
+              btn.disabled = false;
+              return window.pullAllMissingPgToApi(btn);
+            }
+          }
+
+          btn.innerHTML = `⚠️ ${data.successful_count || 0}/${data.total_pulled || currentMissingPayloads.length} Pulled`;
+          btn.style.background = '#d97706';
+          if (data.results) {
+            data.results.forEach(r => {
+              const rowBtn = document.getElementById('btn-pull-row-' + r.index);
+              const tabBtn = document.getElementById('btn-pull-tab-row-' + r.index);
+              const tabCell = document.getElementById(`pull-status-tab-cell-${r.index}`);
+              [rowBtn, tabBtn].forEach(b => {
+                if (b) {
+                  if (r.success) {
+                    b.innerHTML = '✅ Pulled (200 OK)';
+                    b.style.background = '#059669';
+                    b.style.color = '#fff';
+                  } else {
+                    b.innerHTML = `⚠️ ${r.status_code || 'Fail'}`;
+                    b.style.background = '#dc2626';
+                  }
+                }
+              });
+              if (tabCell) {
+                tabCell.innerHTML = r.success ? `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>` : `<span class="badge badge-fail" style="font-size:0.72rem;">${r.status_code || 'Fail'}</span>`;
+              }
+            });
+          }
+          alert(`Batch Pull Complete: ${data.successful_count || 0} succeeded, ${data.failed_count || 0} failed.`);
+        }
+      } catch (err) {
+        btn.innerHTML = '⚠️ Pull Failed';
+        btn.style.background = '#dc2626';
+        alert('API Pull Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    };
+    window.pushAllMissingPgToApi = window.pullAllMissingPgToApi;
+
+    window.copyAllPayloadsJson = function(btn) {
+      if (!currentMissingPayloads || currentMissingPayloads.length === 0) return;
+      const allArray = currentMissingPayloads.map(p => p.payload);
+      navigator.clipboard.writeText(JSON.stringify(allArray, null, 2)).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied All Payloads!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2500);
+      });
+    };
+
+    // Daily Operations Email Summary Functions
+    function renderEmailSummary(data) {
+      const emailCard = document.getElementById('email-summary-card');
+      if (!emailCard) return;
+
+      currentEmailData = data;
+      const outletCount = data.outlet_count || 0;
+      const cfPulledCount = (data.network_changes && data.network_changes.length) || 
+                            (data.missing_pg_payloads && data.missing_pg_payloads.filter(p => p.gateway === 'Cashfree').length) || 1;
+
+      const elOutlet = document.getElementById('email-outlet-val');
+      const elCf = document.getElementById('email-cf-pulled-val');
+      const elAttach = document.getElementById('email-preview-attach-name');
+      if (elOutlet) elOutlet.textContent = outletCount;
+      if (elCf) elCf.textContent = cfPulledCount;
+      if (elAttach) elAttach.textContent = data.output_filename || 'XCD Recon.xlsx';
+
+      const tbody = document.getElementById('email-table-tbody');
+      tbody.innerHTML = '';
+
+      (data.summary_rows || []).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${r.PARTNER || ''}</strong></td>
+          <td>${r.Mode || ''}</td>
+          <td><code>${r.Network || ''}</code></td>
+          <td style="text-align: right;" class="mono">${formatNumber(r['SUCCESS COUNT'])}</td>
+          <td style="text-align: right;" class="mono">${formatCurrency(r['SUM OF TXN AMOUNT'])}</td>
+          <td style="text-align: right;" class="mono">${formatCurrency(r['Sum of net amount'])}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const tfoot = document.getElementById('email-table-tfoot');
+      tfoot.innerHTML = `
+        <tr class="tot-row">
+          <td>TOTAL</td>
+          <td></td>
+          <td></td>
+          <td style="text-align: right;" class="mono">${formatNumber(data.summary.success_count)}</td>
+          <td style="text-align: right;" class="mono">${formatCurrency(data.summary.gross_amount)}</td>
+          <td style="text-align: right;" class="mono">${formatCurrency(data.summary.net_amount)}</td>
+        </tr>
+      `;
+
+      emailCard.style.display = 'block';
+    }
+
+    window.copyEmailRichHtml = async function(btn) {
+      if (!currentEmailData) return;
+      const outletVal = document.getElementById('email-outlet-val').textContent.trim();
+      const cfPulledVal = document.getElementById('email-cf-pulled-val').textContent.trim();
+
+      let rowsHtml = '';
+      (currentEmailData.summary_rows || []).forEach(r => {
+        rowsHtml += `
+          <tr>
+            <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt;">${r.PARTNER || ''}</td>
+            <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt;">${r.Mode || ''}</td>
+            <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt;">${r.Network || ''}</td>
+            <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt; text-align: right;">${formatNumber(r['SUCCESS COUNT'])}</td>
+            <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt; text-align: right;">${formatCurrency(r['SUM OF TXN AMOUNT'])}</td>
+            <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt; text-align: right;">${formatCurrency(r['Sum of net amount'])}</td>
+          </tr>`;
+      });
+
+      const totRowHtml = `
+        <tr style="background-color: #f1f5f9; font-weight: bold;">
+          <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt;">TOTAL</td>
+          <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt;"></td>
+          <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt;"></td>
+          <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt; text-align: right;">${formatNumber(currentEmailData.summary.success_count)}</td>
+          <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt; text-align: right;">${formatCurrency(currentEmailData.summary.gross_amount)}</td>
+          <td style="border: 1px solid #94a3b8; padding: 6px 10px; font-family: Calibri, sans-serif; font-size: 11pt; text-align: right;">${formatCurrency(currentEmailData.summary.net_amount)}</td>
+        </tr>`;
+
+      const richHtml = `
+        <div style="font-family: Calibri, sans-serif; font-size: 11pt; color: #000000; line-height: 1.5;">
+          <p>Dear Team,</p>
+          <p>Please find the attached <span style="background-color: #fef08a; font-weight: bold; padding: 1px 4px;">XCD Recon</span>.</p>
+          <p><strong>Exception:</strong><br>
+          Transactions happened in ${outletVal} outlets.<br>
+          ${cfPulledVal} CF Transaction is pulled.</p>
+          <table style="border-collapse: collapse; border: 1px solid #94a3b8; font-family: Calibri, sans-serif; font-size: 11pt; width: 100%; max-width: 820px; margin-top: 12px; margin-bottom: 12px;">
+            <thead>
+              <tr style="background-color: #f8fafc; font-weight: bold;">
+                <th style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: left;">PARTNER</th>
+                <th style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: left;">Mode</th>
+                <th style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: left;">Network</th>
+                <th style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: right;">SUCCESS COUNT</th>
+                <th style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: right;">SUM OF TXN AMOUNT</th>
+                <th style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: right;">Sum of net amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              ${totRowHtml}
+            </tbody>
+          </table>
+        </div>`;
+
+      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n${cfPulledVal} CF Transaction is pulled.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
+        (currentEmailData.summary_rows || []).map(r => `${r.PARTNER}\t${r.Mode}\t${r.Network}\t${r['SUCCESS COUNT']}\t${r['SUM OF TXN AMOUNT']}\t${r['Sum of net amount']}`).join('\n') +
+        `\nTOTAL\t\t\t${currentEmailData.summary.success_count}\t${currentEmailData.summary.gross_amount}\t${currentEmailData.summary.net_amount}\n`;
+
+      try {
+        const blobHtml = new Blob([richHtml], { type: 'text/html' });
+        const blobText = new Blob([plainText], { type: 'text/plain' });
+        const item = new ClipboardItem({
+          'text/html': blobHtml,
+          'text/plain': blobText
+        });
+        await navigator.clipboard.write([item]);
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied for Outlook / Gmail!';
+        btn.style.background = '#059669';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 3000);
+      } catch (err) {
+        navigator.clipboard.writeText(plainText).then(() => {
+          alert('Copied formatted table as plain text.');
+        });
+      }
+    };
+
+    window.copyEmailPlainText = function(btn) {
+      if (!currentEmailData) return;
+      const outletVal = document.getElementById('email-outlet-val').textContent.trim();
+      const cfPulledVal = document.getElementById('email-cf-pulled-val').textContent.trim();
+
+      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n${cfPulledVal} CF Transaction is pulled.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
+        (currentEmailData.summary_rows || []).map(r => `${r.PARTNER}\t${r.Mode}\t${r.Network}\t${r['SUCCESS COUNT']}\t${r['SUM OF TXN AMOUNT']}\t${r['Sum of net amount']}`).join('\n') +
+        `\nTOTAL\t\t\t${currentEmailData.summary.success_count}\t${currentEmailData.summary.gross_amount}\t${currentEmailData.summary.net_amount}\n`;
+
+      navigator.clipboard.writeText(plainText).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied Plain Text!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2500);
+      });
+    };
+
+    // Initial 5-slot state & terminal mapping status
+    updateSlotsUI();
+    checkTerminalMappingStatus();
+
+    btnCopyAllPayloads.addEventListener('click', () => {
+      if (!currentMissingPayloads || currentMissingPayloads.length === 0) return;
+      const allArray = currentMissingPayloads.map(p => p.payload);
+      navigator.clipboard.writeText(JSON.stringify(allArray, null, 2)).then(() => {
+        const orig = btnCopyAllPayloads.innerHTML;
+        btnCopyAllPayloads.innerHTML = '✅ Copied All Payloads!';
+        setTimeout(() => {
+          btnCopyAllPayloads.innerHTML = orig;
+        }, 2500);
+      }).catch(err => {
+        alert('Failed to copy: ' + err);
+      });
+    });
+
+    function renderXcdSection(xcdStatus) {
+      const settleDate = xcdStatus.settlement_date || 'N/A';
+      xcdSettleDateBadge.textContent = `Settlement Date: ${settleDate}`;
+
+      const files = xcdStatus.files || {};
+      
+      // Cashfree
+      const cfInfo = files.cashfree || {};
+      const cfCount = cfInfo.count !== undefined ? cfInfo.count : (currentPartnerSubtotals?.CashFree?.matched_count || currentPartnerSubtotals?.CashFree?.count || 0);
+      const cfGross = cfInfo.gross_amount !== undefined ? cfInfo.gross_amount : (currentPartnerSubtotals?.CashFree?.gross_amount || currentPartnerSubtotals?.CashFree?.matched_amount || 0);
+      const cfNetVal = cfInfo.net_amount !== undefined ? cfInfo.net_amount : (currentPartnerSubtotals?.CashFree?.net_amount || 0);
+      cfXcdCount.textContent = formatNumber(cfCount);
+      cfXcdAmount.textContent = formatCurrency(cfGross);
+      if (cfXcdNet) cfXcdNet.textContent = formatCurrency(cfNetVal);
+      btnDownloadCf.href = cfInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/cashfree` : '#');
+      btnDownloadCf.download = cfInfo.filename || 'XCD_Cashfree.xlsx';
+      btnDownloadCf.className = 'btn btn-primary xcd-btn';
+      btnDownloadCf.innerHTML = '📥 Download Cashfree Input File (.xlsx)';
+
+      // Easebuzz
+      const ebInfo = files.easebuzz || {};
+      const ebCount = ebInfo.count !== undefined ? ebInfo.count : (currentPartnerSubtotals?.EaseBuzz?.matched_count || currentPartnerSubtotals?.EaseBuzz?.count || 0);
+      const ebGross = ebInfo.gross_amount !== undefined ? ebInfo.gross_amount : (currentPartnerSubtotals?.EaseBuzz?.gross_amount || currentPartnerSubtotals?.EaseBuzz?.matched_amount || 0);
+      const ebNetVal = ebInfo.net_amount !== undefined ? ebInfo.net_amount : (currentPartnerSubtotals?.EaseBuzz?.net_amount || 0);
+      ebXcdCount.textContent = formatNumber(ebCount);
+      ebXcdAmount.textContent = formatCurrency(ebGross);
+      if (ebXcdNet) ebXcdNet.textContent = formatCurrency(ebNetVal);
+      btnDownloadEb.href = ebInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/easebuzz` : '#');
+      btnDownloadEb.download = ebInfo.filename || 'XCD_Easebuzz.xlsx';
+      btnDownloadEb.className = 'btn btn-primary xcd-btn';
+      btnDownloadEb.innerHTML = '📥 Download Easebuzz Input File (.xlsx)';
+
+      // Airtel
+      const airInfo = files.airtel || {};
+      const airCount = airInfo.count !== undefined ? airInfo.count : (currentPartnerSubtotals?.['Airtel Bank']?.matched_count || currentPartnerSubtotals?.['Airtel Bank']?.count || 0);
+      const airGross = airInfo.gross_amount !== undefined ? airInfo.gross_amount : (currentPartnerSubtotals?.['Airtel Bank']?.gross_amount || currentPartnerSubtotals?.['Airtel Bank']?.matched_amount || 0);
+      const airNetVal = airInfo.net_amount !== undefined ? airInfo.net_amount : (currentPartnerSubtotals?.['Airtel Bank']?.net_amount || 0);
+      airXcdCount.textContent = formatNumber(airCount);
+      airXcdAmount.textContent = formatCurrency(airGross);
+      if (airXcdNet) airXcdNet.textContent = formatCurrency(airNetVal);
+      btnDownloadAir.href = airInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/airtel` : '#');
+      btnDownloadAir.download = airInfo.filename || 'XCD_Airtel.xlsx';
+      btnDownloadAir.className = 'btn btn-primary xcd-btn';
+      btnDownloadAir.innerHTML = '📥 Download Airtel Input File (.xlsx)';
+
+      if (xcdStatus.all_clear) {
+        // Strict All-Clear Pass
+        xcdGateBanner.className = 'xcd-gate-banner xcd-gate-pass';
+        xcdGateBanner.innerHTML = `
+          <h4>✅ All-Clear: Ready for XCD Settlement Downloads</h4>
+          <p>${xcdStatus.summary_message || 'Reconciliation balanced with zero blocking discrepancies. Input files are ready for bank processing.'}</p>
+        `;
+      } else {
+        const reasons = xcdStatus.blocking_reasons || [xcdStatus.summary_message || 'Audit variance noted.'];
+        const isOnlyDateMissing = reasons.length === 1 && reasons[0].toLowerCase().includes('settlement date is missing');
+
+        if (isOnlyDateMissing) {
+          xcdGateBanner.className = 'xcd-gate-banner xcd-gate-warning';
+          xcdGateBanner.innerHTML = `
+            <h4>⚠️ Settlement Date Specification</h4>
+            <p>Input files generated with auto-detected dates. To set an explicit settlement date across all files, select below:</p>
+            <div style="margin-top: 0.85rem; padding: 0.85rem 1.15rem; background: #ffffff; border: 1px solid #fde68a; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.1rem;">📅</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.85rem; color: #92400e;">Update Settlement Date</div>
+                  <div style="font-size: 0.75rem; color: #b45309;">Format: DD-MM-YYYY</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <input type="date" id="inline-settlement-date" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 0.5rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;" />
+                <button type="button" class="btn btn-primary btn-sm" id="btn-unlock-inline" onclick="applyInlineSettlementDate()">🔄 Update Date & Regenerate</button>
+              </div>
+            </div>
+          `;
+        } else {
+          // Informational audit banner - downloads are active and unlocked
+          xcdGateBanner.className = 'xcd-gate-banner xcd-gate-warning';
+          const reasonItems = reasons.map(r => `<li>${r}</li>`).join('');
+          xcdGateBanner.innerHTML = `
+            <h4>ℹ️ Reconciliation Audit Notes (Downloads Active)</h4>
+            <p>Input files are available for download below. Review the following audit notes:</p>
+            <ul style="margin-top: 0.35rem; padding-left: 1.25rem;">${reasonItems}</ul>
+          `;
+        }
+      }
+
+      // Update URLs with multi-date filters if selected
+      updateXcdDownloadUrls();
+    }
+
+    async function applyInlineSettlementDate() {
+      const dateInput = document.getElementById('inline-settlement-date');
+      const btn = document.getElementById('btn-unlock-inline');
+      if (!dateInput || !dateInput.value) {
+        alert('Please select a valid settlement date first.');
+        return;
+      }
+
+      if (!currentSessionId) {
+        alert('No active session found. Please run reconciliation again.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Updating XCD Files...';
+
+      try {
+        const formData = new FormData();
+        formData.append('settlement_date', dateInput.value);
+
+        const resp = await fetch(`/api/generate-xcd/${currentSessionId}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const res = await resp.json();
+        if (!resp.ok) {
+          throw new Error(res.detail || 'Failed to update XCD files.');
+        }
+
+        if (res.xcd_status) {
+          renderXcdSection(res.xcd_status);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Update Date & Regenerate';
+      }
+    }
+
+    // ==========================================
+    // Terminal Reference Mapping Handlers (Tab 4)
+    // ==========================================
+    let currentTerminalMappings = [];
+    let terminalSearchDebounce = null;
+
+    window.loadTerminalMappingsTable = async function(searchQuery = '') {
+      const tbody = document.getElementById('terminal-tab-tbody');
+      const pill = document.getElementById('terminal-stats-pill');
+      const badge = document.getElementById('tab-terminal-badge');
+      const tableWrap = document.getElementById('terminal-tab-table-wrap');
+      const emptyWrap = document.getElementById('terminal-tab-empty');
+      if (!tbody) return;
+
+      try {
+        const url = searchQuery && searchQuery.trim() ? `/api/terminal-mappings?q=${encodeURIComponent(searchQuery.trim())}` : '/api/terminal-mappings';
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        if (data.success && data.records) {
+          currentTerminalMappings = data.records;
+          tbody.innerHTML = '';
+
+          if (currentTerminalMappings.length === 0) {
+            if (tableWrap) tableWrap.style.display = 'none';
+            if (emptyWrap) emptyWrap.style.display = 'block';
+          } else {
+            if (emptyWrap) emptyWrap.style.display = 'none';
+            if (tableWrap) tableWrap.style.display = 'block';
+
+            currentTerminalMappings.forEach((r, idx) => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td style="color: var(--text-muted); font-size: 0.75rem;">${idx + 1}</td>
+                <td>
+                  <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-family: var(--font-mono); font-size: 0.82rem; border: 1px solid #bfdbfe;">
+                    ${r.partner_ref_id || '--'}
+                  </span>
+                </td>
+                <td><strong class="mono" style="color: #1a73e8; font-size: 0.85rem;">${r.mms_terminal_id || '--'}</strong></td>
+                <td><span class="mono" style="color: var(--text-main); font-size: 0.82rem;">${r.terminal_id || '--'}</span></td>
+                <td><span style="font-size: 0.8rem; color: var(--text-muted);">${r.vpa || '--'}</span></td>
+                <td style="text-align: center;"><span class="badge badge-pass" style="font-size: 0.68rem;">Active Ready</span></td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          const countStr = formatNumber(data.total);
+          if (pill) pill.textContent = `${countStr} Mappings Loaded`;
+          if (badge) {
+            badge.textContent = countStr;
+            badge.style.display = data.total > 0 ? 'inline-flex' : 'none';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load terminal mappings:', err);
+      }
+    };
+
+    window.onTerminalSearch = function(val) {
+      clearTimeout(terminalSearchDebounce);
+      terminalSearchDebounce = setTimeout(() => {
+        window.loadTerminalMappingsTable(val);
+      }, 250);
+    };
+
+    window.handleTerminalUploadFromTab = async function(file) {
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+        alert('Please select an Excel file (.xlsx, .xls) containing the TID_FILE sheet.');
+        return;
+      }
+      const btn = document.getElementById('btn-terminal-tab-upload');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Loading & Mapping...';
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const resp = await fetch('/api/upload-terminal-file', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+          alert(`Successfully loaded ${data.total_mappings} terminal mappings (${data.terminal_count} MMS terminals) from '${file.name}'. All records are now active.`);
+          await window.loadTerminalMappingsTable();
+        } else {
+          throw new Error(data.detail || 'Failed to parse terminal file.');
+        }
+      } catch (err) {
+        alert('Error uploading terminal report: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+        const fileIn = document.getElementById('terminal-tab-file-input');
+        if (fileIn) fileIn.value = '';
+      }
+    };
+
+    window.confirmResetTerminalMappings = async function() {
+      if (!confirm('Are you sure you want to reset and clear all stored terminal mappings?')) return;
+      try {
+        const resp = await fetch('/api/terminal-mappings', { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+          alert('Terminal mappings cleared.');
+          await window.loadTerminalMappingsTable();
+        }
+      } catch (err) {
+        alert('Failed to clear mappings: ' + err.message);
+      }
+    };
+
+    // ==========================================
+    // Postman Credentials & Telemetry Handlers
+    // ==========================================
+    async function loadApiSettings() {
+      try {
+        const resp = await fetch('/api/settings');
+        const data = await resp.json();
+        const tokEl = document.getElementById('pull-settings-token');
+        const chanEl = document.getElementById('pull-settings-channel');
+        if (tokEl && data.auth_token) tokEl.value = data.auth_token;
+        if (chanEl && data.channel) chanEl.value = data.channel;
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    }
+
+    window.toggleTokenVisibility = function() {
+      const tokEl = document.getElementById('pull-settings-token');
+      if (!tokEl) return;
+      tokEl.type = tokEl.type === 'password' ? 'text' : 'password';
+    };
+
+    window.saveApiSettingsFromUI = async function() {
+      const tokEl = document.getElementById('pull-settings-token');
+      const chanEl = document.getElementById('pull-settings-channel');
+      const btn = document.getElementById('btn-save-api-settings');
+      if (!tokEl || !chanEl) return;
+
+      const body = {
+        auth_token: tokEl.value.trim(),
+        channel: chanEl.value.trim()
+      };
+
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Saving...';
+      }
+
+      try {
+        const resp = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const res = await resp.json();
+        if (res.success) {
+          if (btn) {
+            btn.innerHTML = '✅ Credentials Saved!';
+            btn.style.background = '#059669';
+            setTimeout(() => {
+              btn.innerHTML = origText;
+              btn.style.background = '';
+              btn.disabled = false;
+            }, 2500);
+          }
+        }
+      } catch (err) {
+        alert('Failed to save settings: ' + err.message);
+        if (btn) {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+    };
+
+    function renderPostmanInspector(apiResult) {
+      const inspector = document.getElementById('pull-live-inspector');
+      if (!inspector) return;
+
+      inspector.style.display = 'block';
+
+      const isSuccess = apiResult.success && (apiResult.status_code === 200 || !apiResult.status_code);
+      const statusPill = document.getElementById('postman-status-pill');
+      const timePill = document.getElementById('postman-time-pill');
+      const refEl = document.getElementById('postman-res-ref');
+      const txnEl = document.getElementById('postman-res-txnid');
+      const msgEl = document.getElementById('postman-res-statusmsg');
+      const dateEl = document.getElementById('postman-res-date');
+      const amtEl = document.getElementById('postman-res-amt');
+      const jsonEl = document.getElementById('postman-json-display');
+
+      if (statusPill) {
+        statusPill.className = isSuccess ? 'postman-status-tag' : 'postman-status-tag error';
+        statusPill.textContent = isSuccess ? '200 OK' : `${apiResult.status_code || 'Error'}`;
+      }
+
+      if (timePill) {
+        timePill.textContent = `⏱️ ${apiResult.response_time_ms || 0} ms`;
+      }
+
+      let parsed = null;
+      if (typeof apiResult.response === 'object' && apiResult.response !== null) {
+        parsed = apiResult.response;
+      } else if (typeof apiResult.response === 'string') {
+        try {
+          parsed = JSON.parse(apiResult.response);
+        } catch (e) {
+          parsed = null;
+        }
+      }
+
+      const dataObj = (parsed && parsed.data) ? parsed.data : (apiResult.data || {});
+
+      if (refEl) refEl.textContent = dataObj.referenceNo || apiResult.referenceNo || '--';
+      if (txnEl) txnEl.textContent = dataObj.transactionId || apiResult.transactionId || '--';
+      if (msgEl) {
+        msgEl.textContent = dataObj.transactionStatusMsg || apiResult.transactionStatusMsg || (isSuccess ? 'Transaction Successful' : (apiResult.error || 'Failed'));
+        msgEl.style.color = isSuccess ? '#059669' : '#dc2626';
+      }
+      if (dateEl) dateEl.textContent = dataObj.date || apiResult.date || '--';
+      if (amtEl) amtEl.textContent = dataObj.amount !== undefined ? formatCurrency(dataObj.amount) : '--';
+
+      if (jsonEl) {
+        const fullDisplay = parsed || apiResult;
+        jsonEl.textContent = JSON.stringify(fullDisplay, null, 2);
+      }
+
+      inspector.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    window.copyPostmanJson = function(btn) {
+      const jsonEl = document.getElementById('postman-json-display');
+      if (!jsonEl) return;
+      navigator.clipboard.writeText(jsonEl.textContent).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      });
+    };
+
+    window.sendManualPayload = async function() {
+      const textEl = document.getElementById('manual-payload-input');
+      if (!textEl || !textEl.value.trim()) {
+        alert('Please enter a JSON payload to push.');
+        return;
+      }
+      let payload = null;
+      try {
+        payload = JSON.parse(textEl.value.trim());
+      } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+        return;
+      }
+
+      const tokEl = document.getElementById('pull-settings-token');
+      const chanEl = document.getElementById('pull-settings-channel');
+      const authToken = tokEl ? tokEl.value.trim() : '';
+      const channel = chanEl ? chanEl.value.trim() : '';
+
+      try {
+        const resp = await fetch(`/api/pull-missing-pg/${currentSessionId || 'manual'}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload, auth_token: authToken, channel: channel })
+        });
+        const res = await resp.json();
+        renderPostmanInspector(res);
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    };
+
+    // Load initial mappings & settings on page start
+    loadTerminalMappingsTable();
+    loadApiSettings();
+    updateSlotsUI();
+  </script>
+</body>
+</html>

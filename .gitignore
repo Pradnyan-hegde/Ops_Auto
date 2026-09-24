@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Sensitive Financial Data & Excel Workbooks
+dashboard_sessions/
+sample_inputs/
+test_scratch/
+*.xlsx
+*.xls
+*.csv
+
+# Data and logs
+data/
+scratch/
+*.log
+.system_generated/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local build artifacts
+*.docx
