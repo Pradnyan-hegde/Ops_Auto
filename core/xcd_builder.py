@@ -706,10 +706,14 @@ def generate_partner_xcd_files(
     else:
         # Standard Single Settlement
         prefix = (merchant.input_file_prefix or f"{merchant.key.upper()}_INPUTFILE").strip()
-        if merchant.key == "ccd" or "XCD" in prefix:
+        if merchant.key == "xcd" or ("XCD" in prefix and merchant.key != "ccd"):
             cf_filename = f"XCD Input file as on {recon_date_str} (Cf).xlsx"
             eb_filename = f"XCD Input file as on {recon_date_str} (EB).xlsx"
             air_filename = f"XCD Input file as on {recon_date_str} (Airtel).xlsx"
+        elif merchant.key == "ccd" or "CCD" in prefix:
+            cf_filename = f"CCD Input file as on {recon_date_str} (Cf).xlsx"
+            eb_filename = f"CCD Input file as on {recon_date_str} (EB).xlsx"
+            air_filename = f"CCD Input file as on {recon_date_str} (Airtel).xlsx"
         else:
             cf_filename = f"{prefix}(CASHFREE)_{recon_date_str}.xlsx"
             eb_filename = f"{prefix}(EASEBUZZ)_{recon_date_str}.xlsx"

@@ -67,7 +67,7 @@ class Aggregator:
             "settle_status_counts": defaultdict(int)
         })
 
-        is_custom_merchant = (self.merchant.key != "ccd")
+        is_custom_merchant = (self.merchant.key not in ("ccd", "xcd"))
 
         for r in self.engine.successful_smms_reconciled:
             partner = r.get("_partner", "Unknown")
@@ -284,26 +284,32 @@ class Aggregator:
                 "actual": tot_matched_cnt + len(self.engine.smms_not_in_cms),
                 "difference": (tot_matched_cnt + len(self.engine.smms_not_in_cms)) - smms_succ_cnt,
                 "status": "PASS" if (tot_matched_cnt + len(self.engine.smms_not_in_cms)) == smms_succ_cnt else "FAIL"
-            },
-            {
+            }
+        ]
+
+        if self.engine.cf_report:
+            self.control_checks.append({
                 "check_name": "Cashfree Source vs Matched Diff-to-Zero",
                 "expected": cf_stats["count"],
                 "actual": len(self.engine.cms_cf_matched) + len(self.engine.unmatched_cf),
                 "difference": len(self.engine.cms_cf_matched) + len(self.engine.unmatched_cf) - cf_stats["count"],
                 "status": "PASS" if len(self.engine.cms_cf_matched) + len(self.engine.unmatched_cf) == cf_stats["count"] else "FAIL"
-            },
-            {
+            })
+
+        if self.engine.eb_report:
+            self.control_checks.append({
                 "check_name": "Easebuzz Source vs (Matched + Failed) Diff-to-Zero",
                 "expected": eb_stats["count"],
                 "actual": len(self.engine.cms_eb_matched) + len(self.engine.unmatched_eb) + eb_stats.get("failed_count", 0),
                 "difference": (len(self.engine.cms_eb_matched) + len(self.engine.unmatched_eb) + eb_stats.get("failed_count", 0)) - eb_stats["count"],
                 "status": "PASS" if (len(self.engine.cms_eb_matched) + len(self.engine.unmatched_eb) + eb_stats.get("failed_count", 0)) == eb_stats["count"] else "FAIL"
-            },
-            {
+            })
+
+        if self.engine.airtel_report:
+            self.control_checks.append({
                 "check_name": "Airtel Source vs Matched Diff-to-Zero",
                 "expected": air_stats["count"],
                 "actual": len(self.engine.cms_air_matched) + len(self.engine.unmatched_airtel),
                 "difference": len(self.engine.cms_air_matched) + len(self.engine.unmatched_airtel) - air_stats["count"],
                 "status": "PASS" if len(self.engine.cms_air_matched) + len(self.engine.unmatched_airtel) == air_stats["count"] else "FAIL"
-            }
-        ]
+            })

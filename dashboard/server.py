@@ -48,7 +48,8 @@ from core.merchant import (
     detect_merchant,
     MerchantProfile,
     list_all_merchants,
-    save_merchant_profile
+    save_merchant_profile,
+    delete_merchant_profile
 )
 
 app = FastAPI(title="Ops_Auto Reconciliation Dashboard", version="1.2.0")
@@ -486,6 +487,18 @@ async def create_merchant_profile(request: Request):
         "status": "success",
         "message": f"Merchant '{profile.display_name}' registered successfully.",
         "merchant": profile.to_dict()
+    }
+
+
+@app.delete("/api/merchants/{key}")
+def delete_merchant(key: str):
+    """Permanently deletes a merchant profile by key."""
+    success = delete_merchant_profile(key)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Merchant '{key}' not found or could not be deleted.")
+    return {
+        "status": "success",
+        "message": f"Merchant '{key}' deleted successfully."
     }
 
 
@@ -1158,7 +1171,8 @@ def detect_uploaded_files(files: List[UploadFile] = File(...)):
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-    mandatory_slots = ["CMS", "SMMS", "CASHFREE", "EASEBUZZ", "AIRTEL"]
+    # Only CMS is strictly mandatory. SMMS, Cashfree, Easebuzz, Airtel are optional
+    mandatory_slots = ["CMS"]
     missing = [s for s in mandatory_slots if s not in detected_slots]
 
     return JSONResponse(content={

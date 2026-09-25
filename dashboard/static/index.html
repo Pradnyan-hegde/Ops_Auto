@@ -1673,13 +1673,17 @@
           <div style="display: flex; align-items: center; gap: 0.65rem;">
             <select id="merchant-select" style="padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.82rem; background: #ffffff; color: #0f172a; cursor: pointer; outline: none;" onchange="onMerchantSelectChanged()">
               <option value="auto">✨ Auto-Detect from Reports</option>
+              <option value="xcd">☕ Cafe Value Express / XCD (Daily Single Settlement)</option>
+              <option value="ccd">☕ Cafe Coffee Day / CCD (Daily Single Settlement)</option>
               <option value="sbb">🏥 SBB Medicare (Intraday Split Settlement: 12AM-12PM &amp; 12PM-12AM)</option>
-              <option value="ccd">☕ Coffee Day / CCD (Daily Single Settlement)</option>
               <option value="__add_new__">➕ Add Custom / New Merchant...</option>
             </select>
             <span id="merchant-active-badge" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.74rem; padding: 0.35rem 0.65rem;">Auto-Detect</span>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openAddMerchantModal()" style="font-weight: 700; gap: 0.35rem; border-color: #cbd5e1;" title="Register a new merchant profile">
               <span>➕</span> Add Merchant
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-delete-merchant" onclick="deleteCurrentMerchant()" style="display: none; color: #dc2626; border-color: #fecaca; background: #fff5f5; font-weight: 700; gap: 0.35rem;" title="Delete this merchant profile">
+              <span>🗑️</span> Delete
             </button>
           </div>
         </div>
@@ -1689,7 +1693,7 @@
           <div class="slots-header-title">
             <span>🎯</span> Daily Report Upload Slots
           </div>
-          <div id="slot-overall-pill" class="slot-status-badge badge-missing">0 / 5 Loaded</div>
+          <div id="slot-overall-pill" class="slot-status-badge badge-missing">0 Loaded (CMS Required)</div>
         </div>
 
         <div class="slots-grid" id="slots-grid">
@@ -1699,7 +1703,7 @@
             <div>
               <div class="slot-top">
                 <span class="slot-label slot-label-cms">Internal CMS (Mandatory)</span>
-                <span class="slot-status-badge badge-missing" id="slot-badge-CMS">⚠️ Missing</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-CMS">⚠️ Required</span>
               </div>
               <div class="slot-title">CMS Report</div>
               <div class="slot-filename" id="slot-file-CMS">No file uploaded</div>
@@ -1714,7 +1718,7 @@
             <div>
               <div class="slot-top">
                 <span class="slot-label slot-label-smms">Settlement Master (Optional)</span>
-                <span class="slot-status-badge badge-missing" id="slot-badge-SMMS">⚠️ Missing</span>
+                <span class="slot-status-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;" id="slot-badge-SMMS">⚪ Optional</span>
               </div>
               <div class="slot-title">SMMS Settlement Report</div>
               <div class="slot-filename" id="slot-file-SMMS">No file uploaded</div>
@@ -1728,8 +1732,8 @@
             <input type="file" id="slot-input-CASHFREE" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('CASHFREE', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-cf">Gateway (Batches 1 &amp; 2)</span>
-                <span class="slot-status-badge badge-missing" id="slot-badge-CASHFREE">⚠️ Missing</span>
+                <span class="slot-label slot-label-cf">Gateway (Optional)</span>
+                <span class="slot-status-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;" id="slot-badge-CASHFREE">⚪ Optional</span>
               </div>
               <div class="slot-title">Cashfree Report</div>
               <div class="slot-filename" id="slot-file-CASHFREE">No file uploaded</div>
@@ -1744,7 +1748,7 @@
             <div>
               <div class="slot-top">
                 <span class="slot-label slot-label-eb">Gateway (Optional)</span>
-                <span class="slot-status-badge badge-missing" id="slot-badge-EASEBUZZ">⚠️ Missing</span>
+                <span class="slot-status-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;" id="slot-badge-EASEBUZZ">⚪ Optional</span>
               </div>
               <div class="slot-title">Easebuzz Report</div>
               <div class="slot-filename" id="slot-file-EASEBUZZ">No file uploaded</div>
@@ -1759,7 +1763,7 @@
             <div>
               <div class="slot-top">
                 <span class="slot-label slot-label-air" id="slot-label-airtel-tag">Bank Partner (Optional)</span>
-                <span class="slot-status-badge badge-missing" id="slot-badge-AIRTEL">⚠️ Missing</span>
+                <span class="slot-status-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;" id="slot-badge-AIRTEL">⚪ Optional</span>
               </div>
               <div class="slot-title">Airtel Bank Report</div>
               <div class="slot-filename" id="slot-file-AIRTEL">No file uploaded</div>
@@ -1773,8 +1777,8 @@
             <input type="file" id="slot-input-AIRTEL_SETTLEMENT" multiple style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('AIRTEL_SETTLEMENT', this.files)" />
             <div>
               <div class="slot-top">
-                <span class="slot-label" style="background: #fdf4ff; color: #a21caf; border: 1px solid #f0abfc;">UTR Fetch (1-2 Files)</span>
-                <span class="slot-status-badge badge-missing" id="slot-badge-AIRTEL_SETTLEMENT">⚠️ Missing</span>
+                <span class="slot-label" style="background: #fdf4ff; color: #a21caf; border: 1px solid #f0abfc;">UTR Fetch (Optional)</span>
+                <span class="slot-status-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;" id="slot-badge-AIRTEL_SETTLEMENT">⚪ Optional</span>
               </div>
               <div class="slot-title">Airtel Settlement Report</div>
               <div class="slot-filename" id="slot-file-AIRTEL_SETTLEMENT">No file uploaded</div>
@@ -1787,7 +1791,7 @@
         <!-- Slot Summary / Alert Bar -->
         <div id="slot-status-bar" class="slot-summary-bar slot-bar-warning">
           <div id="slot-status-text">
-            <strong>⚠️ 5 Reports Missing:</strong> Upload CMS, SMMS, Cashfree, Easebuzz, and Airtel Bank reports to enable automated reconciliation.
+            <strong>⚠️ CMS Report Required:</strong> Upload your CMS Report to enable automated reconciliation. All Payment Gateway reports (Cashfree, Easebuzz, Airtel) are optional and reconcile if provided.
           </div>
           <div id="slot-auxiliary-container"></div>
         </div>
@@ -2865,7 +2869,8 @@
     });
 
     // 6-Slot Smart Dropzone File State
-    const mandatorySlots = ['CMS', 'SMMS', 'CASHFREE', 'EASEBUZZ', 'AIRTEL'];
+    const mandatorySlots = ['CMS'];
+    const recognizedSlots = ['CMS', 'SMMS', 'CASHFREE', 'EASEBUZZ', 'AIRTEL'];
     const allSlotKeys = ['CMS', 'SMMS', 'CASHFREE', 'EASEBUZZ', 'AIRTEL', 'AIRTEL_SETTLEMENT'];
     const slotDisplayNames = {
       CMS: 'CMS Report',
@@ -2993,7 +2998,7 @@
           const opt = document.createElement('option');
           opt.value = m.key;
           let icon = '🏢';
-          if (m.key === 'ccd') icon = '☕';
+          if (m.key === 'ccd' || m.key === 'xcd') icon = '☕';
           else if (m.key === 'sbb') icon = '🏥';
 
           let label = `${icon} ${m.display_name}`;
@@ -3028,7 +3033,12 @@
       const select = document.getElementById('merchant-select');
       const badge = document.getElementById('merchant-active-badge');
       const airtelTag = document.getElementById('slot-label-airtel-tag');
+      const delBtn = document.getElementById('btn-delete-merchant');
       const val = select ? select.value : 'auto';
+
+      if (delBtn) {
+        delBtn.style.display = (val && val !== 'auto' && val !== '__add_new__') ? 'inline-flex' : 'none';
+      }
 
       if (val === '__add_new__') {
         window.openAddMerchantModal();
@@ -3046,9 +3056,17 @@
           badge.style.borderColor = '#fcd34d';
         }
         if (airtelTag) airtelTag.textContent = 'Not Used in SBB';
+      } else if (val === 'xcd' || (match && match.key === 'xcd')) {
+        if (badge) {
+          badge.textContent = '☕ Cafe Value Express (XCD)';
+          badge.style.background = '#fef9c3';
+          badge.style.color = '#854d0e';
+          badge.style.borderColor = '#fef08a';
+        }
+        if (airtelTag) airtelTag.textContent = 'Bank Partner (Airtel)';
       } else if (val === 'ccd' || (match && match.key === 'ccd')) {
         if (badge) {
-          badge.textContent = '☕ Coffee Day (CCD)';
+          badge.textContent = '☕ Cafe Coffee Day (CCD)';
           badge.style.background = '#ecfdf5';
           badge.style.color = '#065f46';
           badge.style.borderColor = '#a7f3d0';
@@ -3071,6 +3089,32 @@
           badge.style.borderColor = '#bae6fd';
         }
         if (airtelTag) airtelTag.textContent = 'Bank Partner (Optional)';
+      }
+    };
+
+    window.deleteCurrentMerchant = async function() {
+      const select = document.getElementById('merchant-select');
+      const key = select ? select.value : null;
+      if (!key || key === 'auto' || key === '__add_new__') return;
+
+      const match = allMerchantsCache.find(m => m.key === key);
+      const name = match ? match.display_name : key;
+
+      if (!confirm(`Are you sure you want to permanently delete the merchant profile "${name}" (${key})?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/merchants/${key}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Merchant "${name}" deleted successfully.`);
+          await window.loadRegisteredMerchants('auto');
+        } else {
+          alert(data.detail || 'Failed to delete merchant.');
+        }
+      } catch (err) {
+        alert('Error deleting merchant: ' + err.message);
       }
     };
 
@@ -3284,7 +3328,7 @@
                 });
                 slotMeta['AIRTEL_SETTLEMENT'] = det;
               }
-            } else if (mandatorySlots.includes(slotKey)) {
+            } else if (recognizedSlots.includes(slotKey)) {
               const det = res.detected[slotKey];
               const matchedFile = filesArray.find(f => f.name === det.filename);
               if (matchedFile) {
@@ -3306,7 +3350,7 @@
       } catch (err) {
         // Fallback: assign sequentially if backend detection had issue
         filesArray.forEach(f => {
-          const emptySlot = mandatorySlots.find(s => !slotFiles[s]);
+          const emptySlot = recognizedSlots.find(s => !slotFiles[s]);
           if (emptySlot) {
             slotFiles[emptySlot] = f;
             slotMeta[emptySlot] = { filename: f.name, file_size: f.size };
@@ -3378,9 +3422,9 @@
           missingSlots.push(slotDisplayNames[slot]);
           card.className = 'slot-card missing';
           badge.className = 'slot-status-badge badge-missing';
-          badge.textContent = '⚠️ Missing';
+          badge.textContent = (slot === 'CMS') ? '⚠️ Required' : '⚪ Optional';
           fileEl.textContent = 'No file uploaded';
-          metaEl.textContent = 'Drop file here or click';
+          metaEl.textContent = (slot === 'CMS') ? 'Internal CMS (Mandatory)' : 'Optional (reconciles if uploaded)';
           if (removeBtn) removeBtn.style.display = 'none';
         }
       });
@@ -3393,7 +3437,7 @@
           overallPill.textContent = `${filledCount} Loaded (CMS Ready)`;
         } else {
           overallPill.className = 'slot-status-badge badge-missing';
-          overallPill.textContent = `${filledCount} / 5 Loaded`;
+          overallPill.textContent = `${filledCount} Loaded (CMS Required)`;
         }
       }
 
@@ -4431,7 +4475,14 @@
           </div>
         `;
       } else if (grid) {
-        // Standard Single Settlement (CCD / Coffee Day)
+        // Standard Single Settlement (XCD / CCD / Custom)
+        const merchantKey = xcdStatus.merchant ? xcdStatus.merchant.key : '';
+        const merchantPfx = (merchantKey === 'ccd') 
+          ? 'CCD Input file' 
+          : ((merchantKey === 'xcd') 
+              ? 'XCD Input file' 
+              : (xcdStatus.merchant && xcdStatus.merchant.input_prefix ? xcdStatus.merchant.input_prefix : 'Input file'));
+
         const cfInfo = files.cashfree || {};
         const cfCount = cfInfo.count !== undefined ? cfInfo.count : (currentPartnerSubtotals?.CashFree?.matched_count || currentPartnerSubtotals?.CashFree?.count || 0);
         const cfGross = cfInfo.gross_amount !== undefined ? cfInfo.gross_amount : (currentPartnerSubtotals?.CashFree?.gross_amount || currentPartnerSubtotals?.CashFree?.matched_amount || 0);
@@ -4455,7 +4506,7 @@
                 <span class="xcd-partner-tag tag-cf">CashFree</span>
                 <span class="xcd-source-pill">CMS_CF_Matched</span>
               </div>
-              <h4>XCD Input file (Cashfree)</h4>
+              <h4>${merchantPfx} (Cashfree)</h4>
               <div class="xcd-stats">
                 <div class="xcd-stat">
                   <span class="xcd-stat-lbl">Matched Count</span>
@@ -4472,7 +4523,7 @@
               </div>
             </div>
             <div>
-              <a href="${cfInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/cashfree` : '#')}" class="btn btn-primary xcd-btn" download="${cfInfo.filename || 'XCD_Cashfree.xlsx'}">📥 Download Cashfree XCD (.xlsx)</a>
+              <a href="${cfInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/cashfree` : '#')}" class="btn btn-primary xcd-btn" download="${cfInfo.filename || `${merchantPfx}_Cashfree.xlsx`}">📥 Download Cashfree (.xlsx)</a>
             </div>
           </div>
 
@@ -4483,7 +4534,7 @@
                 <span class="xcd-partner-tag tag-eb">EaseBuzz</span>
                 <span class="xcd-source-pill">CMS_EB_Matched</span>
               </div>
-              <h4>XCD Input file (Easebuzz)</h4>
+              <h4>${merchantPfx} (Easebuzz)</h4>
               <div class="xcd-stats">
                 <div class="xcd-stat">
                   <span class="xcd-stat-lbl">Matched Count</span>
@@ -4500,7 +4551,7 @@
               </div>
             </div>
             <div>
-              <a href="${ebInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/easebuzz` : '#')}" class="btn btn-primary xcd-btn" download="${ebInfo.filename || 'XCD_Easebuzz.xlsx'}">📥 Download Easebuzz XCD (.xlsx)</a>
+              <a href="${ebInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/easebuzz` : '#')}" class="btn btn-primary xcd-btn" download="${ebInfo.filename || `${merchantPfx}_Easebuzz.xlsx`}">📥 Download Easebuzz (.xlsx)</a>
             </div>
           </div>
 
@@ -4511,7 +4562,7 @@
                 <span class="xcd-partner-tag tag-air">Airtel Bank</span>
                 <span class="xcd-source-pill">CMS_Air_Matched</span>
               </div>
-              <h4>XCD Input file (Airtel)</h4>
+              <h4>${merchantPfx} (Airtel)</h4>
               <div class="xcd-stats">
                 <div class="xcd-stat">
                   <span class="xcd-stat-lbl">Matched Count</span>
@@ -4528,7 +4579,7 @@
               </div>
             </div>
             <div>
-              <a href="${airInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/airtel` : '#')}" class="btn btn-primary xcd-btn" download="${airInfo.filename || 'XCD_Airtel.xlsx'}">📥 Download Airtel XCD (.xlsx)</a>
+              <a href="${airInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/airtel` : '#')}" class="btn btn-primary xcd-btn" download="${airInfo.filename || `${merchantPfx}_Airtel.xlsx`}">📥 Download Airtel (.xlsx)</a>
             </div>
           </div>
         `;

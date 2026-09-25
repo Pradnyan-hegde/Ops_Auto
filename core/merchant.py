@@ -44,15 +44,28 @@ class MerchantProfile:
 
 # Built-in baseline merchant profiles
 DEFAULT_MERCHANT_PROFILES: Dict[str, MerchantProfile] = {
-    "ccd": MerchantProfile(
-        key="ccd",
-        display_name="CCD Value Express (Coffee Day)",
+    "xcd": MerchantProfile(
+        key="xcd",
+        display_name="Cafe Value Express (XCD)",
         merchant_ids=["0000000000002045", "2045"],
-        merchant_keywords=["CCD", "COFFEE DAY", "VALUE EXPRESS", "XCD"],
+        merchant_keywords=["VALUE EXPRESS", "CAFE VALUE EXPRESS", "XCD"],
         gateways=["CashFree", "EaseBuzz", "Airtel Bank"],
-        has_split_settlement=False,
+        has_split_settlement=False,  # Single Daily Settlement
         softpos_label="CashFree",
         input_file_prefix="XCD Input file as on",
+        upi_fee_rate=0.01,    # 1.00%
+        cc_fee_rate=0.0275,   # 2.75%
+        default_gst_rate=0.18
+    ),
+    "ccd": MerchantProfile(
+        key="ccd",
+        display_name="Cafe Coffee Day (CCD)",
+        merchant_ids=["0000000000002045", "2045"],
+        merchant_keywords=["CAFE COFFEE DAY", "COFFEE DAY", "CCD"],
+        gateways=["CashFree", "EaseBuzz", "Airtel Bank"],
+        has_split_settlement=False,  # Single Daily Settlement
+        softpos_label="CashFree",
+        input_file_prefix="CCD Input file as on",
         upi_fee_rate=0.01,    # 1.00%
         cc_fee_rate=0.0275,   # 2.75%
         default_gst_rate=0.18
@@ -76,17 +89,63 @@ DEFAULT_MERCHANT_PROFILES: Dict[str, MerchantProfile] = {
 def load_all_merchant_profiles() -> Dict[str, MerchantProfile]:
     """Loads default merchant profiles plus any custom merchants stored in data/merchants.json."""
     profiles = dict(DEFAULT_MERCHANT_PROFILES)
+    deleted_keys = []
     if os.path.exists(MERCHANTS_FILE):
         try:
             with open(MERCHANTS_FILE, "r", encoding="utf-8") as f:
                 saved = json.load(f)
                 if isinstance(saved, dict):
+                    deleted_keys = [str(k).lower() for k in saved.get("__deleted__", [])]
                     for k, v in saved.items():
-                        if isinstance(v, dict):
+                        if k != "__deleted__" and isinstance(v, dict):
                             profiles[k.lower()] = MerchantProfile.from_dict(v)
         except Exception as e:
             print(f"[MerchantRegistry] Warning loading {MERCHANTS_FILE}: {e}")
+
+    for dk in deleted_keys:
+        if dk in profiles:
+            del profiles[dk]
+
     return profiles
+
+
+def delete_merchant_profile(key: str) -> bool:
+    """
+    Permanently deletes a merchant profile by key from persistent storage.
+    Works for both custom and default merchants.
+    """
+    os.makedirs(DATA_DIR, exist_ok=True)
+    key_lower = key.lower().strip()
+    saved = {}
+    deleted_keys = []
+
+    if os.path.exists(MERCHANTS_FILE):
+        try:
+            with open(MERCHANTS_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+            deleted_keys = [str(k).lower() for k in saved.get("__deleted__", [])]
+        except Exception:
+            saved = {}
+
+    found = False
+    if key_lower in saved:
+        del saved[key_lower]
+        found = True
+
+    if key_lower in DEFAULT_MERCHANT_PROFILES or found:
+        if key_lower not in deleted_keys:
+            deleted_keys.append(key_lower)
+        found = True
+
+    saved["__deleted__"] = deleted_keys
+
+    try:
+        with open(MERCHANTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(saved, f, indent=2)
+        return found
+    except Exception as e:
+        print(f"[MerchantRegistry] Error deleting merchant '{key}': {e}")
+        return False
 
 
 def save_merchant_profile(data: Dict[str, Any]) -> MerchantProfile:
@@ -155,10 +214,24 @@ def save_merchant_profile(data: Dict[str, Any]) -> MerchantProfile:
 
     profiles[profile.key] = profile
 
-    # Save custom profiles (excluding baseline defaults unless modified)
+    # Save custom profiles
     custom_dict = {}
     for k, p in profiles.items():
         custom_dict[k] = p.to_dict()
+
+    # Ensure un-deleted if re-saved
+    deleted_keys = []
+    if os.path.exists(MERCHANTS_FILE):
+        try:
+            with open(MERCHANTS_FILE, "r", encoding="utf-8") as f:
+                prev = json.load(f)
+            deleted_keys = [str(k).lower() for k in prev.get("__deleted__", [])]
+            if profile.key in deleted_keys:
+                deleted_keys.remove(profile.key)
+        except Exception:
+            pass
+
+    custom_dict["__deleted__"] = deleted_keys
 
     try:
         with open(MERCHANTS_FILE, "w", encoding="utf-8") as f:
@@ -173,9 +246,9 @@ def list_all_merchants() -> List[Dict[str, Any]]:
     """Returns a list of all available merchants formatted for UI dropdowns and API responses."""
     profiles = load_all_merchant_profiles()
     results = []
-    # CCD first, SBB second, then others alphabetically
-    order = ["ccd", "sbb"]
-    sorted_keys = order + sorted([k for k in profiles.keys() if k not in order])
+    # XCD first, CCD second, SBB third, then others alphabetically
+    order = ["xcd", "ccd", "sbb"]
+    sorted_keys = [k for k in order if k in profiles] + sorted([k for k in profiles.keys() if k not in order])
 
     for k in sorted_keys:
         if k in profiles:
@@ -200,7 +273,7 @@ def detect_merchant(records: List[Dict[str, Any]]) -> str:
     by checking 'Merchant Name' and 'Merchant ID' against all registered profiles.
     """
     if not records:
-        return "ccd"
+        return "xcd"
 
     profiles = load_all_merchant_profiles()
 
@@ -208,19 +281,28 @@ def detect_merchant(records: List[Dict[str, Any]]) -> str:
         m_name = str(r.get("Merchant Name") or "").upper().strip()
         m_id = str(r.get("Merchant ID") or "").strip()
 
+        # Check explicit priority keywords
+        if "VALUE EXPRESS" in m_name or "XCD" in m_name:
+            if "xcd" in profiles:
+                return "xcd"
+        if "COFFEE DAY" in m_name or "CCD" in m_name:
+            if "ccd" in profiles:
+                return "ccd"
+        if "SBB" in m_name or "MEDICARE" in m_name:
+            if "sbb" in profiles:
+                return "sbb"
+
         # Check all profiles
         for key, prof in profiles.items():
-            # Check keywords in merchant name
             for kw in prof.merchant_keywords:
                 if kw and kw in m_name:
                     return prof.key
 
-            # Check merchant IDs
             for mid in prof.merchant_ids:
                 if mid and m_id.endswith(mid):
                     return prof.key
 
-    return "ccd"
+    return "xcd" if "xcd" in profiles else "ccd"
 
 
 def get_merchant_profile(key: Optional[str] = None, records: Optional[List[Dict[str, Any]]] = None) -> MerchantProfile:
@@ -243,4 +325,4 @@ def get_merchant_profile(key: Optional[str] = None, records: Optional[List[Dict[
         if detected_key in profiles:
             return profiles[detected_key]
 
-    return profiles.get("ccd", DEFAULT_MERCHANT_PROFILES["ccd"])
+    return profiles.get("xcd", profiles.get("ccd", DEFAULT_MERCHANT_PROFILES["xcd"]))

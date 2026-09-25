@@ -49,13 +49,20 @@ class TestEmailAndOutlets(unittest.TestCase):
         upload_cms = UploadFile(filename="daily_cms.csvtarget.csv", file=BytesIO(cms_csv))
         upload_smms = UploadFile(filename="daily_smms.csvtarget.csv", file=BytesIO(smms_csv))
 
+        # CMS + SMMS uploaded: CMS is present and all PGs are optional -> is_ready is True
         resp = detect_uploaded_files([upload_cms, upload_smms])
         data = json.loads(resp.body.decode("utf-8"))
 
-        self.assertIn("CMS", data["result"] if "result" in data else data["detected"])
-        self.assertIn("SMMS", data["result"] if "result" in data else data["detected"])
-        self.assertIn("CASHFREE", data["missing"])
-        self.assertFalse(data["is_ready"])
+        self.assertIn("CMS", data["detected"])
+        self.assertIn("SMMS", data["detected"])
+        self.assertTrue(data["is_ready"])
+
+        # When CMS is missing -> is_ready is False and CMS in missing
+        upload_smms_only = UploadFile(filename="daily_smms.csvtarget.csv", file=BytesIO(smms_csv))
+        resp_missing = detect_uploaded_files([upload_smms_only])
+        data_missing = json.loads(resp_missing.body.decode("utf-8"))
+        self.assertIn("CMS", data_missing["missing"])
+        self.assertFalse(data_missing["is_ready"])
 
     @patch("urllib.request.urlopen")
     def test_push_payload_to_swinkpay_success(self, mock_urlopen):
