@@ -209,6 +209,37 @@ class TestOptionalPGReconciliation(unittest.TestCase):
         files_ccd = generate_partner_xcd_files(engine, self.temp_dir, "2026-09-20", "2026-09-21", merchant_key="ccd")
         self.assertTrue(files_ccd["cashfree"]["filename"].startswith("CCD Input file as on"))
 
+    def test_airtel_invoice_summary_single_settlement_for_xcd(self):
+        """Verify that XCD generates Single Daily Settlement text, not 2-batch timing."""
+        from dashboard.server import execute_recon_for_files
+
+        # Create sample CMS file
+        cms_path = os.path.join(self.temp_dir, "cms.csv")
+        with open(cms_path, "w", encoding="utf-8") as f:
+            f.write("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,Payment Gateway\n"
+                    "1001,SP001,100.00,SUCCESS,UPI,2026-09-20 10:00:00,TID01,Cashfree\n")
+
+        sess_dir = os.path.join(self.temp_dir, "session_test")
+        os.makedirs(sess_dir, exist_ok=True)
+
+        # 1. Run for XCD
+        res_xcd = execute_recon_for_files([cms_path], sess_dir, merchant_key="xcd")
+        sum_xcd = res_xcd["airtel_invoice_summary"]
+        self.assertFalse(sum_xcd["has_split_settlement"])
+        self.assertEqual(sum_xcd["schedule_badge"], "Daily Schedule: Single Daily Settlement")
+        self.assertEqual(sum_xcd["batch_heading"], "Bank Settlement & UTR Details")
+        self.assertIn("single daily settlement", sum_xcd["timing_explanation"].lower())
+        self.assertNotIn("two intraday batches", sum_xcd["timing_explanation"].lower())
+
+        # 2. Run for SBB (split settlement)
+        res_sbb = execute_recon_for_files([cms_path], sess_dir, merchant_key="sbb")
+        sum_sbb = res_sbb["airtel_invoice_summary"]
+        self.assertTrue(sum_sbb["has_split_settlement"])
+        self.assertEqual(sum_sbb["schedule_badge"], "Daily Schedule: Batch 1 & Batch 2 (2 Settlements)")
+        self.assertEqual(sum_sbb["batch_heading"], "Two-Batch Settlement Timing & UTR Breakdown")
+        self.assertIn("two intraday batches", sum_sbb["timing_explanation"].lower())
+
 
 if __name__ == "__main__":
     unittest.main()
+

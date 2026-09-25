@@ -386,6 +386,32 @@ def execute_recon_for_files(
                 "txn_time_range": f"{t_min} to {t_max}" if t_min != "N/A" else "Standard Day Cycle"
             })
 
+    has_split = merchant_profile.has_split_settlement
+    num_batches = len(settle_batches)
+
+    if has_split:
+        timing_explanation = (
+            "Settlements disbursed in two intraday batches: "
+            "Batch 1 (12 AM - 12 PM) and Batch 2 (12 PM - 12 AM). "
+            "Upload both settlement reports to extract all transaction UTR numbers."
+        )
+        schedule_badge = "Daily Schedule: Batch 1 & Batch 2 (2 Settlements)"
+        batch_heading = "Two-Batch Settlement Timing & UTR Breakdown"
+    elif num_batches > 1:
+        timing_explanation = (
+            f"Settlements disbursed across {num_batches} bank tranches. "
+            "Each tranche is mapped to its respective bank UTR number."
+        )
+        schedule_badge = f"Daily Schedule: {num_batches} Settlement Tranches"
+        batch_heading = "Bank Settlement Tranches & UTR Breakdown"
+    else:
+        timing_explanation = (
+            "Disburses in a single daily settlement cycle. "
+            "All transactions settle under one authoritative bank UTR number."
+        )
+        schedule_badge = "Daily Schedule: Single Daily Settlement"
+        batch_heading = "Bank Settlement & UTR Details"
+
     airtel_invoice_summary = {
         "has_airtel": bool(air_rep and air_rep.records),
         "has_settlement_report": bool(settle_rep and settle_rep.records),
@@ -396,12 +422,11 @@ def execute_recon_for_files(
         "utr_display": ", ".join(settle_utrs) if settle_utrs else ("UTR Pending in Settlement File" if settle_rep else "Settlement Report Not Uploaded"),
         "settlement_date": ", ".join(settle_dates) if settle_dates else "",
         "batches": settle_batches,
-        "timing_explanation": (
-            "Airtel Payments Bank settles in 2 distinct daily intraday cycles: "
-            "Batch 1 (Morning cycle: ~10:15 AM - 11:30 AM) and "
-            "Batch 2 (Afternoon cycle: ~02:30 PM - 03:00 PM). "
-            "Upload both settlement reports to extract complete UTR numbers for billing."
-        )
+        "batch_count": num_batches,
+        "has_split_settlement": has_split,
+        "schedule_badge": schedule_badge,
+        "batch_heading": batch_heading,
+        "timing_explanation": timing_explanation
     }
 
     # Save session metadata for gate verification on download and API push

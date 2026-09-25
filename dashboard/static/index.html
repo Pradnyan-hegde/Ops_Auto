@@ -1737,7 +1737,7 @@
               </div>
               <div class="slot-title">Cashfree Report</div>
               <div class="slot-filename" id="slot-file-CASHFREE">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-CASHFREE">Drop 12AM-12PM &amp; 12PM-12AM batches here</div>
+              <div class="slot-meta" id="slot-meta-CASHFREE">Drop Cashfree partner report here</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-CASHFREE" style="display: none;" onclick="removeSlotFile('CASHFREE', event)" title="Remove file">×</button>
           </div>
@@ -2334,27 +2334,24 @@
           </div>
         </div>
 
-        <!-- Settlement Timings & Batch Breakdown Detail (For 2 Settlements) -->
+        <!-- Settlement Timings & Batch Breakdown Detail -->
         <div style="background: #ffffff; border: 1px solid #f5d0fe; border-radius: 12px; padding: 1.1rem; margin-bottom: 1rem;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-            <div style="font-size: 0.85rem; font-weight: 800; color: #701a75;">
-              ⏱️ Two-Batch Settlement Timing &amp; UTR Breakdown
+            <div id="airtel-batch-heading" style="font-size: 0.85rem; font-weight: 800; color: #701a75;">
+              ⏱️ Bank Settlement &amp; UTR Details
             </div>
-            <span style="font-size: 0.72rem; background: #fae8ff; color: #86198f; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600;">
-              Daily Schedule: Batch 1 (~10:15 AM) &amp; Batch 2 (~02:30 PM)
+            <span id="airtel-schedule-badge" style="font-size: 0.72rem; background: #fae8ff; color: #86198f; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600;">
+              Daily Schedule: Single Daily Settlement
             </span>
           </div>
-          <div style="font-size: 0.78rem; color: #475569; margin-bottom: 0.85rem; line-height: 1.45;">
-            Airtel Bank disburses settlements in <strong>two intraday batches</strong>:
-            <strong>Batch 1 (Morning cycle: ~10:15 AM - 11:30 AM)</strong> and
-            <strong>Batch 2 (Afternoon cycle: ~02:30 PM - 03:00 PM)</strong>.
-            Upload both settlement reports to extract all transaction UTR numbers.
+          <div id="airtel-timing-explanation" style="font-size: 0.78rem; color: #475569; margin-bottom: 0.85rem; line-height: 1.45;">
+            Disburses in a single daily settlement cycle. All transactions settle under one authoritative bank UTR number.
           </div>
           <div class="table-container" style="max-height: 200px; overflow-y: auto;">
             <table class="table" style="font-size: 0.78rem; margin: 0;">
               <thead>
                 <tr style="background: #faf5ff;">
-                  <th style="padding: 0.45rem 0.75rem;">Batch #</th>
+                  <th id="airtel-col-batch-header" style="padding: 0.45rem 0.75rem;">Settlement #</th>
                   <th style="padding: 0.45rem 0.75rem;">Settlement Date</th>
                   <th style="padding: 0.45rem 0.75rem;">Bank UTR Number</th>
                   <th style="padding: 0.45rem 0.75rem;">Txn Time Window</th>
@@ -3819,20 +3816,52 @@
         countEl.textContent = formatNumber(summary.transaction_count || 0);
       }
 
+      // Check whether this merchant or report has split (two-batch) settlement
+      const isSplit = summary.has_split_settlement || (summary.batches && summary.batches.length > 1);
+
+      const headingEl = document.getElementById('airtel-batch-heading');
+      if (headingEl) {
+        headingEl.innerHTML = isSplit 
+          ? '⏱️ Two-Batch Settlement Timing &amp; UTR Breakdown'
+          : '⏱️ Bank Settlement &amp; UTR Details';
+      }
+
+      const scheduleBadge = document.getElementById('airtel-schedule-badge');
+      if (scheduleBadge) {
+        scheduleBadge.textContent = summary.schedule_badge || (isSplit
+          ? 'Daily Schedule: Batch 1 & Batch 2 (2 Settlements)'
+          : 'Daily Schedule: Single Daily Settlement');
+      }
+
+      const timingExpl = document.getElementById('airtel-timing-explanation');
+      if (timingExpl) {
+        timingExpl.textContent = summary.timing_explanation || (isSplit
+          ? 'Settlements disbursed in two intraday batches. Upload both settlement reports to extract all transaction UTR numbers.'
+          : 'Disburses in a single daily settlement cycle. All transactions settle under one authoritative bank UTR number.');
+      }
+
+      const colBatchHeader = document.getElementById('airtel-col-batch-header');
+      if (colBatchHeader) {
+        colBatchHeader.textContent = isSplit ? 'Batch #' : 'Settlement #';
+      }
+
       // Batches Table
       const tbody = document.getElementById('airtel-batches-tbody');
       if (tbody) {
         if (summary.batches && summary.batches.length > 0) {
-          tbody.innerHTML = summary.batches.map(b => `
+          tbody.innerHTML = summary.batches.map(b => {
+            let label = isSplit ? `Batch ${b.batch_number}` : (summary.batches.length > 1 ? `Tranche ${b.batch_number}` : 'Single Settlement');
+            return `
             <tr>
-              <td style="padding: 0.5rem 0.75rem;"><strong style="color: #701a75;">Batch ${b.batch_number}</strong></td>
+              <td style="padding: 0.5rem 0.75rem;"><strong style="color: #701a75;">${label}</strong></td>
               <td style="padding: 0.5rem 0.75rem;"><span class="mono">${b.settlement_date || '--'}</span></td>
               <td style="padding: 0.5rem 0.75rem;"><code class="mono" style="font-weight:700; color:#4a044e; background:#fdf4ff; padding:2px 6px; border-radius:4px; border:1px solid #f5d0fe;">${b.utr}</code></td>
               <td style="padding: 0.5rem 0.75rem; color:#64748b; font-size:0.74rem;">${b.txn_time_range || 'Standard'}</td>
               <td style="padding: 0.5rem 0.75rem; text-align: right;" class="mono">${formatNumber(b.count)}</td>
               <td style="padding: 0.5rem 0.75rem; text-align: right; font-weight:700; color:#047857;" class="mono">${formatCurrency(b.total_net_credit)}</td>
             </tr>
-          `).join('');
+          `;
+          }).join('');
         } else {
           tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 1rem;">No settlement batches recorded. Upload Airtel Settlement Report to parse UTRs.</td></tr>`;
         }
@@ -3844,7 +3873,10 @@
         const utrStr = (summary.utrs && summary.utrs.length > 0) ? summary.utrs.join(' / ') : (summary.utr_display || 'N/A');
         const netCrStr = formatCurrency(summary.net_amount_payable_cr || 0);
         const dateStr = summary.settlement_date || 'N/A';
-        snippetEl.textContent = `Airtel Bank Settlement Invoice Summary:\n• Bank UTR Number(s): ${utrStr}\n• Total Net Amount Payable (CR): ${netCrStr}\n• Total Settled Txns: ${formatNumber(summary.transaction_count || 0)} (Gross: ${formatCurrency(summary.gross_amount || 0)})\n• Settlement Date(s): ${dateStr}\n• Settlement Batches: Batch 1 (~10:15 AM) & Batch 2 (~02:30 PM)`;
+        const batchLine = isSplit 
+          ? '• Settlement Batches: Batch 1 & Batch 2 (2 Settlements)' 
+          : '• Settlement Type: Daily Single Settlement';
+        snippetEl.textContent = `Airtel Bank Settlement Invoice Summary:\n• Bank UTR Number(s): ${utrStr}\n• Total Net Amount Payable (CR): ${netCrStr}\n• Total Settled Txns: ${formatNumber(summary.transaction_count || 0)} (Gross: ${formatCurrency(summary.gross_amount || 0)})\n• Settlement Date(s): ${dateStr}\n${batchLine}`;
       }
     }
 
