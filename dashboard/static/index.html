@@ -2213,8 +2213,7 @@
           <p style="margin: 0 0 1rem 0;">Please find the attached <span style="background-color: #fef08a; font-weight: 700; padding: 1px 4px; border-radius: 2px;">XCD Recon</span>.</p>
           <p style="margin: 0 0 0.5rem 0;">
             <strong>Exception:</strong><br>
-            Transactions happened in <strong id="email-outlet-val" contenteditable="true" style="color: #1a73e8; border-bottom: 1px dashed #1a73e8; cursor: text;" title="Click to edit if needed">0</strong> outlets.<br>
-            <span id="email-cf-pulled-val" contenteditable="true" style="border-bottom: 1px dashed #64748b; cursor: text;" title="Click to edit if needed">1</span> CF Transaction is pulled.
+            Transactions happened in <strong id="email-outlet-val" contenteditable="true" style="color: #1a73e8; border-bottom: 1px dashed #1a73e8; cursor: text;" title="Click to edit if needed">0</strong> outlets.
           </p>
 
           <table class="email-table-render" id="email-table-render">
@@ -3529,7 +3528,6 @@
     window.copyEmailRichHtml = async function(btn) {
       if (!currentEmailData) return;
       const outletVal = document.getElementById('email-outlet-val').textContent.trim();
-      const cfPulledVal = document.getElementById('email-cf-pulled-val').textContent.trim();
 
       let rowsHtml = '';
       (currentEmailData.summary_rows || []).forEach(r => {
@@ -3559,8 +3557,7 @@
           <p>Dear Team,</p>
           <p>Please find the attached <span style="background-color: #fef08a; font-weight: bold; padding: 1px 4px;">XCD Recon</span>.</p>
           <p><strong>Exception:</strong><br>
-          Transactions happened in ${outletVal} outlets.<br>
-          ${cfPulledVal} CF Transaction is pulled.</p>
+          Transactions happened in ${outletVal} outlets.</p>
           <table style="border-collapse: collapse; border: 1px solid #94a3b8; font-family: Calibri, sans-serif; font-size: 11pt; width: 100%; max-width: 820px; margin-top: 12px; margin-bottom: 12px;">
             <thead>
               <tr style="background-color: #f8fafc; font-weight: bold;">
@@ -3579,7 +3576,7 @@
           </table>
         </div>`;
 
-      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n${cfPulledVal} CF Transaction is pulled.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
+      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
         (currentEmailData.summary_rows || []).map(r => `${r.PARTNER}\t${r.Mode}\t${r.Network}\t${r['SUCCESS COUNT']}\t${r['SUM OF TXN AMOUNT']}\t${r['Sum of net amount']}`).join('\n') +
         `\nTOTAL\t\t\t${currentEmailData.summary.success_count}\t${currentEmailData.summary.gross_amount}\t${currentEmailData.summary.net_amount}\n`;
 
@@ -3610,9 +3607,8 @@
     window.copyEmailPlainText = function(btn) {
       if (!currentEmailData) return;
       const outletVal = document.getElementById('email-outlet-val').textContent.trim();
-      const cfPulledVal = document.getElementById('email-cf-pulled-val').textContent.trim();
 
-      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n${cfPulledVal} CF Transaction is pulled.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
+      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
         (currentEmailData.summary_rows || []).map(r => `${r.PARTNER}\t${r.Mode}\t${r.Network}\t${r['SUCCESS COUNT']}\t${r['SUM OF TXN AMOUNT']}\t${r['Sum of net amount']}`).join('\n') +
         `\nTOTAL\t\t\t${currentEmailData.summary.success_count}\t${currentEmailData.summary.gross_amount}\t${currentEmailData.summary.net_amount}\n`;
 
