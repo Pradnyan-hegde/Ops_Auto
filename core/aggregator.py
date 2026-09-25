@@ -67,18 +67,18 @@ class Aggregator:
             "settle_status_counts": defaultdict(int)
         })
 
-        is_sbb = (self.merchant.key == "sbb")
+        is_custom_merchant = (self.merchant.key != "ccd")
 
         for r in self.engine.successful_smms_reconciled:
             partner = r.get("_partner", "Unknown")
-            if is_sbb and partner in ("CashFree", "Cashfree"):
+            if is_custom_merchant and partner in ("CashFree", "Cashfree") and self.merchant.softpos_label != "CashFree":
                 partner = self.merchant.softpos_label
 
             network = str(r.get("Network") or "").strip()
             net_lower = network.lower()
             is_cc = ("credit" in net_lower or "cc" in net_lower or "rupay" in net_lower)
 
-            if is_sbb:
+            if is_custom_merchant:
                 fee = f"{self.merchant.cc_fee_rate * 100:.2f}%" if is_cc else f"{self.merchant.upi_fee_rate * 100:.2f}%"
                 mode = f"CC ON UPI({fee})" if is_cc else f"UPI({fee})"
             else:
@@ -88,7 +88,7 @@ class Aggregator:
             amt = clean_amount(r.get("Transaction Amount")) or 0.0
 
             # Compute fee & net amount
-            if is_sbb:
+            if is_custom_merchant:
                 fee_rate = self.merchant.cc_fee_rate if is_cc else self.merchant.upi_fee_rate
                 psp_amt = round(amt * fee_rate, 4)
                 gst_amt = round(psp_amt * self.merchant.default_gst_rate, 5)
@@ -121,7 +121,7 @@ class Aggregator:
             g["settle_status_counts"][settle_stat] += 1
 
         # Desired ordering of partners and networks matching the template
-        partner_order = ["CF_SoftPOS", "CashFree", "EaseBuzz", "Airtel Bank"] if is_sbb else ["CashFree", "EaseBuzz", "Airtel Bank"]
+        partner_order = [self.merchant.softpos_label, "CashFree", "EaseBuzz", "Airtel Bank"]
         def sort_key(item):
             p, m, n = item[0]
             p_idx = partner_order.index(p) if p in partner_order else 99

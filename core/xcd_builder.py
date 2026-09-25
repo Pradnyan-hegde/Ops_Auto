@@ -621,28 +621,30 @@ def generate_partner_xcd_files(
             else:
                 cb_b2.append(r_copy)
 
+        prefix = (merchant.input_file_prefix or f"{merchant.key.upper()}_INPUTFILE").strip()
+
         # Batch 1 (12 AM - 12 PM -> Settles same day recon_date_str)
-        cf_b1_filename = f"SBB_INPUTFILE(CASHFREE)_{recon_date_str}_Batch1_12AM-12PM.xlsx"
+        cf_b1_filename = f"{prefix}(CASHFREE)_{recon_date_str}_Batch1_12AM-12PM.xlsx"
         cf_b1_path = os.path.join(output_dir, cf_b1_filename)
         build_xcd_workbook(cf_b1, recon_date_str, cf_b1_path, refund_records=ref_b1, chargeback_records=cb_b1)
 
         # Batch 2 (12 PM - 12 AM -> Settles next day next_date_str)
-        cf_b2_filename = f"SBB_INPUTFILE(CASHFREE)_{recon_date_str}_Batch2_12PM-12AM.xlsx"
+        cf_b2_filename = f"{prefix}(CASHFREE)_{recon_date_str}_Batch2_12PM-12AM.xlsx"
         cf_b2_path = os.path.join(output_dir, cf_b2_filename)
         build_xcd_workbook(cf_b2, next_date_str, cf_b2_path, refund_records=ref_b2, chargeback_records=cb_b2)
 
         # Combined Full Day File (Dynamic row-level settlement date)
-        cf_comb_filename = f"SBB_INPUTFILE(CASHFREE)_{recon_date_str}.xlsx"
+        cf_comb_filename = f"{prefix}(CASHFREE)_{recon_date_str}.xlsx"
         cf_comb_path = os.path.join(output_dir, cf_comb_filename)
         build_xcd_workbook(cf_combined, recon_date_str, cf_comb_path, refund_records=ref_combined, chargeback_records=cb_combined)
 
-        # Easebuzz for SBB
-        eb_filename = f"SBB_INPUTFILE(EASEBUZZ)_{recon_date_str}.xlsx"
+        # Easebuzz
+        eb_filename = f"{prefix}(EASEBUZZ)_{recon_date_str}.xlsx"
         eb_path = os.path.join(output_dir, eb_filename)
         build_xcd_workbook(engine.cms_eb_matched, settlement_date or next_date_str, eb_path)
 
-        # Airtel is not used in SBB
-        air_filename = f"SBB_INPUTFILE(AIRTEL)_{recon_date_str}.xlsx"
+        # Airtel
+        air_filename = f"{prefix}(AIRTEL)_{recon_date_str}.xlsx"
         air_path = os.path.join(output_dir, air_filename)
         build_xcd_workbook(engine.cms_air_matched, settlement_date, air_path)
 
@@ -654,7 +656,7 @@ def generate_partner_xcd_files(
 
         files_info = {
             "cashfree": {
-                "partner": "CF_SoftPOS",
+                "partner": merchant.softpos_label,
                 "filename": cf_comb_filename,
                 "filepath": cf_comb_path,
                 "count": comb_cnt,
@@ -663,7 +665,7 @@ def generate_partner_xcd_files(
                 "settlement_date": f"12AM-12PM: {settle_same_day} | 12PM-12AM: {settle_next_day}"
             },
             "cashfree_batch1": {
-                "partner": "CF_SoftPOS (Batch 1)",
+                "partner": f"{merchant.softpos_label} (Batch 1)",
                 "batch": "12 AM - 12 PM",
                 "filename": cf_b1_filename,
                 "filepath": cf_b1_path,
@@ -673,7 +675,7 @@ def generate_partner_xcd_files(
                 "settlement_date": settle_same_day
             },
             "cashfree_batch2": {
-                "partner": "CF_SoftPOS (Batch 2)",
+                "partner": f"{merchant.softpos_label} (Batch 2)",
                 "batch": "12 PM - 12 AM",
                 "filename": cf_b2_filename,
                 "filepath": cf_b2_path,
@@ -702,10 +704,16 @@ def generate_partner_xcd_files(
             }
         }
     else:
-        # Standard Single Settlement (CCD / Coffee Day)
-        cf_filename = f"XCD Input file as on {recon_date_str} (Cf).xlsx"
-        eb_filename = f"XCD Input file as on {recon_date_str} (EB).xlsx"
-        air_filename = f"XCD Input file as on {recon_date_str} (Airtel).xlsx"
+        # Standard Single Settlement
+        prefix = (merchant.input_file_prefix or f"{merchant.key.upper()}_INPUTFILE").strip()
+        if merchant.key == "ccd" or "XCD" in prefix:
+            cf_filename = f"XCD Input file as on {recon_date_str} (Cf).xlsx"
+            eb_filename = f"XCD Input file as on {recon_date_str} (EB).xlsx"
+            air_filename = f"XCD Input file as on {recon_date_str} (Airtel).xlsx"
+        else:
+            cf_filename = f"{prefix}(CASHFREE)_{recon_date_str}.xlsx"
+            eb_filename = f"{prefix}(EASEBUZZ)_{recon_date_str}.xlsx"
+            air_filename = f"{prefix}(AIRTEL)_{recon_date_str}.xlsx"
 
         cf_path = os.path.join(output_dir, cf_filename)
         eb_path = os.path.join(output_dir, eb_filename)
@@ -721,7 +729,7 @@ def generate_partner_xcd_files(
 
         files_info = {
             "cashfree": {
-                "partner": "CashFree",
+                "partner": merchant.softpos_label,
                 "filename": cf_filename,
                 "filepath": cf_path,
                 "count": cf_cnt,

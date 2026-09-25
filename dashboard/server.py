@@ -43,7 +43,13 @@ from core.pg_payload_builder import build_missing_pg_payloads
 from core.network_builder import detect_network_changes, build_change_network_workbook
 from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
 from core.terminal_mapper import load_and_save_terminal_file, load_terminal_mappings, DATA_DIR, clear_terminal_mappings
-from core.merchant import get_merchant_profile, detect_merchant, MerchantProfile
+from core.merchant import (
+    get_merchant_profile,
+    detect_merchant,
+    MerchantProfile,
+    list_all_merchants,
+    save_merchant_profile
+)
 
 app = FastAPI(title="Ops_Auto Reconciliation Dashboard", version="1.2.0")
 
@@ -376,6 +382,32 @@ def execute_recon_for_files(
         "network_file": network_file_info,
         "network_changes": network_changes,
         "missing_pg_payloads": missing_pg_payloads
+    }
+
+
+@app.get("/api/merchants")
+def get_all_merchants():
+    """Returns list of all available and dynamically registered merchants."""
+    return {"merchants": list_all_merchants()}
+
+
+@app.post("/api/merchants")
+async def create_merchant_profile(request: Request):
+    """Registers or updates a merchant profile dynamically."""
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+
+    name = data.get("name") or data.get("display_name")
+    if not name:
+        raise HTTPException(status_code=400, detail="Merchant name is required.")
+
+    profile = save_merchant_profile(data)
+    return {
+        "status": "success",
+        "message": f"Merchant '{profile.display_name}' registered successfully.",
+        "merchant": profile.to_dict()
     }
 
 

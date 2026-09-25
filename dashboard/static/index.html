@@ -1675,8 +1675,12 @@
               <option value="auto">✨ Auto-Detect from Reports</option>
               <option value="sbb">🏥 SBB Medicare (Intraday Split Settlement: 12AM-12PM &amp; 12PM-12AM)</option>
               <option value="ccd">☕ Coffee Day / CCD (Daily Single Settlement)</option>
+              <option value="__add_new__">➕ Add Custom / New Merchant...</option>
             </select>
             <span id="merchant-active-badge" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.74rem; padding: 0.35rem 0.65rem;">Auto-Detect</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="openAddMerchantModal()" style="font-weight: 700; gap: 0.35rem; border-color: #cbd5e1;" title="Register a new merchant profile">
+              <span>➕</span> Add Merchant
+            </button>
           </div>
         </div>
 
@@ -2797,12 +2801,78 @@
       updateSlotsUI();
     };
 
+    let allMerchantsCache = [];
+
+    window.loadRegisteredMerchants = async function(selectedKey = null) {
+      try {
+        const res = await fetch('/api/merchants');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !data.merchants) return;
+        allMerchantsCache = data.merchants;
+        const select = document.getElementById('merchant-select');
+        if (!select) return;
+
+        const currentVal = selectedKey || select.value || 'auto';
+        select.innerHTML = '';
+
+        // Auto option
+        const optAuto = document.createElement('option');
+        optAuto.value = 'auto';
+        optAuto.textContent = '✨ Auto-Detect from Reports';
+        select.appendChild(optAuto);
+
+        // Pre-configured & Registered Merchants
+        data.merchants.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.key;
+          let icon = '🏢';
+          if (m.key === 'ccd') icon = '☕';
+          else if (m.key === 'sbb') icon = '🏥';
+
+          let label = `${icon} ${m.display_name}`;
+          if (m.has_split_settlement) {
+            label += ' (2-Part Split Settlement: 12AM-12PM & 12PM-12AM)';
+          } else {
+            label += ' (Daily Single Settlement)';
+          }
+          opt.textContent = label;
+          select.appendChild(opt);
+        });
+
+        // Add custom merchant option
+        const optAdd = document.createElement('option');
+        optAdd.value = '__add_new__';
+        optAdd.textContent = '➕ Add Custom / New Merchant...';
+        select.appendChild(optAdd);
+
+        // Restore selected value if valid
+        if (select.querySelector(`option[value="${currentVal}"]`)) {
+          select.value = currentVal;
+        } else {
+          select.value = 'auto';
+        }
+        window.onMerchantSelectChanged();
+      } catch (err) {
+        console.warn('Could not load merchants registry:', err);
+      }
+    };
+
     window.onMerchantSelectChanged = function() {
       const select = document.getElementById('merchant-select');
       const badge = document.getElementById('merchant-active-badge');
       const airtelTag = document.getElementById('slot-label-airtel-tag');
       const val = select ? select.value : 'auto';
-      if (val === 'sbb') {
+
+      if (val === '__add_new__') {
+        window.openAddMerchantModal();
+        select.value = 'auto';
+        return;
+      }
+
+      const match = allMerchantsCache.find(m => m.key === val);
+
+      if (val === 'sbb' || (match && match.key === 'sbb')) {
         if (badge) {
           badge.textContent = '🏥 SBB Medicare';
           badge.style.background = '#fef3c7';
@@ -2810,7 +2880,7 @@
           badge.style.borderColor = '#fcd34d';
         }
         if (airtelTag) airtelTag.textContent = 'Not Used in SBB';
-      } else if (val === 'ccd') {
+      } else if (val === 'ccd' || (match && match.key === 'ccd')) {
         if (badge) {
           badge.textContent = '☕ Coffee Day (CCD)';
           badge.style.background = '#ecfdf5';
@@ -2818,6 +2888,15 @@
           badge.style.borderColor = '#a7f3d0';
         }
         if (airtelTag) airtelTag.textContent = 'Bank Partner (Airtel)';
+      } else if (match) {
+        if (badge) {
+          badge.textContent = '🏢 ' + match.display_name;
+          badge.style.background = '#f3e8ff';
+          badge.style.color = '#6b21a8';
+          badge.style.borderColor = '#d8b4fe';
+        }
+        const hasAirtel = match.gateways && match.gateways.some(g => g.toLowerCase().includes('airtel'));
+        if (airtelTag) airtelTag.textContent = hasAirtel ? 'Bank Partner (Airtel)' : 'Optional Gateway';
       } else {
         if (badge) {
           badge.textContent = '✨ Auto-Detect';
@@ -2826,6 +2905,103 @@
           badge.style.borderColor = '#bae6fd';
         }
         if (airtelTag) airtelTag.textContent = 'Bank Partner (Optional)';
+      }
+    };
+
+    window.openAddMerchantModal = function() {
+      const modal = document.getElementById('modal-add-merchant');
+      if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('merchant-name-input').value = '';
+        document.getElementById('merchant-prefix-input').value = '';
+        document.getElementById('merchant-key-input').value = '';
+        document.getElementById('merchant-mids-input').value = '';
+        const singleRadio = document.querySelector('input[name="settlement_type"][value="single"]');
+        if (singleRadio) singleRadio.checked = true;
+        window.updateFilePrefixPreview();
+        setTimeout(() => document.getElementById('merchant-name-input').focus(), 60);
+      }
+    };
+
+    window.closeAddMerchantModal = function() {
+      const modal = document.getElementById('modal-add-merchant');
+      if (modal) modal.style.display = 'none';
+    };
+
+    window.onMerchantNameInput = function(val) {
+      const raw = val.trim();
+      const clean = raw.replace(/[^a-zA-Z0-9]+/g, '_').toUpperCase();
+      const slug = clean.toLowerCase();
+      const prefixInput = document.getElementById('merchant-prefix-input');
+      const keyInput = document.getElementById('merchant-key-input');
+      if (prefixInput) prefixInput.value = clean ? `${clean}_INPUTFILE` : '';
+      if (keyInput) keyInput.value = slug;
+      window.updateFilePrefixPreview();
+    };
+
+    window.updateSettlementTypeUI = function() {
+      window.updateFilePrefixPreview();
+    };
+
+    window.updateFilePrefixPreview = function() {
+      const prefix = (document.getElementById('merchant-prefix-input')?.value.trim() || 'MERCHANT_INPUTFILE');
+      const isSplitRadio = document.querySelector('input[name="settlement_type"]:checked');
+      const isSplit = isSplitRadio ? isSplitRadio.value === 'split' : false;
+      const previewEl = document.getElementById('file-prefix-preview');
+      if (previewEl) {
+        previewEl.textContent = isSplit 
+          ? `${prefix}(CASHFREE)_YYYY-MM-DD_Batch1_12AM-12PM.xlsx`
+          : `${prefix}(CASHFREE)_YYYY-MM-DD.xlsx`;
+      }
+    };
+
+    window.submitNewMerchant = async function(event) {
+      event.preventDefault();
+      const name = document.getElementById('merchant-name-input').value.trim();
+      const prefix = document.getElementById('merchant-prefix-input').value.trim();
+      const key = document.getElementById('merchant-key-input').value.trim();
+      const isSplit = document.querySelector('input[name="settlement_type"]:checked').value === 'split';
+      const midsStr = document.getElementById('merchant-mids-input').value.trim();
+      const upiRate = (parseFloat(document.getElementById('merchant-upi-rate').value) || 0.15) / 100;
+      const ccRate = (parseFloat(document.getElementById('merchant-cc-rate').value) || 2.25) / 100;
+
+      const mids = midsStr ? midsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+      
+      const payload = {
+        name: name,
+        display_name: name,
+        key: key || undefined,
+        input_file_prefix: prefix,
+        has_split_settlement: isSplit,
+        merchant_ids: mids,
+        upi_fee_rate: upiRate,
+        cc_fee_rate: ccRate,
+        softpos_label: isSplit ? 'CF_SoftPOS' : 'CashFree',
+        gateways: ['CashFree', 'EaseBuzz', 'Airtel Bank']
+      };
+
+      const btn = document.getElementById('btn-save-merchant');
+      if (btn) btn.textContent = 'Saving...';
+
+      try {
+        const res = await fetch('/api/merchants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          alert('Error saving merchant: ' + (result.detail || 'Unknown error'));
+          return;
+        }
+        
+        window.closeAddMerchantModal();
+        await window.loadRegisteredMerchants(result.merchant.key);
+        alert(`Merchant "${result.merchant.display_name}" registered successfully!\nSettlement files will be generated as:\n${result.merchant.input_file_prefix}(CASHFREE)_YYYY-MM-DD.xlsx`);
+      } catch (err) {
+        alert('Network error registering merchant: ' + err.message);
+      } finally {
+        if (btn) btn.textContent = '💾 Save & Select Merchant';
       }
     };
 
@@ -4433,6 +4609,84 @@
     loadTerminalMappingsTable();
     loadApiSettings();
     updateSlotsUI();
+    loadRegisteredMerchants();
   </script>
+
+  <!-- Modal: Add New Merchant Profile -->
+  <div id="modal-add-merchant" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1.5rem;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 580px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; overflow: hidden;">
+      <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; background: #f8fafc;">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span style="font-size: 1.35rem;">🏢</span>
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">Add New Merchant Profile</h3>
+            <p style="font-size: 0.76rem; color: #64748b; margin: 0;">Configure merchant name, settlement cycle, and input file naming</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAddMerchantModal()" style="border: none; background: transparent; font-size: 1.4rem; color: #94a3b8; cursor: pointer; padding: 0.25rem; line-height: 1;">&times;</button>
+      </div>
+      
+      <form id="form-add-merchant" onsubmit="submitNewMerchant(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.15rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Display Name <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="merchant-name-input" required placeholder="e.g., Apollo Hospitals, MedPlus, Reliance Retail" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Input File Prefix <span style="color: #ef4444;">*</span></label>
+            <input type="text" id="merchant-prefix-input" required placeholder="e.g. APOLLO_INPUTFILE" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none; font-family: monospace; font-weight: 600; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
+            <small style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">Preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">APOLLO_INPUTFILE(CASHFREE)_YYYY-MM-DD.xlsx</span></small>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Key (Slug)</label>
+            <input type="text" id="merchant-key-input" placeholder="e.g. apollo" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.45rem;">Settlement Cycle <span style="color: #ef4444;">*</span></label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #f8fafc;" id="settle-type-single-label">
+              <input type="radio" name="settlement_type" value="single" checked style="margin-top: 0.15rem;" onchange="updateSettlementTypeUI()" />
+              <div>
+                <div style="font-weight: 700; font-size: 0.82rem; color: #0f172a;">Single Settlement</div>
+                <div style="font-size: 0.72rem; color: #64748b;">Standard full-day settlement (T+1)</div>
+              </div>
+            </label>
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #f8fafc;" id="settle-type-split-label">
+              <input type="radio" name="settlement_type" value="split" style="margin-top: 0.15rem;" onchange="updateSettlementTypeUI()" />
+              <div>
+                <div style="font-weight: 700; font-size: 0.82rem; color: #0f172a;">2-Part Split Settlement</div>
+                <div style="font-size: 0.72rem; color: #64748b;">12AM-12PM (T) &amp; 12PM-12AM (T+1)</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant ID(s) in CMS / SMMS (Optional)</label>
+          <input type="text" id="merchant-mids-input" placeholder="e.g. 0000000000002199, 2199" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
+          <small style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">Used to auto-detect this merchant from uploaded reports</small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">UPI Fee Rate (%)</label>
+            <input type="number" step="0.01" id="merchant-upi-rate" value="0.15" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Credit Card Fee Rate (%)</label>
+            <input type="number" step="0.01" id="merchant-cc-rate" value="2.25" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.75rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+          <button type="button" class="btn btn-secondary" onclick="closeAddMerchantModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-merchant">💾 Save &amp; Select Merchant</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
