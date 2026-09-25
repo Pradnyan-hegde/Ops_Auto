@@ -327,6 +327,82 @@ def execute_recon_for_files(
         }
     }
 
+    # Airtel Settlement and Invoice Generation Details
+    airtel_net_amount_payable_cr = 0.0
+    airtel_gross_amt = 0.0
+    airtel_txn_count = 0
+    if air_rep and air_rep.records:
+        airtel_txn_count = len(air_rep.records)
+        for r in air_rep.records:
+            val_cr = clean_amount(r.get("Net Amount Payable(CR)") or r.get("Net Amount Payable (CR)") or r.get("Net Amount Payable"))
+            if val_cr is not None:
+                airtel_net_amount_payable_cr += val_cr
+            val_gross = clean_amount(r.get("Original Input Amt") or r.get("Transaction Amount"))
+            if val_gross is not None:
+                airtel_gross_amt += val_gross
+        airtel_net_amount_payable_cr = round(airtel_net_amount_payable_cr, 2)
+        airtel_gross_amt = round(airtel_gross_amt, 2)
+
+    settle_utrs = []
+    settle_batches = []
+    settle_dates = []
+    if settle_rep and settle_rep.records:
+        utr_groups = {}
+        for r in settle_rep.records:
+            u = str(r.get("UTR Num") or r.get("UTR") or "").strip()
+            s_date = str(r.get("Settlement Date") or "").strip()
+            if s_date and s_date not in settle_dates:
+                settle_dates.append(s_date)
+            net_c = clean_amount(r.get("Net Credit Amnt") or r.get("ORIG_AMNT") or 0.0) or 0.0
+            t_date = str(r.get("TXN_DATE") or "").strip()
+            
+            u_key = u if u else "Pending UTR"
+            if u_key not in utr_groups:
+                utr_groups[u_key] = {
+                    "utr": u if u else "Pending / Bank Processing",
+                    "settlement_date": s_date,
+                    "count": 0,
+                    "total_net_credit": 0.0,
+                    "txn_times": []
+                }
+            utr_groups[u_key]["count"] += 1
+            utr_groups[u_key]["total_net_credit"] += net_c
+            if t_date:
+                utr_groups[u_key]["txn_times"].append(t_date)
+            
+            if u and u not in settle_utrs:
+                settle_utrs.append(u)
+
+        for idx, (uk, data) in enumerate(utr_groups.items(), start=1):
+            t_min = min(data["txn_times"]) if data["txn_times"] else "N/A"
+            t_max = max(data["txn_times"]) if data["txn_times"] else "N/A"
+            settle_batches.append({
+                "batch_number": idx,
+                "utr": data["utr"],
+                "settlement_date": data["settlement_date"],
+                "count": data["count"],
+                "total_net_credit": round(data["total_net_credit"], 2),
+                "txn_time_range": f"{t_min} to {t_max}" if t_min != "N/A" else "Standard Day Cycle"
+            })
+
+    airtel_invoice_summary = {
+        "has_airtel": bool(air_rep and air_rep.records),
+        "has_settlement_report": bool(settle_rep and settle_rep.records),
+        "transaction_count": airtel_txn_count,
+        "gross_amount": airtel_gross_amt,
+        "net_amount_payable_cr": airtel_net_amount_payable_cr,
+        "utrs": settle_utrs,
+        "utr_display": ", ".join(settle_utrs) if settle_utrs else ("UTR Pending in Settlement File" if settle_rep else "Settlement Report Not Uploaded"),
+        "settlement_date": ", ".join(settle_dates) if settle_dates else "",
+        "batches": settle_batches,
+        "timing_explanation": (
+            "Airtel Payments Bank settles in 2 distinct daily intraday cycles: "
+            "Batch 1 (Morning cycle: ~10:15 AM - 11:30 AM) and "
+            "Batch 2 (Afternoon cycle: ~02:30 PM - 03:00 PM). "
+            "Upload both settlement reports to extract complete UTR numbers for billing."
+        )
+    }
+
     # Save session metadata for gate verification on download and API push
     meta_path = os.path.join(session_dir, "session_meta.json")
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -337,7 +413,8 @@ def execute_recon_for_files(
             "outlet_count": outlet_count,
             "missing_pg_payloads": missing_pg_payloads,
             "merchant": xcd_status["merchant"],
-            "adjustments": adjustments_summary
+            "adjustments": adjustments_summary,
+            "airtel_invoice_summary": airtel_invoice_summary
         }, f, indent=2)
 
     # Format result payload
@@ -381,7 +458,8 @@ def execute_recon_for_files(
         "sync_file": sync_file_info,
         "network_file": network_file_info,
         "network_changes": network_changes,
-        "missing_pg_payloads": missing_pg_payloads
+        "missing_pg_payloads": missing_pg_payloads,
+        "airtel_invoice_summary": airtel_invoice_summary
     }
 
 

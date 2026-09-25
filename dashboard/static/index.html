@@ -1753,7 +1753,7 @@
             <button type="button" class="slot-remove-btn" id="slot-remove-EASEBUZZ" style="display: none;" onclick="removeSlotFile('EASEBUZZ', event)" title="Remove file">×</button>
           </div>
 
-          <!-- Slot 5: Airtel -->
+          <!-- Slot 5: Airtel Transaction Report -->
           <div class="slot-card missing" id="slot-card-AIRTEL" onclick="triggerSlotUpload('AIRTEL')">
             <input type="file" id="slot-input-AIRTEL" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('AIRTEL', this.files[0])" />
             <div>
@@ -1763,9 +1763,24 @@
               </div>
               <div class="slot-title">Airtel Bank Report</div>
               <div class="slot-filename" id="slot-file-AIRTEL">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-AIRTEL">CCD Coffee Day only (not used in SBB)</div>
+              <div class="slot-meta" id="slot-meta-AIRTEL">Transactions &amp; Net Amount Payable(CR)</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-AIRTEL" style="display: none;" onclick="removeSlotFile('AIRTEL', event)" title="Remove file">×</button>
+          </div>
+
+          <!-- Slot 6: Airtel Settlement Report(s) -->
+          <div class="slot-card missing" id="slot-card-AIRTEL_SETTLEMENT" onclick="triggerSlotUpload('AIRTEL_SETTLEMENT')">
+            <input type="file" id="slot-input-AIRTEL_SETTLEMENT" multiple style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('AIRTEL_SETTLEMENT', this.files)" />
+            <div>
+              <div class="slot-top">
+                <span class="slot-label" style="background: #fdf4ff; color: #a21caf; border: 1px solid #f0abfc;">UTR Fetch (1-2 Files)</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-AIRTEL_SETTLEMENT">⚠️ Missing</span>
+              </div>
+              <div class="slot-title">Airtel Settlement Report</div>
+              <div class="slot-filename" id="slot-file-AIRTEL_SETTLEMENT">No file uploaded</div>
+              <div class="slot-meta" id="slot-meta-AIRTEL_SETTLEMENT">Upload 1 or 2 settlement files to fetch UTR</div>
+            </div>
+            <button type="button" class="slot-remove-btn" id="slot-remove-AIRTEL_SETTLEMENT" style="display: none;" onclick="removeSlotFile('AIRTEL_SETTLEMENT', event)" title="Remove file">×</button>
           </div>
         </div>
 
@@ -2251,6 +2266,116 @@
           </table>
         </div>
       </div>
+
+      <!-- Dedicated Airtel Bank Settlement & Invoicing Card -->
+      <div class="card" id="airtel-invoice-card" style="display: none; margin-bottom: 2rem; background: linear-gradient(135deg, #ffffff 0%, #fdf4ff 100%); border: 1px solid #f0abfc; border-radius: 14px; padding: 1.5rem 1.75rem; box-shadow: 0 2px 10px rgba(168, 85, 247, 0.06);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #fae8ff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">📱</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: #701a75; margin: 0;">Airtel Payments Bank — Settlement &amp; Invoice Ledger</h3>
+                <span class="badge" style="background: #fdf4ff; color: #a21caf; border: 1px solid #f0abfc; font-size: 0.75rem;">Invoice Generation Ready</span>
+              </div>
+              <p style="font-size: 0.8rem; color: #86198f; margin-top: 0.25rem;">
+                Automated extraction of bank UTR numbers and exact <code>Net Amount Payable(CR)</code> for seamless merchant billing and settlement reconciliation.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyAirtelInvoiceDetails()" style="font-weight: 700; border-color: #d8b4fe; color: #701a75; background: #ffffff;">
+            📋 Copy Invoice Summary
+          </button>
+        </div>
+
+        <!-- 2 Main Metric Highlights: UTR Num & Net Amount Payable(CR) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+          <!-- UTR Highlight -->
+          <div style="background: #ffffff; border: 1px solid #f5d0fe; border-radius: 12px; padding: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="font-size: 0.78rem; font-weight: 700; color: #86198f; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.35rem;">
+              🏦 Bank UTR Number (Settlement Report)
+            </div>
+            <div id="airtel-utr-display" style="font-family: monospace; font-size: 1.15rem; font-weight: 800; color: #4a044e; word-break: break-all;">
+              --
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+              <small style="font-size: 0.72rem; color: #a21caf;">Fetched from Airtel Settlement Report(s)</small>
+              <button type="button" onclick="copyAirtelUTR()" style="background: transparent; border: none; font-size: 0.75rem; font-weight: 700; color: #701a75; cursor: pointer; text-decoration: underline; padding: 0;">Copy UTR</button>
+            </div>
+          </div>
+
+          <!-- Net Amount Payable (CR) Highlight -->
+          <div style="background: #ffffff; border: 1px solid #a7f3d0; border-radius: 12px; padding: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="font-size: 0.78rem; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.35rem;">
+              💰 Total Net Amount Payable(CR)
+            </div>
+            <div id="airtel-net-cr-display" style="font-family: monospace; font-size: 1.35rem; font-weight: 900; color: #065f46;">
+              ₹0.00
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+              <small style="font-size: 0.72rem; color: #059669;">From Airtel Transaction Report column <code>Net Amount Payable(CR)</code></small>
+            </div>
+          </div>
+
+          <!-- Gross Input Amt -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.35rem;">
+              📊 Original Gross Input Amount
+            </div>
+            <div id="airtel-gross-display" style="font-family: monospace; font-size: 1.35rem; font-weight: 800; color: #1e293b;">
+              ₹0.00
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+              <small style="font-size: 0.72rem; color: #64748b;"><span id="airtel-txn-count-display">0</span> Transactions Reconciled</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settlement Timings & Batch Breakdown Detail (For 2 Settlements) -->
+        <div style="background: #ffffff; border: 1px solid #f5d0fe; border-radius: 12px; padding: 1.1rem; margin-bottom: 1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: #701a75;">
+              ⏱️ Two-Batch Settlement Timing &amp; UTR Breakdown
+            </div>
+            <span style="font-size: 0.72rem; background: #fae8ff; color: #86198f; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600;">
+              Daily Schedule: Batch 1 (~10:15 AM) &amp; Batch 2 (~02:30 PM)
+            </span>
+          </div>
+          <div style="font-size: 0.78rem; color: #475569; margin-bottom: 0.85rem; line-height: 1.45;">
+            Airtel Bank disburses settlements in <strong>two intraday batches</strong>:
+            <strong>Batch 1 (Morning cycle: ~10:15 AM - 11:30 AM)</strong> and
+            <strong>Batch 2 (Afternoon cycle: ~02:30 PM - 03:00 PM)</strong>.
+            Upload both settlement reports to extract all transaction UTR numbers.
+          </div>
+          <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+            <table class="table" style="font-size: 0.78rem; margin: 0;">
+              <thead>
+                <tr style="background: #faf5ff;">
+                  <th style="padding: 0.45rem 0.75rem;">Batch #</th>
+                  <th style="padding: 0.45rem 0.75rem;">Settlement Date</th>
+                  <th style="padding: 0.45rem 0.75rem;">Bank UTR Number</th>
+                  <th style="padding: 0.45rem 0.75rem;">Txn Time Window</th>
+                  <th style="padding: 0.45rem 0.75rem; text-align: right;">Transactions</th>
+                  <th style="padding: 0.45rem 0.75rem; text-align: right;">Net Credit (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="airtel-batches-tbody">
+                <tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 1rem;">No settlement report uploaded yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Copyable Invoice Box -->
+        <div style="background: #1e1b4b; border-radius: 10px; padding: 0.85rem 1.15rem; color: #e0e7ff; font-family: monospace; font-size: 0.76rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+          <div id="airtel-invoice-copy-snippet" style="white-space: pre-wrap; line-height: 1.5;">
+            --
+          </div>
+          <button type="button" onclick="copyAirtelInvoiceDetails()" class="btn btn-sm" style="background: #4338ca; color: #ffffff; border: 1px solid #6366f1; font-weight: 700; white-space: nowrap;">
+            📋 Copy for Invoice
+          </button>
+        </div>
+      </div>
+
       <div class="email-summary-card" id="email-summary-card" style="display: none;">
         <div class="email-header">
           <div class="email-title-wrap">
@@ -2739,21 +2864,24 @@
       }
     });
 
-    // 5-Slot Smart Dropzone File State
+    // 6-Slot Smart Dropzone File State
     const mandatorySlots = ['CMS', 'SMMS', 'CASHFREE', 'EASEBUZZ', 'AIRTEL'];
+    const allSlotKeys = ['CMS', 'SMMS', 'CASHFREE', 'EASEBUZZ', 'AIRTEL', 'AIRTEL_SETTLEMENT'];
     const slotDisplayNames = {
       CMS: 'CMS Report',
       SMMS: 'SMMS Report',
       CASHFREE: 'Cashfree Report',
       EASEBUZZ: 'Easebuzz Report',
-      AIRTEL: 'Airtel Bank Report'
+      AIRTEL: 'Airtel Bank Report',
+      AIRTEL_SETTLEMENT: 'Airtel Settlement Report'
     };
     let slotFiles = {
       CMS: null,
       SMMS: null,
       CASHFREE: null,
       EASEBUZZ: null,
-      AIRTEL: null
+      AIRTEL: null,
+      AIRTEL_SETTLEMENT: null
     };
     let slotMeta = {};
     let auxiliaryFiles = [];
@@ -2775,8 +2903,46 @@
       updateSlotsUI();
     };
 
-    window.handleSingleSlotFile = async function(slot, file) {
+    window.handleSingleSlotFile = async function(slot, fileOrFiles) {
+      if (!fileOrFiles) return;
+
+      if (slot === 'AIRTEL_SETTLEMENT') {
+        const incoming = (fileOrFiles instanceof FileList || Array.isArray(fileOrFiles)) 
+          ? Array.from(fileOrFiles) 
+          : [fileOrFiles];
+        if (!slotFiles['AIRTEL_SETTLEMENT']) {
+          slotFiles['AIRTEL_SETTLEMENT'] = [];
+        } else if (!Array.isArray(slotFiles['AIRTEL_SETTLEMENT'])) {
+          slotFiles['AIRTEL_SETTLEMENT'] = [slotFiles['AIRTEL_SETTLEMENT']];
+        }
+        incoming.forEach(f => {
+          if (!slotFiles['AIRTEL_SETTLEMENT'].some(existing => existing.name === f.name)) {
+            slotFiles['AIRTEL_SETTLEMENT'].push(f);
+          }
+        });
+        const cnt = slotFiles['AIRTEL_SETTLEMENT'].length;
+        slotMeta['AIRTEL_SETTLEMENT'] = {
+          filename: `${cnt} Settlement Report(s)`,
+          file_size: slotFiles['AIRTEL_SETTLEMENT'].reduce((acc, f) => acc + f.size, 0)
+        };
+        updateSlotsUI();
+
+        try {
+          const formData = new FormData();
+          slotFiles['AIRTEL_SETTLEMENT'].forEach(f => formData.append('files', f));
+          const resp = await fetch('/api/detect-files', { method: 'POST', body: formData });
+          const res = await resp.json();
+          if (res.detected && res.detected['AIRTEL_SETTLEMENT']) {
+            slotMeta['AIRTEL_SETTLEMENT'] = res.detected['AIRTEL_SETTLEMENT'];
+          }
+        } catch (e) {}
+        updateSlotsUI();
+        return;
+      }
+
+      const file = (fileOrFiles instanceof FileList && fileOrFiles.length > 0) ? fileOrFiles[0] : fileOrFiles;
       if (!file) return;
+
       if (slotFiles[slot]) {
         if (!auxiliaryFiles.some(f => f.name === file.name)) {
           auxiliaryFiles.push(file);
@@ -2914,8 +3080,6 @@
         modal.style.display = 'flex';
         document.getElementById('merchant-name-input').value = '';
         document.getElementById('merchant-prefix-input').value = '';
-        document.getElementById('merchant-key-input').value = '';
-        document.getElementById('merchant-mids-input').value = '';
         const singleRadio = document.querySelector('input[name="settlement_type"][value="single"]');
         if (singleRadio) singleRadio.checked = true;
         window.updateFilePrefixPreview();
@@ -2931,11 +3095,8 @@
     window.onMerchantNameInput = function(val) {
       const raw = val.trim();
       const clean = raw.replace(/[^a-zA-Z0-9]+/g, '_').toUpperCase();
-      const slug = clean.toLowerCase();
       const prefixInput = document.getElementById('merchant-prefix-input');
-      const keyInput = document.getElementById('merchant-key-input');
       if (prefixInput) prefixInput.value = clean ? `${clean}_INPUTFILE` : '';
-      if (keyInput) keyInput.value = slug;
       window.updateFilePrefixPreview();
     };
 
@@ -2959,23 +3120,18 @@
       event.preventDefault();
       const name = document.getElementById('merchant-name-input').value.trim();
       const prefix = document.getElementById('merchant-prefix-input').value.trim();
-      const key = document.getElementById('merchant-key-input').value.trim();
       const isSplit = document.querySelector('input[name="settlement_type"]:checked').value === 'split';
-      const midsStr = document.getElementById('merchant-mids-input').value.trim();
-      const upiRate = (parseFloat(document.getElementById('merchant-upi-rate').value) || 0.15) / 100;
-      const ccRate = (parseFloat(document.getElementById('merchant-cc-rate').value) || 2.25) / 100;
+      const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
-      const mids = midsStr ? midsStr.split(',').map(s => s.trim()).filter(Boolean) : [];
-      
       const payload = {
         name: name,
         display_name: name,
         key: key || undefined,
         input_file_prefix: prefix,
         has_split_settlement: isSplit,
-        merchant_ids: mids,
-        upi_fee_rate: upiRate,
-        cc_fee_rate: ccRate,
+        merchant_ids: [],
+        upi_fee_rate: 0.0015,
+        cc_fee_rate: 0.0225,
         softpos_label: isSplit ? 'CF_SoftPOS' : 'CashFree',
         gateways: ['CashFree', 'EaseBuzz', 'Airtel Bank']
       };
@@ -2997,7 +3153,6 @@
         
         window.closeAddMerchantModal();
         await window.loadRegisteredMerchants(result.merchant.key);
-        alert(`Merchant "${result.merchant.display_name}" registered successfully!\nSettlement files will be generated as:\n${result.merchant.input_file_prefix}(CASHFREE)_YYYY-MM-DD.xlsx`);
       } catch (err) {
         alert('Network error registering merchant: ' + err.message);
       } finally {
@@ -3015,7 +3170,7 @@
     }, false);
 
     // Slot Drag-and-drop wiring
-    mandatorySlots.forEach(slot => {
+    allSlotKeys.forEach(slot => {
       const card = document.getElementById('slot-card-' + slot);
       if (!card) return;
 
@@ -3046,7 +3201,11 @@
         card.classList.remove('dragover');
         const dt = e.dataTransfer;
         if (dt && dt.files && dt.files.length > 0) {
-          handleSingleSlotFile(slot, dt.files[0]);
+          if (slot === 'AIRTEL_SETTLEMENT') {
+            handleSingleSlotFile(slot, dt.files);
+          } else {
+            handleSingleSlotFile(slot, dt.files[0]);
+          }
         }
       }, false);
     });
@@ -3111,18 +3270,26 @@
 
         if (res.detected) {
           Object.keys(res.detected).forEach(slotKey => {
-            if (mandatorySlots.includes(slotKey)) {
+            if (slotKey === 'AIRTEL_SETTLEMENT') {
+              const det = res.detected[slotKey];
+              const fileNames = det.filenames || [det.filename];
+              const matchedFiles = filesArray.filter(f => fileNames.includes(f.name));
+              if (matchedFiles.length > 0) {
+                if (!slotFiles['AIRTEL_SETTLEMENT']) slotFiles['AIRTEL_SETTLEMENT'] = [];
+                else if (!Array.isArray(slotFiles['AIRTEL_SETTLEMENT'])) slotFiles['AIRTEL_SETTLEMENT'] = [slotFiles['AIRTEL_SETTLEMENT']];
+                matchedFiles.forEach(mf => {
+                  if (!slotFiles['AIRTEL_SETTLEMENT'].some(existing => existing.name === mf.name)) {
+                    slotFiles['AIRTEL_SETTLEMENT'].push(mf);
+                  }
+                });
+                slotMeta['AIRTEL_SETTLEMENT'] = det;
+              }
+            } else if (mandatorySlots.includes(slotKey)) {
               const det = res.detected[slotKey];
               const matchedFile = filesArray.find(f => f.name === det.filename);
               if (matchedFile) {
                 slotFiles[slotKey] = matchedFile;
                 slotMeta[slotKey] = det;
-              }
-            } else if (slotKey === 'AIRTEL_SETTLEMENT') {
-              const det = res.detected[slotKey];
-              const matchedFile = filesArray.find(f => f.name === det.filename);
-              if (matchedFile && !auxiliaryFiles.some(f => f.name === matchedFile.name)) {
-                auxiliaryFiles.push(matchedFile);
               }
             }
           });
@@ -3154,16 +3321,49 @@
       let filledCount = 0;
       let missingSlots = [];
 
-      mandatorySlots.forEach(slot => {
+      allSlotKeys.forEach(slot => {
         const card = document.getElementById('slot-card-' + slot);
         const badge = document.getElementById('slot-badge-' + slot);
         const fileEl = document.getElementById('slot-file-' + slot);
         const metaEl = document.getElementById('slot-meta-' + slot);
         const removeBtn = document.getElementById('slot-remove-' + slot);
 
-        const file = slotFiles[slot];
+        if (!card) return;
+
+        const fileVal = slotFiles[slot];
         const meta = slotMeta[slot] || {};
 
+        if (slot === 'AIRTEL_SETTLEMENT') {
+          const filesArr = Array.isArray(fileVal) ? fileVal : (fileVal ? [fileVal] : []);
+          if (filesArr.length > 0) {
+            card.className = 'slot-card filled';
+            if (badge) {
+              badge.className = 'slot-status-badge badge-detected';
+              badge.textContent = `✅ ${filesArr.length} File${filesArr.length > 1 ? 's' : ''}`;
+            }
+            if (fileEl) {
+              fileEl.textContent = filesArr.map(f => f.name).join(', ');
+              fileEl.title = fileEl.textContent;
+            }
+            const totalBytes = filesArr.reduce((acc, f) => acc + f.size, 0);
+            const sizeKb = (totalBytes / 1024).toFixed(1);
+            const countStr = meta.record_count !== undefined ? `${formatNumber(meta.record_count)} rows • ` : '';
+            if (metaEl) metaEl.textContent = `${countStr}${sizeKb} KB (UTR Ready)`;
+            if (removeBtn) removeBtn.style.display = 'flex';
+          } else {
+            card.className = 'slot-card missing';
+            if (badge) {
+              badge.className = 'slot-status-badge badge-missing';
+              badge.textContent = '⚪ Optional';
+            }
+            if (fileEl) fileEl.textContent = 'No file uploaded';
+            if (metaEl) metaEl.textContent = 'Upload 1 or 2 settlement files to fetch UTR';
+            if (removeBtn) removeBtn.style.display = 'none';
+          }
+          return;
+        }
+
+        const file = fileVal;
         if (file) {
           filledCount++;
           card.className = 'slot-card filled';
@@ -3205,7 +3405,7 @@
       if (statusBar && statusText) {
         if (slotFiles['CMS']) {
           statusBar.className = 'slot-summary-bar slot-bar-ready';
-          const totalFiles = filledCount + auxiliaryFiles.length;
+          const totalFiles = filledCount + auxiliaryFiles.length + (Array.isArray(slotFiles['AIRTEL_SETTLEMENT']) ? slotFiles['AIRTEL_SETTLEMENT'].length : (slotFiles['AIRTEL_SETTLEMENT'] ? 1 : 0));
           statusText.innerHTML = `<strong>✅ Ready to Reconcile:</strong> CMS Report loaded (${totalFiles} file${totalFiles > 1 ? 's' : ''} active). Click <strong>🚀 Start Reconciliation</strong> below to proceed.`;
         } else {
           statusBar.className = 'slot-summary-bar slot-bar-warning';
@@ -3243,7 +3443,7 @@
     };
 
     btnClear.addEventListener('click', () => {
-      mandatorySlots.forEach(slot => {
+      allSlotKeys.forEach(slot => {
         slotFiles[slot] = null;
         delete slotMeta[slot];
         const inp = document.getElementById('slot-input-' + slot);
@@ -3259,8 +3459,14 @@
     // Reconcile action
     btnReconcile.addEventListener('click', async () => {
       const activeFiles = [];
-      mandatorySlots.forEach(s => {
-        if (slotFiles[s]) activeFiles.push(slotFiles[s]);
+      allSlotKeys.forEach(s => {
+        if (slotFiles[s]) {
+          if (Array.isArray(slotFiles[s])) {
+            slotFiles[s].forEach(f => activeFiles.push(f));
+          } else {
+            activeFiles.push(slotFiles[s]);
+          }
+        }
       });
       auxiliaryFiles.forEach(af => activeFiles.push(af));
 
@@ -3373,6 +3579,9 @@
 
       // 1.9. Adjustments, Refunds & Deductions (Status 3, 4, 5, 6)
       renderAdjustmentsSection(data.adjustments);
+
+      // 1.95. Dedicated Airtel Bank Settlement & Invoicing (UTR & Net Amount Payable)
+      renderAirtelInvoiceSection(data.airtel_invoice_summary);
 
       // 2. Controlled XCD Section Handling
       renderXcdSection(data.xcd_status || {});
@@ -3525,6 +3734,97 @@
         });
       }
     }
+
+    let currentAirtelSummary = null;
+
+    function renderAirtelInvoiceSection(summary) {
+      const card = document.getElementById('airtel-invoice-card');
+      if (!card) return;
+
+      if (!summary || (!summary.has_airtel && !summary.has_settlement_report && (!summary.utrs || summary.utrs.length === 0))) {
+        card.style.display = 'none';
+        return;
+      }
+
+      currentAirtelSummary = summary;
+      card.style.display = 'block';
+
+      // UTR display
+      const utrEl = document.getElementById('airtel-utr-display');
+      if (utrEl) {
+        if (summary.utrs && summary.utrs.length > 0) {
+          utrEl.innerHTML = summary.utrs.map(u => `<span style="display:inline-block; background:#fae8ff; color:#701a75; padding:0.25rem 0.6rem; border-radius:6px; margin:0.15rem; border:1px solid #f0abfc;">${u}</span>`).join(' ');
+        } else {
+          utrEl.textContent = summary.utr_display || 'UTR Not Available';
+        }
+      }
+
+      // Net Amount Payable (CR)
+      const netCrEl = document.getElementById('airtel-net-cr-display');
+      if (netCrEl) {
+        netCrEl.textContent = formatCurrency(summary.net_amount_payable_cr || 0);
+      }
+
+      // Gross Input Amount & Count
+      const grossEl = document.getElementById('airtel-gross-display');
+      if (grossEl) {
+        grossEl.textContent = formatCurrency(summary.gross_amount || 0);
+      }
+      const countEl = document.getElementById('airtel-txn-count-display');
+      if (countEl) {
+        countEl.textContent = formatNumber(summary.transaction_count || 0);
+      }
+
+      // Batches Table
+      const tbody = document.getElementById('airtel-batches-tbody');
+      if (tbody) {
+        if (summary.batches && summary.batches.length > 0) {
+          tbody.innerHTML = summary.batches.map(b => `
+            <tr>
+              <td style="padding: 0.5rem 0.75rem;"><strong style="color: #701a75;">Batch ${b.batch_number}</strong></td>
+              <td style="padding: 0.5rem 0.75rem;"><span class="mono">${b.settlement_date || '--'}</span></td>
+              <td style="padding: 0.5rem 0.75rem;"><code class="mono" style="font-weight:700; color:#4a044e; background:#fdf4ff; padding:2px 6px; border-radius:4px; border:1px solid #f5d0fe;">${b.utr}</code></td>
+              <td style="padding: 0.5rem 0.75rem; color:#64748b; font-size:0.74rem;">${b.txn_time_range || 'Standard'}</td>
+              <td style="padding: 0.5rem 0.75rem; text-align: right;" class="mono">${formatNumber(b.count)}</td>
+              <td style="padding: 0.5rem 0.75rem; text-align: right; font-weight:700; color:#047857;" class="mono">${formatCurrency(b.total_net_credit)}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 1rem;">No settlement batches recorded. Upload Airtel Settlement Report to parse UTRs.</td></tr>`;
+        }
+      }
+
+      // Copyable Invoice Snippet
+      const snippetEl = document.getElementById('airtel-invoice-copy-snippet');
+      if (snippetEl) {
+        const utrStr = (summary.utrs && summary.utrs.length > 0) ? summary.utrs.join(' / ') : (summary.utr_display || 'N/A');
+        const netCrStr = formatCurrency(summary.net_amount_payable_cr || 0);
+        const dateStr = summary.settlement_date || 'N/A';
+        snippetEl.textContent = `Airtel Bank Settlement Invoice Summary:\n• Bank UTR Number(s): ${utrStr}\n• Total Net Amount Payable (CR): ${netCrStr}\n• Total Settled Txns: ${formatNumber(summary.transaction_count || 0)} (Gross: ${formatCurrency(summary.gross_amount || 0)})\n• Settlement Date(s): ${dateStr}\n• Settlement Batches: Batch 1 (~10:15 AM) & Batch 2 (~02:30 PM)`;
+      }
+    }
+
+    window.copyAirtelUTR = function() {
+      if (!currentAirtelSummary || !currentAirtelSummary.utrs || currentAirtelSummary.utrs.length === 0) {
+        alert('No UTR number available to copy.');
+        return;
+      }
+      const utrText = currentAirtelSummary.utrs.join(', ');
+      navigator.clipboard.writeText(utrText).then(() => {
+        alert(`Copied UTR Number(s): ${utrText}`);
+      });
+    };
+
+    window.copyAirtelInvoiceDetails = function() {
+      const snippetEl = document.getElementById('airtel-invoice-copy-snippet');
+      if (!snippetEl || !snippetEl.textContent.trim() || snippetEl.textContent.trim() === '--') {
+        alert('No Airtel invoice details available.');
+        return;
+      }
+      navigator.clipboard.writeText(snippetEl.textContent.trim()).then(() => {
+        alert('Copied Airtel Settlement & Invoice details to clipboard!');
+      });
+    };
 
     function renderMissingPgSection(payloads) {
       currentMissingPayloads = payloads || [];
@@ -4628,30 +4928,24 @@
       
       <form id="form-add-merchant" onsubmit="submitNewMerchant(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.15rem;">
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Display Name <span style="color: #ef4444;">*</span></label>
-          <input type="text" id="merchant-name-input" required placeholder="e.g., Apollo Hospitals, MedPlus, Reliance Retail" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Input File Prefix <span style="color: #ef4444;">*</span></label>
-            <input type="text" id="merchant-prefix-input" required placeholder="e.g. APOLLO_INPUTFILE" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none; font-family: monospace; font-weight: 600; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
-            <small style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">Preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">APOLLO_INPUTFILE(CASHFREE)_YYYY-MM-DD.xlsx</span></small>
-          </div>
-          <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Key (Slug)</label>
-            <input type="text" id="merchant-key-input" placeholder="e.g. apollo" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
-          </div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Display Name <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="merchant-name-input" required placeholder="e.g., Apollo Hospitals, MedPlus, Reliance Retail" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.45rem;">Settlement Cycle <span style="color: #ef4444;">*</span></label>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Input File Prefix <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="merchant-prefix-input" required placeholder="e.g. APOLLO_INPUTFILE" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none; font-family: monospace; font-weight: 700; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
+          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">APOLLO_INPUTFILE(CASHFREE)_YYYY-MM-DD.xlsx</span></small>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.45rem;">Settlement Cycle <span style="color: #ef4444;">*</span></label>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #f8fafc;" id="settle-type-single-label">
               <input type="radio" name="settlement_type" value="single" checked style="margin-top: 0.15rem;" onchange="updateSettlementTypeUI()" />
               <div>
                 <div style="font-weight: 700; font-size: 0.82rem; color: #0f172a;">Single Settlement</div>
-                <div style="font-size: 0.72rem; color: #64748b;">Standard full-day settlement (T+1)</div>
+                <div style="font-size: 0.72rem; color: #64748b;">Standard daily settlement (T+1)</div>
               </div>
             </label>
             <label style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; background: #f8fafc;" id="settle-type-split-label">
@@ -4661,23 +4955,6 @@
                 <div style="font-size: 0.72rem; color: #64748b;">12AM-12PM (T) &amp; 12PM-12AM (T+1)</div>
               </div>
             </label>
-          </div>
-        </div>
-
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant ID(s) in CMS / SMMS (Optional)</label>
-          <input type="text" id="merchant-mids-input" placeholder="e.g. 0000000000002199, 2199" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
-          <small style="display: block; font-size: 0.72rem; color: #64748b; margin-top: 0.25rem;">Used to auto-detect this merchant from uploaded reports</small>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">UPI Fee Rate (%)</label>
-            <input type="number" step="0.01" id="merchant-upi-rate" value="0.15" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
-          </div>
-          <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Credit Card Fee Rate (%)</label>
-            <input type="number" step="0.01" id="merchant-cc-rate" value="2.25" style="width: 100%; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none;" />
           </div>
         </div>
 

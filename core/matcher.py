@@ -84,13 +84,11 @@ def _is_adjustment_record(row: Dict[str, Any]) -> Tuple[bool, str]:
     net_raw = str(row.get("Network") or "").strip().lower()
     desc_raw = str(row.get("Transaction Description") or "").strip().lower()
 
-    if st_raw in ("3", "3.0") or "refund" in mode_raw or "refund" in desc_raw:
+    if st_raw in ("3", "3.0", "4", "4.0") or "refund" in mode_raw or "refund" in desc_raw or "reversal" in mode_raw:
         return True, "Refund"
-    elif st_raw in ("4", "4.0") or "chargeback" in mode_raw or "chargeback" in desc_raw:
-        return True, "Chargeback"
     elif st_raw in ("5", "5.0") or "dispute" in mode_raw or "dispute" in desc_raw:
         return True, "Dispute"
-    elif st_raw in ("6", "6.0") or "adjustment" in mode_raw or "adjustment" in net_raw or "adjustment" in desc_raw:
+    elif st_raw in ("6", "6.0") or "adjustment" in mode_raw or "adjustment" in net_raw or "adjustment" in desc_raw or "chargeback" in mode_raw or "chargeback" in desc_raw:
         return True, "Adjustment"
 
     return False, ""
