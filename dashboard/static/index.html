@@ -1661,10 +1661,29 @@
           <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
         </div>
 
+        <!-- Merchant Reconciliation Profile Selector -->
+        <div class="merchant-selector-bar" style="margin-top: 1.25rem; margin-bottom: 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 38px; height: 38px; border-radius: 8px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🏢</div>
+            <div>
+              <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a;">Merchant Reconciliation Profile</div>
+              <div style="font-size: 0.76rem; color: #64748b;">Select merchant profile or let Ops_Auto auto-detect from CMS records</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <select id="merchant-select" style="padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.82rem; background: #ffffff; color: #0f172a; cursor: pointer; outline: none;" onchange="onMerchantSelectChanged()">
+              <option value="auto">✨ Auto-Detect from Reports</option>
+              <option value="sbb">🏥 SBB Medicare (Intraday Split Settlement: 12AM-12PM &amp; 12PM-12AM)</option>
+              <option value="ccd">☕ Coffee Day / CCD (Daily Single Settlement)</option>
+            </select>
+            <span id="merchant-active-badge" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.74rem; padding: 0.35rem 0.65rem;">Auto-Detect</span>
+          </div>
+        </div>
+
         <!-- 5-Slot Verification Grid -->
         <div class="slots-header-wrap">
           <div class="slots-header-title">
-            <span>🎯</span> 5-Report Verification Slots &amp; Status
+            <span>🎯</span> Daily Report Upload Slots
           </div>
           <div id="slot-overall-pill" class="slot-status-badge badge-missing">0 / 5 Loaded</div>
         </div>
@@ -1675,7 +1694,7 @@
             <input type="file" id="slot-input-CMS" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('CMS', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-cms">Internal CMS</span>
+                <span class="slot-label slot-label-cms">Internal CMS (Mandatory)</span>
                 <span class="slot-status-badge badge-missing" id="slot-badge-CMS">⚠️ Missing</span>
               </div>
               <div class="slot-title">CMS Report</div>
@@ -1690,12 +1709,12 @@
             <input type="file" id="slot-input-SMMS" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('SMMS', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-smms">Settlement Master</span>
+                <span class="slot-label slot-label-smms">Settlement Master (Optional)</span>
                 <span class="slot-status-badge badge-missing" id="slot-badge-SMMS">⚠️ Missing</span>
               </div>
               <div class="slot-title">SMMS Settlement Report</div>
               <div class="slot-filename" id="slot-file-SMMS">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-SMMS">Drop file here or click</div>
+              <div class="slot-meta" id="slot-meta-SMMS">Drop file here (auto-synthesized if absent)</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-SMMS" style="display: none;" onclick="removeSlotFile('SMMS', event)" title="Remove file">×</button>
           </div>
@@ -1705,12 +1724,12 @@
             <input type="file" id="slot-input-CASHFREE" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('CASHFREE', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-cf">Payment Gateway</span>
+                <span class="slot-label slot-label-cf">Gateway (Batches 1 &amp; 2)</span>
                 <span class="slot-status-badge badge-missing" id="slot-badge-CASHFREE">⚠️ Missing</span>
               </div>
               <div class="slot-title">Cashfree Report</div>
               <div class="slot-filename" id="slot-file-CASHFREE">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-CASHFREE">Drop file here or click</div>
+              <div class="slot-meta" id="slot-meta-CASHFREE">Drop 12AM-12PM &amp; 12PM-12AM batches here</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-CASHFREE" style="display: none;" onclick="removeSlotFile('CASHFREE', event)" title="Remove file">×</button>
           </div>
@@ -1720,12 +1739,12 @@
             <input type="file" id="slot-input-EASEBUZZ" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('EASEBUZZ', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-eb">Payment Gateway</span>
+                <span class="slot-label slot-label-eb">Gateway (Optional)</span>
                 <span class="slot-status-badge badge-missing" id="slot-badge-EASEBUZZ">⚠️ Missing</span>
               </div>
               <div class="slot-title">Easebuzz Report</div>
               <div class="slot-filename" id="slot-file-EASEBUZZ">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-EASEBUZZ">Drop file here or click</div>
+              <div class="slot-meta" id="slot-meta-EASEBUZZ">Drop file if Easebuzz had volume</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-EASEBUZZ" style="display: none;" onclick="removeSlotFile('EASEBUZZ', event)" title="Remove file">×</button>
           </div>
@@ -1735,12 +1754,12 @@
             <input type="file" id="slot-input-AIRTEL" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('AIRTEL', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-air">Bank Partner</span>
+                <span class="slot-label slot-label-air" id="slot-label-airtel-tag">Bank Partner (Optional)</span>
                 <span class="slot-status-badge badge-missing" id="slot-badge-AIRTEL">⚠️ Missing</span>
               </div>
               <div class="slot-title">Airtel Bank Report</div>
               <div class="slot-filename" id="slot-file-AIRTEL">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-AIRTEL">Drop file here or click</div>
+              <div class="slot-meta" id="slot-meta-AIRTEL">CCD Coffee Day only (not used in SBB)</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-AIRTEL" style="display: none;" onclick="removeSlotFile('AIRTEL', event)" title="Remove file">×</button>
           </div>
@@ -2188,7 +2207,46 @@
         </div>
       </div>
 
-      <!-- Daily Operations Email Summary Card -->
+      <!-- Dedicated Adjustments, Refunds & Deductions Section (Status 3, 4, 5, 6) -->
+      <div class="card" id="adjustments-card" style="display: none; margin-bottom: 2rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem 1.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">⚖️</div>
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                Adjustments, Refunds &amp; Deductions (Status 3, 4, 5, 6)
+                <span id="adj-total-badge" class="badge badge-fail" style="font-size: 0.75rem;">0 Records</span>
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem;">Automated isolation of non-sale adjustments routed into dedicated sections of the settlement files (Status 3: Refunds, Status 4: Chargebacks, Status 5: Disputes, Status 6: System Adjustments)</p>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.78rem; padding: 0.35rem 0.65rem;">🔄 Refunds (3): <strong id="adj-refund-count">0</strong></span>
+            <span class="badge" style="background: #fffbeb; color: #b45309; font-size: 0.78rem; padding: 0.35rem 0.65rem;">⚠️ Chargebacks (4): <strong id="adj-cb-count">0</strong></span>
+            <span class="badge" style="background: #fef2f2; color: #b91c1c; font-size: 0.78rem; padding: 0.35rem 0.65rem;">❓ Disputes (5): <strong id="adj-dispute-count">0</strong></span>
+            <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-size: 0.78rem; padding: 0.35rem 0.65rem;">📉 Adjustments (6): <strong id="adj-adj-count">0</strong></span>
+            <span class="badge" style="background: #0f172a; color: #ffffff; font-size: 0.78rem; padding: 0.35rem 0.65rem;">💰 Value: <strong id="adj-total-amount">₹0.00</strong></span>
+          </div>
+        </div>
+
+        <div id="adj-table-wrap" style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.84rem;">
+            <thead>
+              <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; text-align: left;">
+                <th style="padding: 0.65rem 1rem;">Category</th>
+                <th style="padding: 0.65rem 1rem;">SwinkPay Transaction ID</th>
+                <th style="padding: 0.65rem 1rem;">RRN / Match Key</th>
+                <th style="padding: 0.65rem 1rem; text-align: right;">Amount</th>
+                <th style="padding: 0.65rem 1rem;">Status / Reason</th>
+                <th style="padding: 0.65rem 1rem;">Settlement Section</th>
+              </tr>
+            </thead>
+            <tbody id="adj-table-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
       <div class="email-summary-card" id="email-summary-card" style="display: none;">
         <div class="email-header">
           <div class="email-title-wrap">
@@ -2715,8 +2773,14 @@
 
     window.handleSingleSlotFile = async function(slot, file) {
       if (!file) return;
-      slotFiles[slot] = file;
-      slotMeta[slot] = { filename: file.name, file_size: file.size };
+      if (slotFiles[slot]) {
+        if (!auxiliaryFiles.some(f => f.name === file.name)) {
+          auxiliaryFiles.push(file);
+        }
+      } else {
+        slotFiles[slot] = file;
+        slotMeta[slot] = { filename: file.name, file_size: file.size };
+      }
       updateSlotsUI();
 
       try {
@@ -2731,6 +2795,38 @@
         // preserve fallback metadata
       }
       updateSlotsUI();
+    };
+
+    window.onMerchantSelectChanged = function() {
+      const select = document.getElementById('merchant-select');
+      const badge = document.getElementById('merchant-active-badge');
+      const airtelTag = document.getElementById('slot-label-airtel-tag');
+      const val = select ? select.value : 'auto';
+      if (val === 'sbb') {
+        if (badge) {
+          badge.textContent = '🏥 SBB Medicare';
+          badge.style.background = '#fef3c7';
+          badge.style.color = '#92400e';
+          badge.style.borderColor = '#fcd34d';
+        }
+        if (airtelTag) airtelTag.textContent = 'Not Used in SBB';
+      } else if (val === 'ccd') {
+        if (badge) {
+          badge.textContent = '☕ Coffee Day (CCD)';
+          badge.style.background = '#ecfdf5';
+          badge.style.color = '#065f46';
+          badge.style.borderColor = '#a7f3d0';
+        }
+        if (airtelTag) airtelTag.textContent = 'Bank Partner (Airtel)';
+      } else {
+        if (badge) {
+          badge.textContent = '✨ Auto-Detect';
+          badge.style.background = '#e0f2fe';
+          badge.style.color = '#0369a1';
+          badge.style.borderColor = '#bae6fd';
+        }
+        if (airtelTag) airtelTag.textContent = 'Bank Partner (Optional)';
+      }
     };
 
     // Prevent browser default open-file behavior when dragging anywhere on the page
@@ -2916,9 +3012,9 @@
       // Update Pill
       const overallPill = document.getElementById('slot-overall-pill');
       if (overallPill) {
-        if (filledCount === 5) {
+        if (slotFiles['CMS']) {
           overallPill.className = 'slot-status-badge badge-detected';
-          overallPill.textContent = '5 / 5 Ready';
+          overallPill.textContent = `${filledCount} Loaded (CMS Ready)`;
         } else {
           overallPill.className = 'slot-status-badge badge-missing';
           overallPill.textContent = `${filledCount} / 5 Loaded`;
@@ -2931,12 +3027,13 @@
       const auxContainer = document.getElementById('slot-auxiliary-container');
 
       if (statusBar && statusText) {
-        if (filledCount === 5) {
+        if (slotFiles['CMS']) {
           statusBar.className = 'slot-summary-bar slot-bar-ready';
-          statusText.innerHTML = '<strong>✅ All 5 Reports Ready:</strong> CMS, SMMS, Cashfree, Easebuzz, and Airtel Bank reports are loaded &amp; validated. Ready to run reconciliation!';
+          const totalFiles = filledCount + auxiliaryFiles.length;
+          statusText.innerHTML = `<strong>✅ Ready to Reconcile:</strong> CMS Report loaded (${totalFiles} file${totalFiles > 1 ? 's' : ''} active). Click <strong>🚀 Start Reconciliation</strong> below to proceed.`;
         } else {
           statusBar.className = 'slot-summary-bar slot-bar-warning';
-          statusText.innerHTML = `<strong>⚠️ ${missingSlots.length} Report(s) Missing:</strong> ${missingSlots.join(', ')}. Drop files into the master dropzone or onto individual slots above.`;
+          statusText.innerHTML = `<strong>⚠️ CMS Report Required:</strong> Upload your CMS Report to enable automated reconciliation. Other gateway files are optional.`;
         }
       }
 
@@ -2955,7 +3052,7 @@
       }
 
       // Action Buttons
-      if (filledCount > 0) {
+      if (slotFiles['CMS'] || filledCount > 0) {
         btnReconcile.style.display = 'inline-flex';
         btnClear.style.display = 'inline-flex';
       } else {
@@ -2999,6 +3096,11 @@
       const sDate = settlementDateInput.value.trim();
       if (sDate) {
         formData.append('settlement_date', sDate);
+      }
+
+      const mSelect = document.getElementById('merchant-select');
+      if (mSelect && mSelect.value && mSelect.value !== 'auto') {
+        formData.append('merchant_key', mSelect.value);
       }
 
       document.getElementById('loading-title').textContent = 'Processing & Reconciling Transactions...';
@@ -3090,6 +3192,12 @@
       // 1.7. Multi-Day Date Filter Handling
       renderDateFilter(data.dates || (data.xcd_status && data.xcd_status.dates) || []);
 
+      // 1.8. Merchant Identification & Badge
+      renderMerchantBadge(data.merchant);
+
+      // 1.9. Adjustments, Refunds & Deductions (Status 3, 4, 5, 6)
+      renderAdjustmentsSection(data.adjustments);
+
       // 2. Controlled XCD Section Handling
       renderXcdSection(data.xcd_status || {});
 
@@ -3163,6 +3271,83 @@
 
       resultsSection.style.display = 'block';
       resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderMerchantBadge(merchantInfo) {
+      if (!merchantInfo) return;
+      const selectEl = document.getElementById('merchant-select');
+      const badgeEl = document.getElementById('merchant-active-badge');
+      if (selectEl && merchantInfo.key) {
+        selectEl.value = merchantInfo.key;
+      }
+      if (badgeEl && merchantInfo.display_name) {
+        if (merchantInfo.has_split_settlement) {
+          badgeEl.textContent = `${merchantInfo.display_name} (2-Batch Split)`;
+          badgeEl.style.background = '#fef3c7';
+          badgeEl.style.color = '#92400e';
+          badgeEl.style.borderColor = '#fcd34d';
+        } else {
+          badgeEl.textContent = merchantInfo.display_name;
+          badgeEl.style.background = '#e0f2fe';
+          badgeEl.style.color = '#0369a1';
+          badgeEl.style.borderColor = '#bae6fd';
+        }
+      }
+    }
+
+    function renderAdjustmentsSection(adjData) {
+      const card = document.getElementById('adjustments-card');
+      if (!card) return;
+      if (!adjData || (!adjData.count && (!adjData.records || adjData.records.length === 0))) {
+        card.style.display = 'none';
+        return;
+      }
+
+      card.style.display = 'block';
+      const summary = adjData.summary || {};
+      const badge = document.getElementById('adj-total-badge');
+      if (badge) badge.textContent = `${adjData.count || adjData.records.length} Records`;
+
+      const elRef = document.getElementById('adj-refund-count');
+      if (elRef) elRef.textContent = summary.refund_count || 0;
+      const elCb = document.getElementById('adj-cb-count');
+      if (elCb) elCb.textContent = summary.chargeback_count || 0;
+      const elDisp = document.getElementById('adj-dispute-count');
+      if (elDisp) elDisp.textContent = summary.dispute_count || 0;
+      const elAdj = document.getElementById('adj-adj-count');
+      if (elAdj) elAdj.textContent = summary.adjustment_count || 0;
+      const elAmt = document.getElementById('adj-total-amount');
+      if (elAmt) elAmt.textContent = formatCurrency(summary.total_amount || 0);
+
+      const tbody = document.getElementById('adj-table-tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        (adjData.records || []).forEach(r => {
+          const tr = document.createElement('tr');
+          const cat = r['Adjustment Category'] || r['Reconciliation Status'] || 'Adjustment';
+          let catBadgeStyle = 'background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe;';
+          if (cat === 'Refund') catBadgeStyle = 'background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;';
+          else if (cat === 'Chargeback') catBadgeStyle = 'background:#fffbeb; color:#b45309; border:1px solid #fde68a;';
+          else if (cat === 'Dispute') catBadgeStyle = 'background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;';
+
+          const spId = r['SwinkPay Transaction ID'] || r['SwinkPay Txn ID'] || '--';
+          const matchKey = r['RRN/UTR'] || r['Match Key'] || '--';
+          const rawAmt = r['Amount'] || r['Transaction Amount'] || 0;
+          const amtVal = Math.abs(parseFloat(rawAmt) || 0);
+          const reason = r['Transaction Description'] || r['Exception Reason'] || r['Reconciliation Status'] || '--';
+          const targetSection = cat === 'Refund' ? 'REFUND TRANSACTIONS' : 'CHARGEBACK/ADJUSTMENT TRANSACTIONS';
+
+          tr.innerHTML = `
+            <td style="padding: 0.65rem 1rem;"><span class="badge" style="${catBadgeStyle} font-size:0.75rem; font-weight:700;">${cat}</span></td>
+            <td style="padding: 0.65rem 1rem;"><strong class="mono" style="font-size:0.8rem; color:#0f172a;">${spId}</strong></td>
+            <td style="padding: 0.65rem 1rem;"><code class="mono" style="font-size:0.78rem;">${matchKey}</code></td>
+            <td style="padding: 0.65rem 1rem; text-align: right;"><span class="mono" style="font-weight:700; color:#dc2626;">-${formatCurrency(amtVal)}</span></td>
+            <td style="padding: 0.65rem 1rem;"><span style="font-size:0.8rem; color:#475569;">${reason}</span></td>
+            <td style="padding: 0.65rem 1rem;"><span class="badge" style="background:#f1f5f9; color:#334155; font-size:0.72rem; border:1px solid #e2e8f0;">${targetSection}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
     }
 
     function renderMissingPgSection(payloads) {
@@ -3642,45 +3827,236 @@
       xcdSettleDateBadge.textContent = `Settlement Date: ${settleDate}`;
 
       const files = xcdStatus.files || {};
-      
-      // Cashfree
-      const cfInfo = files.cashfree || {};
-      const cfCount = cfInfo.count !== undefined ? cfInfo.count : (currentPartnerSubtotals?.CashFree?.matched_count || currentPartnerSubtotals?.CashFree?.count || 0);
-      const cfGross = cfInfo.gross_amount !== undefined ? cfInfo.gross_amount : (currentPartnerSubtotals?.CashFree?.gross_amount || currentPartnerSubtotals?.CashFree?.matched_amount || 0);
-      const cfNetVal = cfInfo.net_amount !== undefined ? cfInfo.net_amount : (currentPartnerSubtotals?.CashFree?.net_amount || 0);
-      cfXcdCount.textContent = formatNumber(cfCount);
-      cfXcdAmount.textContent = formatCurrency(cfGross);
-      if (cfXcdNet) cfXcdNet.textContent = formatCurrency(cfNetVal);
-      btnDownloadCf.href = cfInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/cashfree` : '#');
-      btnDownloadCf.download = cfInfo.filename || 'XCD_Cashfree.xlsx';
-      btnDownloadCf.className = 'btn btn-primary xcd-btn';
-      btnDownloadCf.innerHTML = '📥 Download Cashfree Input File (.xlsx)';
+      const grid = document.getElementById('xcd-cards-grid');
+      const isSplit = !!(files.cashfree_batch1 && files.cashfree_batch2);
 
-      // Easebuzz
-      const ebInfo = files.easebuzz || {};
-      const ebCount = ebInfo.count !== undefined ? ebInfo.count : (currentPartnerSubtotals?.EaseBuzz?.matched_count || currentPartnerSubtotals?.EaseBuzz?.count || 0);
-      const ebGross = ebInfo.gross_amount !== undefined ? ebInfo.gross_amount : (currentPartnerSubtotals?.EaseBuzz?.gross_amount || currentPartnerSubtotals?.EaseBuzz?.matched_amount || 0);
-      const ebNetVal = ebInfo.net_amount !== undefined ? ebInfo.net_amount : (currentPartnerSubtotals?.EaseBuzz?.net_amount || 0);
-      ebXcdCount.textContent = formatNumber(ebCount);
-      ebXcdAmount.textContent = formatCurrency(ebGross);
-      if (ebXcdNet) ebXcdNet.textContent = formatCurrency(ebNetVal);
-      btnDownloadEb.href = ebInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/easebuzz` : '#');
-      btnDownloadEb.download = ebInfo.filename || 'XCD_Easebuzz.xlsx';
-      btnDownloadEb.className = 'btn btn-primary xcd-btn';
-      btnDownloadEb.innerHTML = '📥 Download Easebuzz Input File (.xlsx)';
+      if (grid && isSplit) {
+        // SBB Medicare 2-batch intraday split settlement
+        const b1 = files.cashfree_batch1 || {};
+        const b2 = files.cashfree_batch2 || {};
+        const comb = files.cashfree || {};
+        const eb = files.easebuzz || {};
 
-      // Airtel
-      const airInfo = files.airtel || {};
-      const airCount = airInfo.count !== undefined ? airInfo.count : (currentPartnerSubtotals?.['Airtel Bank']?.matched_count || currentPartnerSubtotals?.['Airtel Bank']?.count || 0);
-      const airGross = airInfo.gross_amount !== undefined ? airInfo.gross_amount : (currentPartnerSubtotals?.['Airtel Bank']?.gross_amount || currentPartnerSubtotals?.['Airtel Bank']?.matched_amount || 0);
-      const airNetVal = airInfo.net_amount !== undefined ? airInfo.net_amount : (currentPartnerSubtotals?.['Airtel Bank']?.net_amount || 0);
-      airXcdCount.textContent = formatNumber(airCount);
-      airXcdAmount.textContent = formatCurrency(airGross);
-      if (airXcdNet) airXcdNet.textContent = formatCurrency(airNetVal);
-      btnDownloadAir.href = airInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/airtel` : '#');
-      btnDownloadAir.download = airInfo.filename || 'XCD_Airtel.xlsx';
-      btnDownloadAir.className = 'btn btn-primary xcd-btn';
-      btnDownloadAir.innerHTML = '📥 Download Airtel Input File (.xlsx)';
+        grid.innerHTML = `
+          <!-- Batch 1 Card -->
+          <div class="xcd-card" id="card-cf-b1" style="border-top: 4px solid #1a73e8;">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-cf">CF_SoftPOS</span>
+                <span class="badge" style="background:#eff6ff; color:#1d4ed8; font-weight:700;">🌅 Batch 1 (12 AM – 12 PM)</span>
+              </div>
+              <h4 style="margin: 0.5rem 0 0.2rem;">SBB Cashfree (Batch 1)</h4>
+              <p style="font-size: 0.76rem; color: #059669; font-weight: 700; margin-bottom: 0.5rem;">📅 Settles: Same Day (${b1.settlement_date || settleDate})</p>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(b1.count || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(b1.gross_amount || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settled</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(b1.net_amount || 0)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <a href="${b1.download_url || '#'}" class="btn btn-primary xcd-btn" download="${b1.filename || 'SBB_Cashfree_Batch1.xlsx'}">📥 Download Batch 1 (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Batch 2 Card -->
+          <div class="xcd-card" id="card-cf-b2" style="border-top: 4px solid #d97706;">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-cf">CF_SoftPOS</span>
+                <span class="badge" style="background:#fffbeb; color:#b45309; font-weight:700;">🌇 Batch 2 (12 PM – 12 AM)</span>
+              </div>
+              <h4 style="margin: 0.5rem 0 0.2rem;">SBB Cashfree (Batch 2)</h4>
+              <p style="font-size: 0.76rem; color: #d97706; font-weight: 700; margin-bottom: 0.5rem;">📅 Settles: Next Day (${b2.settlement_date || 'T+1'})</p>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(b2.count || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(b2.gross_amount || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settled</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(b2.net_amount || 0)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <a href="${b2.download_url || '#'}" class="btn btn-primary xcd-btn" download="${b2.filename || 'SBB_Cashfree_Batch2.xlsx'}">📥 Download Batch 2 (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Combined Full Day Card -->
+          <div class="xcd-card" id="card-cf-comb" style="border-top: 4px solid #059669;">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-cf">CF_SoftPOS</span>
+                <span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700;">Full Day (Dynamic Dates)</span>
+              </div>
+              <h4 style="margin: 0.5rem 0 0.2rem;">SBB Cashfree Full Day</h4>
+              <p style="font-size: 0.76rem; color: #64748b; font-weight: 500; margin-bottom: 0.5rem;">Row-level settlement dates for Batches 1 &amp; 2</p>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Total Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(comb.count || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(comb.gross_amount || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settled</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(comb.net_amount || 0)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <a href="${comb.download_url || '#'}" class="btn btn-primary xcd-btn" download="${comb.filename || 'SBB_Cashfree_Combined.xlsx'}">📥 Download Full Day (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Easebuzz Card -->
+          <div class="xcd-card" id="card-eb" style="border-top: 4px solid #b45309;">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-eb">EaseBuzz</span>
+                <span class="xcd-source-pill">CMS_EB_Matched</span>
+              </div>
+              <h4 style="margin: 0.5rem 0 0.2rem;">SBB Easebuzz Input File</h4>
+              <p style="font-size: 0.76rem; color: #64748b; margin-bottom: 0.5rem;">Settlement Date: ${eb.settlement_date || settleDate}</p>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(eb.count || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(eb.gross_amount || 0)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settled</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(eb.net_amount || 0)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <a href="${eb.download_url || '#'}" class="btn btn-primary xcd-btn" download="${eb.filename || 'SBB_Easebuzz.xlsx'}">📥 Download Easebuzz (.xlsx)</a>
+            </div>
+          </div>
+        `;
+      } else if (grid) {
+        // Standard Single Settlement (CCD / Coffee Day)
+        const cfInfo = files.cashfree || {};
+        const cfCount = cfInfo.count !== undefined ? cfInfo.count : (currentPartnerSubtotals?.CashFree?.matched_count || currentPartnerSubtotals?.CashFree?.count || 0);
+        const cfGross = cfInfo.gross_amount !== undefined ? cfInfo.gross_amount : (currentPartnerSubtotals?.CashFree?.gross_amount || currentPartnerSubtotals?.CashFree?.matched_amount || 0);
+        const cfNetVal = cfInfo.net_amount !== undefined ? cfInfo.net_amount : (currentPartnerSubtotals?.CashFree?.net_amount || 0);
+
+        const ebInfo = files.easebuzz || {};
+        const ebCount = ebInfo.count !== undefined ? ebInfo.count : (currentPartnerSubtotals?.EaseBuzz?.matched_count || currentPartnerSubtotals?.EaseBuzz?.count || 0);
+        const ebGross = ebInfo.gross_amount !== undefined ? ebInfo.gross_amount : (currentPartnerSubtotals?.EaseBuzz?.gross_amount || currentPartnerSubtotals?.EaseBuzz?.matched_amount || 0);
+        const ebNetVal = ebInfo.net_amount !== undefined ? ebInfo.net_amount : (currentPartnerSubtotals?.EaseBuzz?.net_amount || 0);
+
+        const airInfo = files.airtel || {};
+        const airCount = airInfo.count !== undefined ? airInfo.count : (currentPartnerSubtotals?.['Airtel Bank']?.matched_count || currentPartnerSubtotals?.['Airtel Bank']?.count || 0);
+        const airGross = airInfo.gross_amount !== undefined ? airInfo.gross_amount : (currentPartnerSubtotals?.['Airtel Bank']?.gross_amount || currentPartnerSubtotals?.['Airtel Bank']?.matched_amount || 0);
+        const airNetVal = airInfo.net_amount !== undefined ? airInfo.net_amount : (currentPartnerSubtotals?.['Airtel Bank']?.net_amount || 0);
+
+        grid.innerHTML = `
+          <!-- Cashfree Card -->
+          <div class="xcd-card" id="card-cf">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-cf">CashFree</span>
+                <span class="xcd-source-pill">CMS_CF_Matched</span>
+              </div>
+              <h4>XCD Input file (Cashfree)</h4>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(cfCount)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(cfGross)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settlement</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(cfNetVal)}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a href="${cfInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/cashfree` : '#')}" class="btn btn-primary xcd-btn" download="${cfInfo.filename || 'XCD_Cashfree.xlsx'}">📥 Download Cashfree XCD (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Easebuzz Card -->
+          <div class="xcd-card" id="card-eb">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-eb">EaseBuzz</span>
+                <span class="xcd-source-pill">CMS_EB_Matched</span>
+              </div>
+              <h4>XCD Input file (Easebuzz)</h4>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(ebCount)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(ebGross)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settlement</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(ebNetVal)}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a href="${ebInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/easebuzz` : '#')}" class="btn btn-primary xcd-btn" download="${ebInfo.filename || 'XCD_Easebuzz.xlsx'}">📥 Download Easebuzz XCD (.xlsx)</a>
+            </div>
+          </div>
+
+          <!-- Airtel Card -->
+          <div class="xcd-card" id="card-air">
+            <div>
+              <div class="xcd-card-top">
+                <span class="xcd-partner-tag tag-air">Airtel Bank</span>
+                <span class="xcd-source-pill">CMS_Air_Matched</span>
+              </div>
+              <h4>XCD Input file (Airtel)</h4>
+              <div class="xcd-stats">
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Matched Count</span>
+                  <span class="xcd-stat-val mono">${formatNumber(airCount)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Txn Amount</span>
+                  <span class="xcd-stat-val mono">${formatCurrency(airGross)}</span>
+                </div>
+                <div class="xcd-stat">
+                  <span class="xcd-stat-lbl">Net Settlement</span>
+                  <span class="xcd-stat-val mono" style="color: #059669;">${formatCurrency(airNetVal)}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <a href="${airInfo.download_url || (currentSessionId ? `/api/download-xcd/${currentSessionId}/airtel` : '#')}" class="btn btn-primary xcd-btn" download="${airInfo.filename || 'XCD_Airtel.xlsx'}">📥 Download Airtel XCD (.xlsx)</a>
+            </div>
+          </div>
+        `;
+      }
 
       if (xcdStatus.all_clear) {
         // Strict All-Clear Pass

@@ -77,6 +77,25 @@ def _is_key_matched(matched_set: Set[str], key: str) -> bool:
     return False
 
 
+def _is_adjustment_record(row: Dict[str, Any]) -> Tuple[bool, str]:
+    """Detects if a transaction is an adjustment, refund, chargeback, or dispute (Status 3, 4, 5, 6)."""
+    st_raw = str(row.get("Transaction Status") or "").strip()
+    mode_raw = str(row.get("Mode") or "").strip().lower()
+    net_raw = str(row.get("Network") or "").strip().lower()
+    desc_raw = str(row.get("Transaction Description") or "").strip().lower()
+
+    if st_raw in ("3", "3.0") or "refund" in mode_raw or "refund" in desc_raw:
+        return True, "Refund"
+    elif st_raw in ("4", "4.0") or "chargeback" in mode_raw or "chargeback" in desc_raw:
+        return True, "Chargeback"
+    elif st_raw in ("5", "5.0") or "dispute" in mode_raw or "dispute" in desc_raw:
+        return True, "Dispute"
+    elif st_raw in ("6", "6.0") or "adjustment" in mode_raw or "adjustment" in net_raw or "adjustment" in desc_raw:
+        return True, "Adjustment"
+
+    return False, ""
+
+
 class ReconciliationEngine:
     def __init__(self, tolerance: float = 0.01):
         self.tolerance = tolerance
@@ -103,6 +122,7 @@ class ReconciliationEngine:
         self.unmatched_airtel: List[Dict[str, Any]] = []
 
         self.failed_or_reversed: List[Dict[str, Any]] = []
+        self.adjustments: List[Dict[str, Any]] = []
         self.duplicates: List[Dict[str, Any]] = []
         self.exceptions: List[Dict[str, Any]] = []
         self.network_changes: List[Dict[str, str]] = []
@@ -308,7 +328,11 @@ class ReconciliationEngine:
 
             # Check if Failed, Reversed, or other non-success status (3, 4, 5, 6)
             if cms_status != "Success" or smms_status != "Success":
-                non_success_st = cms_status if cms_status != "Success" else smms_status
+                is_adj, adj_cat = _is_adjustment_record(cms_r)
+                if not is_adj:
+                    is_adj, adj_cat = _is_adjustment_record(smms_r)
+
+                non_success_st = adj_cat if is_adj else (cms_status if cms_status != "Success" else smms_status)
                 entry = dict(cms_r)
                 entry.update({
                     "Source System": "CMS/SMMS",
@@ -320,7 +344,8 @@ class ReconciliationEngine:
                     "CMS Status": cms_status,
                     "Partner Status": smms_status,
                     "Reconciliation Status": non_success_st,
-                    "Exception Reason": f"Transaction not successful in source (CMS: {cms_status}, SMMS: {smms_status})",
+                    "Adjustment Category": adj_cat if is_adj else "",
+                    "Exception Reason": (f"{adj_cat}: {cms_r.get('Transaction Description') or 'Adjustment/Deduction'}" if is_adj else f"Transaction not successful in source (CMS: {cms_status}, SMMS: {smms_status})"),
                     "Settlement UTR": smms_r.get("Settlement UTR"),
                     "Settlement Date": smms_r.get("Settlement Date & Time"),
                     "Settlement Amount": clean_amount(smms_r.get("Net Amount")),
@@ -332,6 +357,8 @@ class ReconciliationEngine:
                     _record_matched_key(handled_failed_keys, smms_rrn)
                 if smms_sp_id:
                     _record_matched_key(handled_failed_keys, smms_sp_id)
+                if is_adj:
+                    self.adjustments.append(entry)
                 self.failed_or_reversed.append(entry)
                 continue
 
@@ -625,6 +652,7 @@ class ReconciliationEngine:
                             _record_matched_key(handled_failed_keys, crrn)
                         if csp:
                             _record_matched_key(handled_failed_keys, csp)
+                        is_adj, adj_cat = _is_adjustment_record(cms_r)
                         entry = dict(cms_r)
                         entry.update({
                             "Source System": "CMS",
@@ -635,10 +663,13 @@ class ReconciliationEngine:
                             "Amount Difference": None,
                             "CMS Status": c_status,
                             "Partner Status": "",
-                            "Reconciliation Status": c_status,
-                            "Exception Reason": "Failed or reversed CMS transaction without SMMS record",
+                            "Reconciliation Status": adj_cat if is_adj else c_status,
+                            "Adjustment Category": adj_cat if is_adj else "",
+                            "Exception Reason": (f"{adj_cat}: {cms_r.get('Transaction Description') or 'CMS Adjustment'}" if is_adj else "Failed or reversed CMS transaction without SMMS record"),
                             "Settlement Details": ""
                         })
+                        if is_adj:
+                            self.adjustments.append(entry)
                         self.failed_or_reversed.append(entry)
                 else:
                     entry = dict(cms_r)

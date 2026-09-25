@@ -171,3 +171,58 @@ def read_report(file_path: str) -> RawReport:
             return read_csv_report(file_path)
         except Exception:
             return read_excel_report(file_path)
+
+
+def read_all_reports_from_file(file_path: str) -> List[RawReport]:
+    """Reads a file and returns all detected reports (extracts multiple sheets if present)."""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Source file not found: {file_path}")
+
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext not in ('.xlsx', '.xls', '.xlsm'):
+        return [read_report(file_path)]
+
+    results: List[RawReport] = []
+    try:
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=False)
+        for sname in wb.sheetnames:
+            ws = wb[sname]
+            cand_matrix = [list(r) for r in ws.iter_rows(values_only=True)]
+            if not cand_matrix:
+                continue
+            cand_type, cand_idx, cand_headers = detect_report_type(cand_matrix[:15])
+            if cand_type != ReportType.UNKNOWN:
+                try:
+                    validate_report_headers(cand_type, cand_headers, f"{file_path} [{sname}]")
+                    records = []
+                    for r_idx in range(cand_idx + 1, len(cand_matrix)):
+                        row = cand_matrix[r_idx]
+                        if not any(c is not None and str(c).strip() != '' for c in row):
+                            continue
+                        first_c = str(row[0] or '').strip().lower()
+                        if first_c.startswith('report generated on') or first_c.startswith('total:'):
+                            continue
+                        rec = {}
+                        for c_idx, h in enumerate(cand_headers):
+                            val = row[c_idx] if c_idx < len(row) else None
+                            rec[h] = val
+                        records.append(rec)
+                    results.append(RawReport(
+                        file_path=file_path,
+                        report_type=cand_type,
+                        headers=cand_headers,
+                        header_row_idx=cand_idx,
+                        records=records,
+                        raw_matrix=cand_matrix
+                    ))
+                except Exception:
+                    pass
+        wb.close()
+    except Exception:
+        pass
+
+    if results:
+        return results
+
+    return [read_report(file_path)]
+

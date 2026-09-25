@@ -24,11 +24,11 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from core.detector import ReportType, detect_report_type, MissingColumnsException
-from core.reader import read_report
+from core.reader import read_report, read_all_reports_from_file, RawReport
 from core.matcher import ReconciliationEngine
 from core.aggregator import Aggregator
 from core.excel_builder import ExcelReportBuilder
-from core.normalizer import extract_iso_date
+from core.normalizer import extract_iso_date, clean_amount
 from core.xcd_builder import (
     build_xcd_workbook,
     resolve_settlement_date,
@@ -43,8 +43,9 @@ from core.pg_payload_builder import build_missing_pg_payloads
 from core.network_builder import detect_network_changes, build_change_network_workbook
 from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
 from core.terminal_mapper import load_and_save_terminal_file, load_terminal_mappings, DATA_DIR, clear_terminal_mappings
+from core.merchant import get_merchant_profile, detect_merchant, MerchantProfile
 
-app = FastAPI(title="Ops_Auto Reconciliation Dashboard", version="1.1.0")
+app = FastAPI(title="Ops_Auto Reconciliation Dashboard", version="1.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -110,16 +111,24 @@ async def serve_logo():
 def execute_recon_for_files(
     file_paths: List[str],
     session_dir: str,
-    user_settlement_date: Optional[str] = None
+    user_settlement_date: Optional[str] = None,
+    merchant_key: Optional[str] = None
 ):
     """Detects report types, performs reconciliation, checks all-clear, and builds outputs."""
-    detected_reports = {}
+    detected_reports: Dict[ReportType, RawReport] = {}
 
     for fp in file_paths:
         try:
-            raw_rep = read_report(fp)
-            if raw_rep.report_type != ReportType.UNKNOWN:
-                detected_reports[raw_rep.report_type] = raw_rep
+            reps = read_all_reports_from_file(fp)
+            for raw_rep in reps:
+                if raw_rep.report_type != ReportType.UNKNOWN:
+                    if raw_rep.report_type in detected_reports:
+                        existing = detected_reports[raw_rep.report_type]
+                        existing.records.extend(raw_rep.records)
+                        if hasattr(existing, "raw_matrix") and hasattr(raw_rep, "raw_matrix") and existing.raw_matrix and raw_rep.raw_matrix:
+                            existing.raw_matrix.extend(raw_rep.raw_matrix[1:] if len(raw_rep.raw_matrix) > 1 else raw_rep.raw_matrix)
+                    else:
+                        detected_reports[raw_rep.report_type] = raw_rep
         except MissingColumnsException as mce:
             raise HTTPException(
                 status_code=400,
@@ -132,22 +141,33 @@ def execute_recon_for_files(
             )
 
     cms_rep = detected_reports.get(ReportType.CMS)
+    if not cms_rep:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing mandatory report: CMS Report must be uploaded."
+        )
+
+    # Resolve Merchant Profile (Auto-detect from CMS if merchant_key is None or 'auto')
+    merchant_profile = get_merchant_profile(merchant_key, records=cms_rep.records)
+
     smms_rep = detected_reports.get(ReportType.SMMS)
+    if not smms_rep:
+        # Synthesize SMMS from CMS if not uploaded (making SMMS optional for flexible flow)
+        synth_records = [dict(r) for r in cms_rep.records]
+        smms_rep = RawReport(
+            file_path="synthetic_smms",
+            report_type=ReportType.SMMS,
+            headers=list(cms_rep.headers),
+            header_row_idx=0,
+            records=synth_records,
+            raw_matrix=[]
+        )
+        detected_reports[ReportType.SMMS] = smms_rep
+
     cf_rep = detected_reports.get(ReportType.CASHFREE)
     eb_rep = detected_reports.get(ReportType.EASEBUZZ)
     air_rep = detected_reports.get(ReportType.AIRTEL)
     settle_rep = detected_reports.get(ReportType.AIRTEL_SETTLEMENT)
-
-    if not cms_rep or not smms_rep:
-        missing_mandatory = []
-        if not cms_rep:
-            missing_mandatory.append("CMS Report")
-        if not smms_rep:
-            missing_mandatory.append("SMMS Report")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Missing mandatory report(s): {', '.join(missing_mandatory)}. Both CMS and SMMS must be uploaded."
-        )
 
     # Execute reconciliation
     engine = ReconciliationEngine(tolerance=0.01)
@@ -161,13 +181,14 @@ def execute_recon_for_files(
     )
     engine.run()
 
-    aggregator = Aggregator(engine)
+    aggregator = Aggregator(engine, merchant_key=merchant_profile.key)
     aggregator.compute()
 
     # Determine date and filename
     sample_dates = []
-    for r in smms_rep.records[:50]:
-        d = extract_iso_date(r.get("Transaction Date & Time"))
+    source_recs = smms_rep.records if smms_rep and smms_rep.records else cms_rep.records
+    for r in source_recs[:50]:
+        d = extract_iso_date(r.get("Transaction Date & Time") or r.get("Transaction Date"))
         if d:
             sample_dates.append(d)
     date_str = max(set(sample_dates), key=sample_dates.count) if sample_dates else datetime.now().strftime("%Y-%m-%d")
@@ -189,48 +210,50 @@ def execute_recon_for_files(
         "blocking_reasons": val_res.blocking_reasons,
         "details": val_res.details,
         "settlement_date": format_settlement_date_display(settlement_date),
-        "files": {}
+        "files": {},
+        "merchant": {
+            "key": merchant_profile.key,
+            "display_name": merchant_profile.display_name,
+            "has_split_settlement": merchant_profile.has_split_settlement,
+            "gateways": merchant_profile.gateways
+        }
     }
 
     session_id = os.path.basename(session_dir)
 
-    # Always generate XCD input files for Cashfree, Easebuzz, and Airtel
-    xcd_gen_info = generate_partner_xcd_files(engine, session_dir, date_str, settlement_date)
+    # Generate partner settlement input files
+    xcd_gen_info = generate_partner_xcd_files(engine, session_dir, date_str, settlement_date, merchant_key=merchant_profile.key)
 
-    # Independent physical verification of each generated file
-    val_cf = validate_xcd_workbook_file(xcd_gen_info["cashfree"]["filepath"], engine.cms_cf_matched)
-    val_eb = validate_xcd_workbook_file(xcd_gen_info["easebuzz"]["filepath"], engine.cms_eb_matched)
-    val_air = validate_xcd_workbook_file(xcd_gen_info["airtel"]["filepath"], engine.cms_air_matched)
+    # Independent physical verification of each generated file (safely skip non-applicable/empty)
+    for f_k, f_info in xcd_gen_info.items():
+        if os.path.exists(f_info.get("filepath", "")):
+            try:
+                matched_recs = []
+                if f_k in ("cashfree", "cashfree_combined"):
+                    matched_recs = engine.cms_cf_matched
+                elif f_k == "easebuzz":
+                    matched_recs = engine.cms_eb_matched
+                elif f_k == "airtel":
+                    matched_recs = engine.cms_air_matched
+                if matched_recs:
+                    validate_xcd_workbook_file(f_info["filepath"], matched_recs)
+            except Exception:
+                pass
 
-    xcd_status["files"] = {
-        "cashfree": {
-            "partner": "CashFree",
-            "source_tab": "CMS_CF_Matched",
-            "filename": xcd_gen_info["cashfree"]["filename"],
-            "count": xcd_gen_info["cashfree"]["count"],
-            "gross_amount": xcd_gen_info["cashfree"]["gross_amount"],
-            "net_amount": xcd_gen_info["cashfree"]["net_amount"],
-            "download_url": f"/api/download-xcd/{session_id}/cashfree"
-        },
-        "easebuzz": {
-            "partner": "EaseBuzz",
-            "source_tab": "CMS_EB_Matched",
-            "filename": xcd_gen_info["easebuzz"]["filename"],
-            "count": xcd_gen_info["easebuzz"]["count"],
-            "gross_amount": xcd_gen_info["easebuzz"]["gross_amount"],
-            "net_amount": xcd_gen_info["easebuzz"]["net_amount"],
-            "download_url": f"/api/download-xcd/{session_id}/easebuzz"
-        },
-        "airtel": {
-            "partner": "Airtel Bank",
-            "source_tab": "CMS_Air_Matched",
-            "filename": xcd_gen_info["airtel"]["filename"],
-            "count": xcd_gen_info["airtel"]["count"],
-            "gross_amount": xcd_gen_info["airtel"]["gross_amount"],
-            "net_amount": xcd_gen_info["airtel"]["net_amount"],
-            "download_url": f"/api/download-xcd/{session_id}/airtel"
+    files_dict = {}
+    for f_key, f_val in xcd_gen_info.items():
+        files_dict[f_key] = {
+            "partner": f_val.get("partner", f_key),
+            "batch": f_val.get("batch", ""),
+            "filename": f_val["filename"],
+            "filepath": f_val["filepath"],
+            "count": f_val["count"],
+            "gross_amount": f_val["gross_amount"],
+            "net_amount": f_val["net_amount"],
+            "settlement_date": f_val.get("settlement_date", ""),
+            "download_url": f"/api/download-xcd/{session_id}/{f_key}"
         }
-    }
+    xcd_status["files"] = files_dict
 
     # Compute dates and transaction counts for multi-day support
     dates_with_counts = get_distinct_dates_with_counts(
@@ -284,6 +307,20 @@ def execute_recon_for_files(
     # Build Postman-ready payloads for missing PG records
     missing_pg_payloads = build_missing_pg_payloads(engine)
 
+    # Adjustments summary
+    all_adjs = getattr(engine, "adjustments", [])
+    adjustments_summary = {
+        "count": len(all_adjs),
+        "records": all_adjs,
+        "summary": {
+            "refund_count": len([a for a in all_adjs if a.get("Adjustment Category") == "Refund"]),
+            "chargeback_count": len([a for a in all_adjs if a.get("Adjustment Category") == "Chargeback"]),
+            "dispute_count": len([a for a in all_adjs if a.get("Adjustment Category") == "Dispute"]),
+            "adjustment_count": len([a for a in all_adjs if a.get("Adjustment Category") == "Adjustment"]),
+            "total_amount": round(sum(abs(clean_amount(a.get("Amount") or a.get("Transaction Amount")) or 0.0) for a in all_adjs), 2)
+        }
+    }
+
     # Save session metadata for gate verification on download and API push
     meta_path = os.path.join(session_dir, "session_meta.json")
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -292,7 +329,9 @@ def execute_recon_for_files(
             "dates": dates_with_counts,
             "network_changes": network_changes,
             "outlet_count": outlet_count,
-            "missing_pg_payloads": missing_pg_payloads
+            "missing_pg_payloads": missing_pg_payloads,
+            "merchant": xcd_status["merchant"],
+            "adjustments": adjustments_summary
         }, f, indent=2)
 
     # Format result payload
@@ -311,11 +350,14 @@ def execute_recon_for_files(
     return {
         "output_filename": output_filename,
         "date": date_str,
+        "merchant": xcd_status["merchant"],
         "summary": aggregator.grand_total,
         "partner_subtotals": aggregator.partner_subtotals,
         "summary_rows": aggregator.summary_rows,
+        "adjustments": adjustments_summary,
         "discrepancies": {
             "failed_or_reversed": len(engine.failed_or_reversed),
+            "adjustments": len(all_adjs),
             "cms_not_in_smms": len(engine.cms_not_in_smms),
             "smms_not_in_cms": len(engine.smms_not_in_cms),
             "unmatched_cf": len(engine.unmatched_cf),
@@ -340,7 +382,8 @@ def execute_recon_for_files(
 @app.post("/api/reconcile")
 def reconcile_files(
     files: List[UploadFile] = File(...),
-    settlement_date: Optional[str] = Form(None)
+    settlement_date: Optional[str] = Form(None),
+    merchant_key: Optional[str] = Form(None)
 ):
     """Uploads multiple source reports and executes reconciliation."""
     if not files:
@@ -357,7 +400,12 @@ def reconcile_files(
             shutil.copyfileobj(file.file, f)
         saved_paths.append(file_path)
 
-    results = execute_recon_for_files(saved_paths, session_dir, user_settlement_date=settlement_date)
+    results = execute_recon_for_files(
+        saved_paths,
+        session_dir,
+        user_settlement_date=settlement_date,
+        merchant_key=merchant_key
+    )
     results["session_id"] = session_id
     results["download_url"] = f"/api/download/{session_id}"
     return JSONResponse(content=results)
@@ -684,7 +732,7 @@ def download_xcd(
     settlement_date: Optional[str] = None
 ):
     """
-    Downloads an XCD settlement input file for Cashfree, Easebuzz, or Airtel.
+    Downloads an XCD/settlement input file for Cashfree (or specific batch), Easebuzz, or Airtel.
     Supports optional date filtering (dates=YYYY-MM-DD,...) and per-date settlement dates.
     Guarded by strict all-clear check.
     """
@@ -700,9 +748,37 @@ def download_xcd(
         meta = json.load(f)
 
     partner_normalized = partner.lower().strip()
+
+    # 1. Direct file lookup from session_meta files (if no date filtering requested)
+    selected_dates = [d.strip() for d in dates.split(",") if d.strip()] if dates else None
+    if not selected_dates and not settlement_dates:
+        meta_files = meta.get("files", {})
+        target_info = meta_files.get(partner) or meta_files.get(partner_normalized)
+        if not target_info:
+            if partner_normalized in ("cashfree", "cf", "cashfree_combined"):
+                target_info = meta_files.get("cashfree")
+            elif partner_normalized in ("cashfree_batch1", "batch1", "b1"):
+                target_info = meta_files.get("cashfree_batch1")
+            elif partner_normalized in ("cashfree_batch2", "batch2", "b2"):
+                target_info = meta_files.get("cashfree_batch2")
+            elif partner_normalized in ("easebuzz", "eb"):
+                target_info = meta_files.get("easebuzz")
+            elif partner_normalized in ("airtel", "air"):
+                target_info = meta_files.get("airtel")
+
+        if target_info and target_info.get("filename"):
+            cand_path = os.path.join(session_dir, target_info["filename"])
+            if os.path.exists(cand_path):
+                return FileResponse(
+                    path=cand_path,
+                    filename=target_info["filename"],
+                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+    # 2. Date filtering or standard partner mapping fallback
     tag = ""
     sheet_name = ""
-    if partner_normalized in ("cashfree", "cf"):
+    if partner_normalized in ("cashfree", "cf", "cashfree_combined", "cashfree_batch1", "cashfree_batch2"):
         tag = "(Cf)"
         sheet_name = "CMS_CF_Matched"
     elif partner_normalized in ("easebuzz", "eb"):
@@ -715,7 +791,6 @@ def download_xcd(
         raise HTTPException(status_code=400, detail=f"Invalid partner '{partner}'. Must be Cashfree, Easebuzz, or Airtel.")
 
     # Parse date filtering options
-    selected_dates = [d.strip() for d in dates.split(",") if d.strip()] if dates else None
     date_settle_map = None
     if settlement_dates:
         try:
@@ -723,7 +798,7 @@ def download_xcd(
         except Exception:
             pass
 
-    # If date filtering or custom settlement dates requested, generate dynamically
+    if selected_dates or settlement_dates:
         recon_path = find_session_recon_workbook(session_dir, meta)
         if not recon_path:
             raise HTTPException(status_code=404, detail="Source reconciliation workbook not found.")
@@ -758,9 +833,9 @@ def download_xcd(
         )
 
     # Locate default pre-generated file in session directory
-    matched_files = [f for f in os.listdir(session_dir) if f.startswith("XCD Input file as on") and tag in f and f.endswith(".xlsx")]
+    matched_files = [f for f in os.listdir(session_dir) if f.endswith(".xlsx") and (tag in f or partner_normalized in f.lower())]
     if not matched_files:
-        raise HTTPException(status_code=404, detail=f"XCD file for partner '{partner}' not found.")
+        raise HTTPException(status_code=404, detail=f"Settlement file for partner '{partner}' not found.")
 
     target_file = os.path.join(session_dir, matched_files[0])
     return FileResponse(
@@ -940,17 +1015,26 @@ def detect_uploaded_files(files: List[UploadFile] = File(...)):
                 shutil.copyfileobj(file.file, f)
 
             try:
-                raw_rep = read_report(file_path)
-                if raw_rep.report_type in slot_key_map:
-                    slot_name = slot_key_map[raw_rep.report_type]
-                    detected_slots[slot_name] = {
-                        "filename": file.filename,
-                        "report_type": raw_rep.report_type.value,
-                        "slot": slot_name,
-                        "record_count": len(raw_rep.records),
-                        "file_size": os.path.getsize(file_path)
-                    }
-                else:
+                reps = read_all_reports_from_file(file_path)
+                recognized_any = False
+                for raw_rep in reps:
+                    if raw_rep.report_type in slot_key_map:
+                        recognized_any = True
+                        slot_name = slot_key_map[raw_rep.report_type]
+                        if slot_name in detected_slots:
+                            detected_slots[slot_name]["record_count"] += len(raw_rep.records)
+                            if "filenames" not in detected_slots[slot_name]:
+                                detected_slots[slot_name]["filenames"] = [detected_slots[slot_name]["filename"]]
+                            detected_slots[slot_name]["filenames"].append(file.filename)
+                        else:
+                            detected_slots[slot_name] = {
+                                "filename": file.filename,
+                                "report_type": raw_rep.report_type.value,
+                                "slot": slot_name,
+                                "record_count": len(raw_rep.records),
+                                "file_size": os.path.getsize(file_path)
+                            }
+                if not recognized_any:
                     unrecognized.append({
                         "filename": file.filename,
                         "file_size": os.path.getsize(file_path)

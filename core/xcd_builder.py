@@ -10,10 +10,10 @@ Generates individual .xlsx files formatted to match the sample specifications:
 import os
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side
-from typing import List, Dict, Any, Optional
-from datetime import datetime, date
-
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, date, timedelta
 from .normalizer import clean_key, clean_amount, extract_iso_date
+from .merchant import get_merchant_profile, MerchantProfile
 
 
 def format_settlement_date_display(settle_date: Any) -> str:
@@ -49,6 +49,73 @@ def format_settlement_date_display(settle_date: Any) -> str:
         pass
 
     return s
+
+
+def extract_record_datetime(record: Dict[str, Any]) -> Optional[datetime]:
+    """Extracts a datetime object from a record across multiple date/time headers."""
+    for k in (
+        "Transaction Date & Time",
+        "Transaction Date",
+        "Txn Registered Date and Time",
+        "Payment Time",
+        "Created At",
+        "Date and Time",
+        "Date"
+    ):
+        val = record.get(k)
+        if not val:
+            continue
+        if isinstance(val, datetime):
+            return val
+        s = str(val).strip()
+        if not s or s == "--" or s.lower() in ("null", "none"):
+            continue
+        clean_s = s.replace("T", " ")
+        if "+" in clean_s:
+            clean_s = clean_s.split("+")[0].strip()
+        elif "-" in clean_s[10:]:
+            clean_s = clean_s[:19]
+        clean_s = clean_s[:19]
+
+        for fmt in (
+            "%Y-%m-%d %H:%M:%S",
+            "%d-%m-%Y %H:%M:%S",
+            "%d/%m/%Y %H:%M:%S",
+            "%d/%m/%y %H:%M:%S",
+            "%Y-%m-%d",
+            "%d-%m-%Y",
+            "%d/%m/%Y",
+            "%d-%b-%Y %H:%M:%S",
+            "%d-%b-%Y",
+        ):
+            try:
+                return datetime.strptime(clean_s, fmt)
+            except ValueError:
+                pass
+    return None
+
+
+def resolve_split_settlement_batch(
+    record: Dict[str, Any],
+    base_date: Optional[str] = None
+) -> tuple[str, str]:
+    """
+    Classifies a transaction into intraday batches:
+    - Batch 1 (12 AM - 12 PM): 00:00:00 <= time < 12:00:00 -> Settles on Same Day (base_date / T)
+    - Batch 2 (12 PM - 12 AM): 12:00:00 <= time <= 23:59:59 -> Settles on Next Day (T + 1)
+    Returns (batch_key, settlement_date_str_YYYY-MM-DD).
+    """
+    dt = extract_record_datetime(record)
+    if dt:
+        rec_d_str = dt.strftime("%Y-%m-%d")
+        if dt.hour < 12:
+            return "batch1", rec_d_str
+        else:
+            next_day = dt.date() + timedelta(days=1)
+            return "batch2", next_day.strftime("%Y-%m-%d")
+
+    fallback_d = base_date or datetime.now().strftime("%Y-%m-%d")
+    return "batch1", fallback_d
 
 
 def extract_record_date(record: Dict[str, Any]) -> Optional[str]:
@@ -279,7 +346,9 @@ def build_xcd_workbook(
 
         # Determine row-specific settlement date
         row_settle = settle_display_default
-        if date_settlement_map:
+        if r.get("_settlement_date"):
+            row_settle = format_settlement_date_display(r.get("_settlement_date"))
+        elif date_settlement_map:
             d = extract_record_date(r)
             if d and d in date_settlement_map:
                 row_settle = format_settlement_date_display(date_settlement_map[d])
@@ -336,7 +405,7 @@ def build_xcd_workbook(
             curr_row += 1
             sp_id = str(r.get("SwinkPay Refund Transaction ID") or r.get("SwinkPay Txn ID") or "").strip()
             amt_raw = clean_amount(r.get("Amount") or r.get("Transaction Amount"))
-            s_dt = format_settlement_date_display(r.get("Refund Settlement Date") or settlement_date)
+            s_dt = format_settlement_date_display(r.get("_settlement_date") or r.get("Refund Settlement Date") or settlement_date)
 
             c_sl = ws.cell(curr_row, 1, ref_sl)
             c_sl.font = font_data
@@ -349,8 +418,9 @@ def build_xcd_workbook(
             c_sp.number_format = "@"
 
             if amt_raw is not None:
-                c_amt = ws.cell(curr_row, 3, amt_raw)
-                c_amt.number_format = "#,##0.00" if not float(amt_raw).is_integer() else "0"
+                amt_val = abs(amt_raw)
+                c_amt = ws.cell(curr_row, 3, amt_val)
+                c_amt.number_format = "#,##0.00" if not float(amt_val).is_integer() else "0"
             else:
                 c_amt = ws.cell(curr_row, 3, "")
             c_amt.font = font_data
@@ -386,7 +456,7 @@ def build_xcd_workbook(
             curr_row += 1
             sp_id = str(r.get("SwinkPay Transaction ID") or r.get("SwinkPay Txn ID") or "").strip()
             amt_raw = clean_amount(r.get("Amount") or r.get("Transaction Amount"))
-            s_dt = format_settlement_date_display(r.get("Chargeback Settlement Date") or settlement_date)
+            s_dt = format_settlement_date_display(r.get("_settlement_date") or r.get("Chargeback Settlement Date") or settlement_date)
 
             c_sl = ws.cell(curr_row, 1, cb_sl)
             c_sl.font = font_data
@@ -399,8 +469,9 @@ def build_xcd_workbook(
             c_sp.number_format = "@"
 
             if amt_raw is not None:
-                c_amt = ws.cell(curr_row, 3, amt_raw)
-                c_amt.number_format = "#,##0.00" if not float(amt_raw).is_integer() else "0"
+                amt_val = abs(amt_raw)
+                c_amt = ws.cell(curr_row, 3, amt_val)
+                c_amt.number_format = "#,##0.00" if not float(amt_val).is_integer() else "0"
             else:
                 c_amt = ws.cell(curr_row, 3, "")
             c_amt.font = font_data
@@ -475,28 +546,23 @@ def generate_partner_xcd_files(
     engine,
     output_dir: str,
     recon_date_str: str,
-    settlement_date: str
+    settlement_date: str,
+    merchant_key: Optional[str] = None
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Generates the three partner XCD files from matched tabs:
-    - Cashfree: from cms_cf_matched -> XCD Input file as on YYYY-MM-DD (Cf).xlsx
-    - Easebuzz: from cms_eb_matched -> XCD Input file as on YYYY-MM-DD (EB).xlsx
-    - Airtel: from cms_air_matched   -> XCD Input file as on YYYY-MM-DD (Airtel).xlsx
+    Generates partner settlement input files with:
+    - Multi-merchant prefixing (XCD for Coffee Day vs SBB_INPUTFILE for SBB)
+    - Full inclusion of Adjustments (Status 4, 5, 6) and Refunds (Status 3)
+    - Intraday two-batch split settlement for SBB (12 AM-12 PM settles Same Day T; 12 PM-12 AM settles Next Day T+1)
     """
-    cf_filename = f"XCD Input file as on {recon_date_str} (Cf).xlsx"
-    eb_filename = f"XCD Input file as on {recon_date_str} (EB).xlsx"
-    air_filename = f"XCD Input file as on {recon_date_str} (Airtel).xlsx"
+    cms_recs = engine.cms_report.records if engine.cms_report else []
+    merchant = get_merchant_profile(merchant_key, records=cms_recs)
 
-    cf_path = os.path.join(output_dir, cf_filename)
-    eb_path = os.path.join(output_dir, eb_filename)
-    air_path = os.path.join(output_dir, air_filename)
+    # Route adjustments into refunds (Status 3) and chargebacks/adjustments (Status 4, 5, 6)
+    all_adjs = getattr(engine, "adjustments", [])
+    refund_records = [r for r in all_adjs if r.get("Adjustment Category") == "Refund"]
+    chargeback_records = [r for r in all_adjs if r.get("Adjustment Category") in ("Chargeback", "Dispute", "Adjustment")]
 
-    # Build workbooks
-    build_xcd_workbook(engine.cms_cf_matched, settlement_date, cf_path)
-    build_xcd_workbook(engine.cms_eb_matched, settlement_date, eb_path)
-    build_xcd_workbook(engine.cms_air_matched, settlement_date, air_path)
-
-    # Compute totals for verification
     def calc_stats(recs):
         cnt = len(recs)
         gross_amt = 0.0
@@ -507,36 +573,180 @@ def generate_partner_xcd_files(
             net_amt += n
         return cnt, round(gross_amt, 2), round(net_amt, 2)
 
-    cf_cnt, cf_gross, cf_net = calc_stats(engine.cms_cf_matched)
-    eb_cnt, eb_gross, eb_net = calc_stats(engine.cms_eb_matched)
-    air_cnt, air_gross, air_net = calc_stats(engine.cms_air_matched)
+    files_info = {}
 
-    return {
-        "cashfree": {
-            "partner": "CashFree",
-            "filename": cf_filename,
-            "filepath": cf_path,
-            "count": cf_cnt,
-            "gross_amount": cf_gross,
-            "net_amount": cf_net,
-            "settlement_date": format_settlement_date_display(settlement_date)
-        },
-        "easebuzz": {
-            "partner": "EaseBuzz",
-            "filename": eb_filename,
-            "filepath": eb_path,
-            "count": eb_cnt,
-            "gross_amount": eb_gross,
-            "net_amount": eb_net,
-            "settlement_date": format_settlement_date_display(settlement_date)
-        },
-        "airtel": {
-            "partner": "Airtel Bank",
-            "filename": air_filename,
-            "filepath": air_path,
-            "count": air_cnt,
-            "gross_amount": air_gross,
-            "net_amount": air_net,
-            "settlement_date": format_settlement_date_display(settlement_date)
+    if merchant.has_split_settlement:
+        # SBB Medicare 2-batch split settlement
+        try:
+            next_dt = datetime.strptime(recon_date_str, "%Y-%m-%d") + timedelta(days=1)
+            next_date_str = next_dt.strftime("%Y-%m-%d")
+        except Exception:
+            next_date_str = settlement_date or recon_date_str
+
+        settle_same_day = format_settlement_date_display(recon_date_str)
+        settle_next_day = format_settlement_date_display(next_date_str)
+
+        # Split Cashfree records
+        cf_b1, cf_b2, cf_combined = [], [], []
+        for r in engine.cms_cf_matched:
+            b_key, b_settle = resolve_split_settlement_batch(r, recon_date_str)
+            r_copy = dict(r)
+            r_copy["_settlement_date"] = b_settle
+            cf_combined.append(r_copy)
+            if b_key == "batch1":
+                cf_b1.append(r_copy)
+            else:
+                cf_b2.append(r_copy)
+
+        # Split refunds and adjustments
+        ref_b1, ref_b2, ref_combined = [], [], []
+        for r in refund_records:
+            b_key, b_settle = resolve_split_settlement_batch(r, recon_date_str)
+            r_copy = dict(r)
+            r_copy["_settlement_date"] = b_settle
+            ref_combined.append(r_copy)
+            if b_key == "batch1":
+                ref_b1.append(r_copy)
+            else:
+                ref_b2.append(r_copy)
+
+        cb_b1, cb_b2, cb_combined = [], [], []
+        for r in chargeback_records:
+            b_key, b_settle = resolve_split_settlement_batch(r, recon_date_str)
+            r_copy = dict(r)
+            r_copy["_settlement_date"] = b_settle
+            cb_combined.append(r_copy)
+            if b_key == "batch1":
+                cb_b1.append(r_copy)
+            else:
+                cb_b2.append(r_copy)
+
+        # Batch 1 (12 AM - 12 PM -> Settles same day recon_date_str)
+        cf_b1_filename = f"SBB_INPUTFILE(CASHFREE)_{recon_date_str}_Batch1_12AM-12PM.xlsx"
+        cf_b1_path = os.path.join(output_dir, cf_b1_filename)
+        build_xcd_workbook(cf_b1, recon_date_str, cf_b1_path, refund_records=ref_b1, chargeback_records=cb_b1)
+
+        # Batch 2 (12 PM - 12 AM -> Settles next day next_date_str)
+        cf_b2_filename = f"SBB_INPUTFILE(CASHFREE)_{recon_date_str}_Batch2_12PM-12AM.xlsx"
+        cf_b2_path = os.path.join(output_dir, cf_b2_filename)
+        build_xcd_workbook(cf_b2, next_date_str, cf_b2_path, refund_records=ref_b2, chargeback_records=cb_b2)
+
+        # Combined Full Day File (Dynamic row-level settlement date)
+        cf_comb_filename = f"SBB_INPUTFILE(CASHFREE)_{recon_date_str}.xlsx"
+        cf_comb_path = os.path.join(output_dir, cf_comb_filename)
+        build_xcd_workbook(cf_combined, recon_date_str, cf_comb_path, refund_records=ref_combined, chargeback_records=cb_combined)
+
+        # Easebuzz for SBB
+        eb_filename = f"SBB_INPUTFILE(EASEBUZZ)_{recon_date_str}.xlsx"
+        eb_path = os.path.join(output_dir, eb_filename)
+        build_xcd_workbook(engine.cms_eb_matched, settlement_date or next_date_str, eb_path)
+
+        # Airtel is not used in SBB
+        air_filename = f"SBB_INPUTFILE(AIRTEL)_{recon_date_str}.xlsx"
+        air_path = os.path.join(output_dir, air_filename)
+        build_xcd_workbook(engine.cms_air_matched, settlement_date, air_path)
+
+        b1_cnt, b1_gross, b1_net = calc_stats(cf_b1)
+        b2_cnt, b2_gross, b2_net = calc_stats(cf_b2)
+        comb_cnt, comb_gross, comb_net = calc_stats(cf_combined)
+        eb_cnt, eb_gross, eb_net = calc_stats(engine.cms_eb_matched)
+        air_cnt, air_gross, air_net = calc_stats(engine.cms_air_matched)
+
+        files_info = {
+            "cashfree": {
+                "partner": "CF_SoftPOS",
+                "filename": cf_comb_filename,
+                "filepath": cf_comb_path,
+                "count": comb_cnt,
+                "gross_amount": comb_gross,
+                "net_amount": comb_net,
+                "settlement_date": f"12AM-12PM: {settle_same_day} | 12PM-12AM: {settle_next_day}"
+            },
+            "cashfree_batch1": {
+                "partner": "CF_SoftPOS (Batch 1)",
+                "batch": "12 AM - 12 PM",
+                "filename": cf_b1_filename,
+                "filepath": cf_b1_path,
+                "count": b1_cnt,
+                "gross_amount": b1_gross,
+                "net_amount": b1_net,
+                "settlement_date": settle_same_day
+            },
+            "cashfree_batch2": {
+                "partner": "CF_SoftPOS (Batch 2)",
+                "batch": "12 PM - 12 AM",
+                "filename": cf_b2_filename,
+                "filepath": cf_b2_path,
+                "count": b2_cnt,
+                "gross_amount": b2_gross,
+                "net_amount": b2_net,
+                "settlement_date": settle_next_day
+            },
+            "easebuzz": {
+                "partner": "EaseBuzz",
+                "filename": eb_filename,
+                "filepath": eb_path,
+                "count": eb_cnt,
+                "gross_amount": eb_gross,
+                "net_amount": eb_net,
+                "settlement_date": format_settlement_date_display(settlement_date)
+            },
+            "airtel": {
+                "partner": "Airtel Bank",
+                "filename": air_filename,
+                "filepath": air_path,
+                "count": air_cnt,
+                "gross_amount": air_gross,
+                "net_amount": air_net,
+                "settlement_date": format_settlement_date_display(settlement_date)
+            }
         }
-    }
+    else:
+        # Standard Single Settlement (CCD / Coffee Day)
+        cf_filename = f"XCD Input file as on {recon_date_str} (Cf).xlsx"
+        eb_filename = f"XCD Input file as on {recon_date_str} (EB).xlsx"
+        air_filename = f"XCD Input file as on {recon_date_str} (Airtel).xlsx"
+
+        cf_path = os.path.join(output_dir, cf_filename)
+        eb_path = os.path.join(output_dir, eb_filename)
+        air_path = os.path.join(output_dir, air_filename)
+
+        build_xcd_workbook(engine.cms_cf_matched, settlement_date, cf_path, refund_records=refund_records, chargeback_records=chargeback_records)
+        build_xcd_workbook(engine.cms_eb_matched, settlement_date, eb_path)
+        build_xcd_workbook(engine.cms_air_matched, settlement_date, air_path)
+
+        cf_cnt, cf_gross, cf_net = calc_stats(engine.cms_cf_matched)
+        eb_cnt, eb_gross, eb_net = calc_stats(engine.cms_eb_matched)
+        air_cnt, air_gross, air_net = calc_stats(engine.cms_air_matched)
+
+        files_info = {
+            "cashfree": {
+                "partner": "CashFree",
+                "filename": cf_filename,
+                "filepath": cf_path,
+                "count": cf_cnt,
+                "gross_amount": cf_gross,
+                "net_amount": cf_net,
+                "settlement_date": format_settlement_date_display(settlement_date)
+            },
+            "easebuzz": {
+                "partner": "EaseBuzz",
+                "filename": eb_filename,
+                "filepath": eb_path,
+                "count": eb_cnt,
+                "gross_amount": eb_gross,
+                "net_amount": eb_net,
+                "settlement_date": format_settlement_date_display(settlement_date)
+            },
+            "airtel": {
+                "partner": "Airtel Bank",
+                "filename": air_filename,
+                "filepath": air_path,
+                "count": air_cnt,
+                "gross_amount": air_gross,
+                "net_amount": air_net,
+                "settlement_date": format_settlement_date_display(settlement_date)
+            }
+        }
+
+    return files_info

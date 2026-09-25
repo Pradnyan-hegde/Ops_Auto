@@ -35,9 +35,14 @@ def derive_mode_label(network: str, processing_fee: Any) -> str:
     return f"{base}({fee_str})"
 
 
+from .merchant import get_merchant_profile, MerchantProfile
+
+
 class Aggregator:
-    def __init__(self, engine):
+    def __init__(self, engine, merchant_key: Optional[str] = None):
         self.engine = engine
+        cms_records = engine.cms_report.records if engine.cms_report else []
+        self.merchant: MerchantProfile = get_merchant_profile(merchant_key, records=cms_records)
         self.summary_rows: List[Dict[str, Any]] = []
         self.partner_subtotals: Dict[str, Dict[str, Any]] = {}
         self.grand_total: Dict[str, Any] = {}
@@ -62,16 +67,39 @@ class Aggregator:
             "settle_status_counts": defaultdict(int)
         })
 
+        is_sbb = (self.merchant.key == "sbb")
+
         for r in self.engine.successful_smms_reconciled:
             partner = r.get("_partner", "Unknown")
+            if is_sbb and partner in ("CashFree", "Cashfree"):
+                partner = self.merchant.softpos_label
+
             network = str(r.get("Network") or "").strip()
-            fee = r.get("Processing Fee") or ("2.75%" if "credit" in network.lower() or "cc" in network.lower() else "1.00%")
-            mode = derive_mode_label(network, fee)
+            net_lower = network.lower()
+            is_cc = ("credit" in net_lower or "cc" in net_lower or "rupay" in net_lower)
+
+            if is_sbb:
+                fee = f"{self.merchant.cc_fee_rate * 100:.2f}%" if is_cc else f"{self.merchant.upi_fee_rate * 100:.2f}%"
+                mode = f"CC ON UPI({fee})" if is_cc else f"UPI({fee})"
+            else:
+                fee = r.get("Processing Fee") or ("2.75%" if is_cc else "1.00%")
+                mode = derive_mode_label(network, fee)
 
             amt = clean_amount(r.get("Transaction Amount")) or 0.0
-            net_amt = clean_amount(r.get("Net Amount")) or 0.0
-            psp_amt = clean_amount(r.get("PSP Amount")) or 0.0
-            gst_amt = clean_amount(r.get("GST Amount")) or 0.0
+
+            # Compute fee & net amount
+            if is_sbb:
+                fee_rate = self.merchant.cc_fee_rate if is_cc else self.merchant.upi_fee_rate
+                psp_amt = round(amt * fee_rate, 4)
+                gst_amt = round(psp_amt * self.merchant.default_gst_rate, 5)
+                net_amt = amt - (amt * fee_rate * (1.0 + self.merchant.default_gst_rate))
+            else:
+                net_amt = clean_amount(r.get("Net Amount"))
+                psp_amt = clean_amount(r.get("PSP Amount")) or 0.0
+                gst_amt = clean_amount(r.get("GST Amount")) or 0.0
+                if net_amt is None:
+                    net_amt = amt - psp_amt - gst_amt
+
             matched = r.get("_partner_matched", False)
             settle_stat = r.get("_settle_status", "Pending")
 
@@ -93,7 +121,7 @@ class Aggregator:
             g["settle_status_counts"][settle_stat] += 1
 
         # Desired ordering of partners and networks matching the template
-        partner_order = ["CashFree", "EaseBuzz", "Airtel Bank"]
+        partner_order = ["CF_SoftPOS", "CashFree", "EaseBuzz", "Airtel Bank"] if is_sbb else ["CashFree", "EaseBuzz", "Airtel Bank"]
         def sort_key(item):
             p, m, n = item[0]
             p_idx = partner_order.index(p) if p in partner_order else 99
