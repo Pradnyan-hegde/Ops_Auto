@@ -45,6 +45,9 @@ from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
 from core.terminal_mapper import (
     load_and_save_terminal_file,
     load_terminal_mappings,
+    load_merchant_terminal_mappings,
+    clear_merchant_terminal_mappings,
+    get_merchant_terminal_summary,
     DATA_DIR,
     clear_terminal_mappings,
     resolve_terminal_details,
@@ -379,7 +382,7 @@ def execute_recon_for_files(
         }
 
     # Build Postman-ready payloads for missing PG records
-    missing_pg_payloads = build_missing_pg_payloads(engine)
+    missing_pg_payloads = build_missing_pg_payloads(engine, merchant_key=merchant_profile.key)
 
     # Adjustments summary
     all_adjs = getattr(engine, "adjustments", [])
@@ -578,11 +581,20 @@ async def create_merchant_profile(request: Request):
     if "multipart/form-data" in content_type:
         form = await request.form()
         name = str(form.get("name") or form.get("display_name") or "").strip()
+        m_id = str(form.get("merchant_id") or form.get("primary_merchant_id") or "").strip()
+        pref = str(form.get("merchant_prefix") or form.get("input_file_prefix") or "").strip()
+        raw_key = str(form.get("key") or "").strip().lower()
+        if not raw_key and name:
+            raw_key = re.sub(r"[^a-zA-Z0-9]+", "_", name).strip("_").lower()
+
         data = {
             "name": name,
             "display_name": name,
-            "key": form.get("key"),
-            "input_file_prefix": form.get("input_file_prefix"),
+            "key": raw_key,
+            "merchant_id": m_id,
+            "merchant_ids": [m_id] if m_id else [],
+            "merchant_prefix": pref,
+            "input_file_prefix": f"{pref} Input file as on" if (pref and "input file" not in pref.lower()) else (pref or f"{raw_key.upper()}_INPUTFILE"),
             "has_split_settlement": str(form.get("has_split_settlement")).lower() in ("true", "1", "split"),
             "gateways": ["CashFree", "EaseBuzz", "Airtel Bank"]
         }
@@ -593,11 +605,13 @@ async def create_merchant_profile(request: Request):
             with open(temp_path, "wb") as f_out:
                 f_out.write(await term_upload.read())
             try:
-                res = load_and_save_terminal_file(temp_path, merge=True)
+                res = load_and_save_terminal_file(temp_path, merchant_key=raw_key, merge=True)
                 terminal_file_saved = True
                 terminal_mappings_count = res.get("total_mappings", 0)
+                data["terminal_file_name"] = term_upload.filename
+                data["terminal_mappings_count"] = terminal_mappings_count
             except Exception as e:
-                print(f"[MerchantCreate] Terminal upload notice: {e}")
+                print(f"[MerchantCreate] Terminal upload notice for '{raw_key}': {e}")
             finally:
                 if os.path.exists(temp_path):
                     try:
@@ -1607,12 +1621,13 @@ async def save_settings(request: Request):
 @app.post("/api/upload-terminal-file")
 def upload_terminal_file(
     file: UploadFile = File(...),
-    merchant_key: Optional[str] = Form(None)
+    merchant_key: Optional[str] = Form(None),
+    merge: bool = Form(True)
 ):
     """
     Uploads and parses the Terminal Report Excel workbook (TID_FILE).
-    Extracts TERMINAL ID, MMS TERMINAL ID, and Partner Ref ID mappings.
-    Saves and merges into data/terminal_mappings.json for permanent auto-resolution.
+    Extracts TERMINAL ID, MMS TERMINAL ID, Partner Ref ID, and BR NAME (branch) mappings.
+    Saves and merges into merchant-specific registry or global mapping for permanent auto-resolution.
     """
     if not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported for terminal mapping.")
@@ -1623,15 +1638,30 @@ def upload_terminal_file(
         with open(temp_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        res = load_and_save_terminal_file(temp_path, merge=True)
+        res = load_and_save_terminal_file(temp_path, merchant_key=merchant_key, merge=merge)
+
+        # Update merchant profile metadata if merchant_key provided
+        if merchant_key:
+            try:
+                prof = get_merchant_profile(merchant_key)
+                save_merchant_profile({
+                    "key": prof.key,
+                    "name": prof.display_name,
+                    "terminal_file_name": file.filename,
+                    "terminal_mappings_count": res.get("total_mappings", 0)
+                })
+            except Exception as pe:
+                print(f"[TerminalUpload] Profile sync notice for '{merchant_key}': {pe}")
+
         return JSONResponse(content={
             "success": True,
             "filename": file.filename,
             "merchant_key": merchant_key,
             "total_mappings": res.get("total_mappings", 0),
             "terminal_count": res.get("terminal_count", 0),
+            "new_added": res.get("new_added", 0),
             "updated_at": res.get("updated_at"),
-            "message": f"Successfully loaded {res.get('total_mappings', 0)} terminal mappings from '{file.filename}'."
+            "message": f"Successfully loaded {res.get('total_mappings', 0)} terminal mappings from '{file.filename}'" + (f" for merchant '{merchant_key}'." if merchant_key else ".")
         })
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse terminal mapping file: {str(e)}")
@@ -1644,14 +1674,15 @@ def upload_terminal_file(
 
 
 @app.get("/api/terminal-mappings-status")
-def get_terminal_mappings_status():
-    """Returns the current count and status of loaded terminal mappings."""
-    mappings = load_terminal_mappings()
+def get_terminal_mappings_status(merchant_key: Optional[str] = None):
+    """Returns the current count and status of loaded terminal mappings for a merchant or globally."""
+    mappings = load_merchant_terminal_mappings(merchant_key)
     ref_map = mappings.get("mappings_by_ref_id", {})
     tid_map = mappings.get("mappings_by_terminal_id", {})
     count = len(ref_map)
     return {
         "success": True,
+        "merchant_key": merchant_key,
         "has_mappings": count > 0,
         "active_count": count,
         "terminal_count": len(tid_map),
@@ -1661,22 +1692,23 @@ def get_terminal_mappings_status():
 
 
 @app.get("/api/resolve-terminal")
-def resolve_terminal_endpoint(query: str):
+def resolve_terminal_endpoint(query: str, merchant_key: Optional[str] = None):
     """
     Direct lookup endpoint to resolve an Order ID (extracts middle number),
-    Partner Ref ID, or full transaction row to MMS Terminal ID, Terminal ID, and merchant details.
+    Partner Ref ID, or full transaction row to MMS Terminal ID, Terminal ID, Branch Name, and merchant details.
     """
     q = str(query).strip()
     if not q:
         raise HTTPException(status_code=400, detail="Query parameter 'query' cannot be blank.")
 
-    mappings = load_terminal_mappings()
-    rec = resolve_terminal_details(q, mappings)
+    mappings = load_merchant_terminal_mappings(merchant_key)
+    rec = resolve_terminal_details(q, merchant_key=merchant_key, mappings=mappings)
 
     if rec:
         mms = rec.get("mms_terminal_id") or rec.get("terminal_id")
         tid = rec.get("terminal_id")
         pref = rec.get("partner_ref_id")
+        br_name = rec.get("branch_name") or ""
         vpa = rec.get("vpa")
         mname = rec.get("merchant_name")
         mid = rec.get("middle_number") or pref or ""
@@ -1686,7 +1718,6 @@ def resolve_terminal_endpoint(query: str):
         extracted_amt = ""
         extracted_date = ""
 
-        # Check for Bank Ref No / UTR in pasted text
         m_utr = re.search(r'\b(CB\d{8,15}|\d{12})\b', q)
         if m_utr:
             extracted_utr = m_utr.group(1).strip()
@@ -1707,27 +1738,31 @@ def resolve_terminal_endpoint(query: str):
         return {
             "success": True,
             "query": q,
+            "merchant_key": merchant_key,
             "middle_number": mid,
             "found": True,
             "mms_terminal_id": mms,
             "terminal_id": tid,
             "partner_ref_id": pref,
+            "branch_name": br_name,
             "vpa": vpa,
             "merchant_name": mname,
             "payload": payload,
             "payload_json": json.dumps(payload, indent=2),
-            "message": f"Successfully mapped to MMS Terminal ID '{mms}' (Terminal ID: {tid or '--'})."
+            "message": f"Successfully mapped to MMS Terminal ID '{mms}' (Terminal ID: {tid or '--'}, Branch: {br_name or '--'})."
         }
 
     mid = extract_cf_middle_number(q)
     return {
         "success": True,
         "query": q,
+        "merchant_key": merchant_key,
         "middle_number": mid or q,
         "found": False,
         "mms_terminal_id": None,
         "terminal_id": None,
         "partner_ref_id": mid or q,
+        "branch_name": None,
         "vpa": None,
         "merchant_name": None,
         "payload": None,
@@ -1736,12 +1771,17 @@ def resolve_terminal_endpoint(query: str):
 
 
 @app.get("/api/terminal-mappings")
-def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: int = 0):
+def get_terminal_mappings(
+    q: Optional[str] = None,
+    merchant_key: Optional[str] = None,
+    limit: int = 1000,
+    offset: int = 0
+):
     """
     Returns the list of loaded terminal mapping records.
-    Supports optional search filter across Partner Ref ID, MMS Terminal ID, Terminal ID, VPA, and Merchant Name.
+    Supports optional search filter across Partner Ref ID, MMS Terminal ID, Terminal ID, Branch Name, VPA, and Merchant Name.
     """
-    mappings = load_terminal_mappings()
+    mappings = load_merchant_terminal_mappings(merchant_key)
     ref_map = mappings.get("mappings_by_ref_id", {})
     tid_map = mappings.get("mappings_by_terminal_id", {})
 
@@ -1752,6 +1792,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
         mms = v.get("mms_terminal_id", "")
         tid = v.get("terminal_id", "")
         pref = v.get("partner_ref_id") or k
+        br_name = v.get("branch_name", "")
         vpa = v.get("vpa", "")
         m_name = v.get("merchant_name", "")
         key = (str(pref).strip(), str(mms).strip(), str(tid).strip())
@@ -1761,6 +1802,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
                 "partner_ref_id": str(pref).strip(),
                 "mms_terminal_id": str(mms).strip(),
                 "terminal_id": str(tid).strip(),
+                "branch_name": str(br_name).strip(),
                 "vpa": str(vpa).strip(),
                 "merchant_name": str(m_name).strip()
             })
@@ -1769,6 +1811,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
         mms = v.get("mms_terminal_id", "")
         tid = v.get("terminal_id") or k
         pref = v.get("partner_ref_id", "")
+        br_name = v.get("branch_name", "")
         vpa = v.get("vpa", "")
         m_name = v.get("merchant_name", "")
         key = (str(pref).strip(), str(mms).strip(), str(tid).strip())
@@ -1778,6 +1821,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
                 "partner_ref_id": str(pref).strip(),
                 "mms_terminal_id": str(mms).strip(),
                 "terminal_id": str(tid).strip(),
+                "branch_name": str(br_name).strip(),
                 "vpa": str(vpa).strip(),
                 "merchant_name": str(m_name).strip()
             })
@@ -1790,6 +1834,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
             if query in r.get("partner_ref_id", "").lower()
             or query in r.get("mms_terminal_id", "").lower()
             or query in r.get("terminal_id", "").lower()
+            or query in r.get("branch_name", "").lower()
             or query in r.get("vpa", "").lower()
             or query in r.get("merchant_name", "").lower()
         ]
@@ -1800,6 +1845,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
     return {
         "success": True,
         "total": total_count,
+        "merchant_key": merchant_key,
         "source_filename": mappings.get("source_filename"),
         "updated_at": mappings.get("updated_at"),
         "records": paginated
@@ -1807,12 +1853,13 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
 
 
 @app.delete("/api/terminal-mappings")
-def reset_terminal_mappings():
-    """Clears all stored terminal mappings and resets cache."""
-    clear_terminal_mappings()
+def reset_terminal_mappings(merchant_key: Optional[str] = None):
+    """Clears stored terminal mappings for a specific merchant, or all merchants if merchant_key is None."""
+    clear_merchant_terminal_mappings(merchant_key)
+    msg = f"Terminal reference mappings for merchant '{merchant_key}' cleared successfully." if merchant_key else "All terminal reference mappings cleared successfully."
     return {
         "success": True,
-        "message": "Terminal reference mappings cleared successfully."
+        "message": msg
     }
 
 

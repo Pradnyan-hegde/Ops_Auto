@@ -24,6 +24,8 @@ class MerchantProfile:
     has_split_settlement: bool = False
     softpos_label: str = "CashFree"
     input_file_prefix: str = ""
+    terminal_file_name: str = ""
+    terminal_mappings_count: int = 0
     upi_fee_rate: float = 0.0015
     cc_fee_rate: float = 0.0225
     default_gst_rate: float = 0.18
@@ -36,7 +38,8 @@ class MerchantProfile:
         valid_keys = {
             "key", "display_name", "merchant_ids", "merchant_keywords",
             "gateways", "has_split_settlement", "softpos_label",
-            "input_file_prefix", "upi_fee_rate", "cc_fee_rate", "default_gst_rate"
+            "input_file_prefix", "terminal_file_name", "terminal_mappings_count",
+            "upi_fee_rate", "cc_fee_rate", "default_gst_rate"
         }
         filtered = {k: v for k, v in data.items() if k in valid_keys}
         return cls(**filtered)
@@ -179,9 +182,9 @@ def save_merchant_profile(data: Dict[str, Any]) -> MerchantProfile:
     display_name = raw_name or raw_key.replace("_", " ").title()
 
     # Input file prefix defaults to {SHORT_NAME}_INPUTFILE
+    short_code = re.sub(r"[^a-zA-Z0-9]+", "_", display_name).strip("_").upper()
     prefix = str(data.get("input_file_prefix") or "").strip()
     if not prefix:
-        short_code = re.sub(r"[^a-zA-Z0-9]+", "_", display_name).strip("_").upper()
         prefix = f"{short_code}_INPUTFILE"
 
     # Keywords
@@ -192,6 +195,19 @@ def save_merchant_profile(data: Dict[str, Any]) -> MerchantProfile:
         keywords = [str(k).upper() for k in keywords]
 
     m_ids = [str(m).strip() for m in (data.get("merchant_ids") or []) if str(m).strip()]
+    single_mid = str(data.get("merchant_id") or data.get("primary_merchant_id") or "").strip()
+    if single_mid and single_mid not in m_ids:
+        m_ids.insert(0, single_mid)
+
+    # Prefix can come as merchant_prefix or input_file_prefix
+    if (not prefix or prefix == f"{short_code}_INPUTFILE") and data.get("merchant_prefix"):
+        pref_cand = str(data.get("merchant_prefix")).strip()
+        if pref_cand:
+            prefix = pref_cand
+
+    term_fn = str(data.get("terminal_file_name") or "").strip()
+    term_cnt = int(data.get("terminal_mappings_count") or 0)
+
     gateways = data.get("gateways") or ["CashFree", "EaseBuzz", "Airtel Bank"]
     has_split = bool(data.get("has_split_settlement", False))
     softpos = str(data.get("softpos_label") or ("CF_SoftPOS" if has_split else "CashFree"))
@@ -220,6 +236,8 @@ def save_merchant_profile(data: Dict[str, Any]) -> MerchantProfile:
         has_split_settlement=has_split,
         softpos_label=softpos,
         input_file_prefix=prefix,
+        terminal_file_name=term_fn,
+        terminal_mappings_count=term_cnt,
         upi_fee_rate=upi_rate,
         cc_fee_rate=cc_rate,
         default_gst_rate=gst_rate
@@ -259,24 +277,22 @@ def list_all_merchants() -> List[Dict[str, Any]]:
     """Returns a list of all available merchants formatted for UI dropdowns and API responses."""
     profiles = load_all_merchant_profiles()
     results = []
-    # XCD first, CCD second, AGS third, SBB fourth, then others alphabetically
-    order = ["xcd", "ccd", "ags", "sbb"]
-    sorted_keys = [k for k in order if k in profiles] + sorted([k for k in profiles.keys() if k not in order])
-
-    for k in sorted_keys:
-        if k in profiles:
-            p = profiles[k]
-            results.append({
-                "key": p.key,
-                "display_name": p.display_name,
-                "input_file_prefix": p.input_file_prefix,
-                "has_split_settlement": p.has_split_settlement,
-                "merchant_ids": p.merchant_ids,
-                "gateways": p.gateways,
-                "softpos_label": p.softpos_label,
-                "upi_fee_rate": p.upi_fee_rate,
-                "cc_fee_rate": p.cc_fee_rate
-            })
+    for k in sorted(profiles.keys()):
+        p = profiles[k]
+        results.append({
+            "key": p.key,
+            "display_name": p.display_name,
+            "input_file_prefix": p.input_file_prefix,
+            "has_split_settlement": p.has_split_settlement,
+            "merchant_ids": p.merchant_ids,
+            "primary_merchant_id": p.merchant_ids[0] if p.merchant_ids else "",
+            "terminal_file_name": getattr(p, "terminal_file_name", ""),
+            "terminal_mappings_count": getattr(p, "terminal_mappings_count", 0),
+            "gateways": p.gateways,
+            "softpos_label": p.softpos_label,
+            "upi_fee_rate": p.upi_fee_rate,
+            "cc_fee_rate": p.cc_fee_rate
+        })
     return results
 
 
@@ -299,16 +315,16 @@ def detect_merchant(
 
             # Priority exact checks
             if "ADVANCE GENUINE SPARES" in fn_upper or "GENUINE SPARES" in fn_upper or "000000000002095" in fn_upper:
-                if "ags" in profiles:
+                if "ags" in profiles or "ags" in DEFAULT_MERCHANT_PROFILES:
                     return "ags"
             if "VALUE EXPRESS" in fn_upper or "XCD" in fn_upper:
-                if "xcd" in profiles:
+                if "xcd" in profiles or "xcd" in DEFAULT_MERCHANT_PROFILES:
                     return "xcd"
             if "COFFEE DAY" in fn_upper or "CCD" in fn_upper:
-                if "ccd" in profiles:
+                if "ccd" in profiles or "ccd" in DEFAULT_MERCHANT_PROFILES:
                     return "ccd"
             if "SBB" in fn_upper or "MEDICARE" in fn_upper:
-                if "sbb" in profiles:
+                if "sbb" in profiles or "sbb" in DEFAULT_MERCHANT_PROFILES:
                     return "sbb"
 
             # Check all registered profile keywords and merchant IDs
@@ -347,24 +363,29 @@ def detect_merchant(
             continue
 
         if "ADVANCE GENUINE SPARES" in m_name or "GENUINE SPARES" in m_name or m_id.endswith("2095"):
-            if "ags" in profiles:
+            if "ags" in profiles or "ags" in DEFAULT_MERCHANT_PROFILES:
                 return "ags"
         if "VALUE EXPRESS" in m_name or "XCD" in m_name:
-            if "xcd" in profiles:
+            if "xcd" in profiles or "xcd" in DEFAULT_MERCHANT_PROFILES:
                 return "xcd"
         if "COFFEE DAY" in m_name or "CCD" in m_name:
-            if "ccd" in profiles:
+            if "ccd" in profiles or "ccd" in DEFAULT_MERCHANT_PROFILES:
                 return "ccd"
         if "SBB" in m_name or "MEDICARE" in m_name:
-            if "sbb" in profiles:
+            if "sbb" in profiles or "sbb" in DEFAULT_MERCHANT_PROFILES:
                 return "sbb"
+
+        clean_mid = m_id.lstrip("0")
+        for key, prof in profiles.items():
+            for mid in prof.merchant_ids:
+                if mid:
+                    clean_reg = str(mid).strip().lstrip("0")
+                    if clean_mid and clean_reg and (clean_mid == clean_reg or m_id == str(mid).strip() or m_id.endswith(str(mid).strip()) or str(mid).strip().endswith(m_id)):
+                        return prof.key
 
         for key, prof in profiles.items():
             for kw in prof.merchant_keywords:
                 if kw and kw in m_name:
-                    return prof.key
-            for mid in prof.merchant_ids:
-                if mid and m_id.endswith(mid):
                     return prof.key
 
         # If a non-empty merchant name is found but unmatched, register it dynamically
@@ -380,7 +401,10 @@ def detect_merchant(
             })
             return new_prof.key
 
-    return "xcd" if "xcd" in profiles else "ccd"
+    if profiles:
+        return next(iter(profiles.keys()))
+
+    return "xcd"
 
 
 def get_merchant_profile(
@@ -398,13 +422,29 @@ def get_merchant_profile(
     if key and key.lower() in profiles:
         return profiles[key.lower()]
 
+    # If key matches a known baseline profile, return its default
+    if key and key.lower() in DEFAULT_MERCHANT_PROFILES:
+        return DEFAULT_MERCHANT_PROFILES[key.lower()]
+
     # If key is a custom string (and not "auto" or empty), register it dynamically
     if key and key.lower() not in ("auto", "none", ""):
         profile = save_merchant_profile({"name": key, "key": key.lower()})
         return profile
 
     detected_key = detect_merchant(records=records, filenames=filenames, smms_records=smms_records)
-    if detected_key in profiles:
+    if detected_key and detected_key in profiles:
         return profiles[detected_key]
 
-    return profiles.get("xcd", profiles.get("ccd", DEFAULT_MERCHANT_PROFILES["xcd"]))
+    if detected_key and detected_key in DEFAULT_MERCHANT_PROFILES:
+        return DEFAULT_MERCHANT_PROFILES[detected_key]
+
+    if profiles:
+        return list(profiles.values())[0]
+
+    # Clean fallback if no merchant is configured yet
+    return DEFAULT_MERCHANT_PROFILES.get("xcd", MerchantProfile(
+        key="custom",
+        display_name="Custom Merchant",
+        input_file_prefix="RECON_INPUTFILE",
+        gateways=["CashFree", "EaseBuzz", "Airtel Bank"]
+    ))

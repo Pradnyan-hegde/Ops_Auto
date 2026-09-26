@@ -19,7 +19,13 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from .normalizer import clean_amount
-from .terminal_mapper import resolve_mms_terminal_id, extract_cf_middle_number, load_terminal_mappings
+from .terminal_mapper import (
+    resolve_mms_terminal_id,
+    resolve_terminal_details,
+    extract_cf_middle_number,
+    load_terminal_mappings,
+    load_merchant_terminal_mappings
+)
 
 
 def format_payload_datetime(dt_val: Any) -> str:
@@ -108,15 +114,19 @@ def build_cms_prefix_terminal_map(cms_report) -> Dict[str, str]:
     return prefix_map
 
 
-def build_missing_pg_payloads(engine, terminal_mappings: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def build_missing_pg_payloads(
+    engine,
+    merchant_key: Optional[str] = None,
+    terminal_mappings: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """
     Generates Postman/Pull-ready payload items for all unmatched PG transactions.
     Supports Cashfree, Easebuzz, and Airtel.
     Resolves Cashfree Order ID middle numbers (e.g. '4860' from '330595-4860-...')
-    to MMS Terminal ID via uploaded terminal mappings or CMS report lookup.
+    to MMS Terminal ID via merchant-specific terminal mappings or CMS report lookup.
     """
     if terminal_mappings is None:
-        terminal_mappings = load_terminal_mappings()
+        terminal_mappings = load_merchant_terminal_mappings(merchant_key)
 
     results: List[Dict[str, Any]] = []
 
@@ -135,8 +145,10 @@ def build_missing_pg_payloads(engine, terminal_mappings: Optional[Dict[str, Any]
             parts = order_id.split("-")
             prefix = f"{parts[0]}-{parts[1]}" if len(parts) >= 2 else order_id
 
-            # Priority 1: Check uploaded Terminal Report mapping (Partner Ref ID / VPA middle number)
-            term_id = resolve_mms_terminal_id(order_id, terminal_mappings) or ""
+            # Priority 1: Check merchant's Terminal Report mapping (Partner Ref ID / VPA middle number)
+            term_details = resolve_terminal_details(order_id, merchant_key=merchant_key, mappings=terminal_mappings)
+            term_id = term_details.get("mms_terminal_id") or term_details.get("terminal_id") if term_details else ""
+            branch_name = term_details.get("branch_name") or "" if term_details else ""
 
             # Priority 2: Check CMS prefix map (e.g. '330595-4873')
             if not term_id and prefix in cf_prefix_map:
@@ -165,6 +177,7 @@ def build_missing_pg_payloads(engine, terminal_mappings: Optional[Dict[str, Any]
                 "order_id": order_id,
                 "middle_number": middle_number,
                 "terminal_id": term_id,
+                "branch_name": branch_name,
                 "utr": utr_str,
                 "amount": amount_str,
                 "date_and_time": dt_str,

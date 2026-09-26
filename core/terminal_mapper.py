@@ -22,9 +22,11 @@ from .normalizer import clean_key
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 MAPPINGS_FILE = os.path.join(DATA_DIR, "terminal_mappings.json")
+TERMINALS_DIR = os.path.join(DATA_DIR, "terminals")
 
 # In-memory cached mappings
 _CACHE: Optional[Dict[str, Any]] = None
+_MERCHANT_CACHE: Dict[str, Dict[str, Any]] = {}
 
 
 def _normalize_header(val: Any) -> str:
@@ -110,6 +112,8 @@ def parse_terminal_report(file_path: str) -> Dict[str, Any]:
                     col_map["merchant_id"] = idx
                 elif "merchant name" in k:
                     col_map["merchant_name"] = idx
+                elif "br name" in k or "branch name" in k or "store name" in k or "outlet" in k:
+                    col_map["branch_name"] = idx
             break
 
     if header_row_idx is None or "mms_terminal_id" not in col_map:
@@ -129,6 +133,7 @@ def parse_terminal_report(file_path: str) -> Dict[str, Any]:
         vpa = str(row[col_map["vpa"]]).strip() if "vpa" in col_map and col_map["vpa"] < len(row) and row[col_map["vpa"]] is not None else ""
         m_id = clean_key(row[col_map["merchant_id"]]) if "merchant_id" in col_map and col_map["merchant_id"] < len(row) else ""
         m_name = str(row[col_map["merchant_name"]]).strip() if "merchant_name" in col_map and col_map["merchant_name"] < len(row) and row[col_map["merchant_name"]] is not None else ""
+        br_name = str(row[col_map["branch_name"]]).strip() if "branch_name" in col_map and col_map["branch_name"] < len(row) and row[col_map["branch_name"]] is not None else ""
 
         if not mms_tid and not tid:
             continue
@@ -143,6 +148,7 @@ def parse_terminal_report(file_path: str) -> Dict[str, Any]:
             "terminal_id": effective_tid,
             "partner_ref_id": pref_id,
             "vpa": vpa,
+            "branch_name": br_name,
             "merchant_id": m_id,
             "merchant_name": m_name
         }
@@ -240,17 +246,211 @@ def load_terminal_mappings(force_reload: bool = False) -> Dict[str, Any]:
     return _CACHE
 
 
-def load_and_save_terminal_file(file_path: str, merge: bool = True) -> Dict[str, Any]:
-    """Convenience function: parses an uploaded file and saves it immediately."""
-    parsed = parse_terminal_report(file_path)
-    save_terminal_mappings(parsed, merge=merge)
+def get_merchant_terminals_path(merchant_key: str) -> str:
+    """Returns the dedicated JSON file path for a merchant's terminal mappings."""
+    k = re.sub(r"[^a-zA-Z0-9]+", "_", str(merchant_key or "")).strip("_").lower()
+    if not k:
+        k = "default"
+    return os.path.join(TERMINALS_DIR, f"{k}_terminals.json")
+
+
+def save_merchant_terminal_mappings(merchant_key: str, mappings_data: Dict[str, Any], merge: bool = True) -> Dict[str, Any]:
+    """
+    Saves terminal mappings specifically for a merchant under data/terminals/{key}_terminals.json.
+    If merge=True, appends/merges any newly added terminals with existing mappings.
+    """
+    global _MERCHANT_CACHE
+    os.makedirs(TERMINALS_DIR, exist_ok=True)
+    m_key = re.sub(r"[^a-zA-Z0-9]+", "_", str(merchant_key or "")).strip("_").lower() or "default"
+    m_path = get_merchant_terminals_path(m_key)
+
+    new_ref_added = 0
+    new_tid_added = 0
+
+    if merge and os.path.exists(m_path):
+        try:
+            with open(m_path, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+            if isinstance(existing, dict):
+                existing_ref = existing.get("mappings_by_ref_id", {})
+                existing_vpa = existing.get("mappings_by_vpa", {})
+                existing_tid = existing.get("mappings_by_terminal_id", {})
+
+                in_ref = mappings_data.get("mappings_by_ref_id", {})
+                for rk, rv in in_ref.items():
+                    if rk not in existing_ref:
+                        new_ref_added += 1
+                    existing_ref[rk] = rv
+
+                in_vpa = mappings_data.get("mappings_by_vpa", {})
+                existing_vpa.update(in_vpa)
+
+                in_tid = mappings_data.get("mappings_by_terminal_id", {})
+                for tk, tv in in_tid.items():
+                    if tk not in existing_tid:
+                        new_tid_added += 1
+                    existing_tid[tk] = tv
+
+                mappings_data["mappings_by_ref_id"] = existing_ref
+                mappings_data["mappings_by_vpa"] = existing_vpa
+                mappings_data["mappings_by_terminal_id"] = existing_tid
+                mappings_data["ref_id_count"] = len(existing_ref)
+                mappings_data["terminal_id_count"] = len(existing_tid)
+                mappings_data["merchant_key"] = m_key
+        except Exception as e:
+            print(f"[TerminalMapper] Merge notice for '{m_key}': {e}")
+    else:
+        new_ref_added = len(mappings_data.get("mappings_by_ref_id", {}))
+        new_tid_added = len(mappings_data.get("mappings_by_terminal_id", {}))
+
+    mappings_data["merchant_key"] = m_key
+    with open(m_path, "w", encoding="utf-8") as f:
+        json.dump(mappings_data, f, indent=2)
+
+    _MERCHANT_CACHE[m_key] = mappings_data
+
+    # Also sync into global mappings for baseline fallback
+    try:
+        save_terminal_mappings(dict(mappings_data), merge=True)
+    except Exception:
+        pass
+
     return {
-        "success": True,
-        "source_filename": parsed.get("source_filename"),
-        "total_mappings": len(parsed.get("mappings_by_ref_id", {})),
-        "terminal_count": len(parsed.get("mappings_by_terminal_id", {})),
-        "updated_at": parsed.get("updated_at")
+        "merchant_key": m_key,
+        "file_path": m_path,
+        "total_mappings": len(mappings_data.get("mappings_by_ref_id", {})),
+        "terminal_count": len(mappings_data.get("mappings_by_terminal_id", {})),
+        "new_added": new_ref_added,
+        "source_filename": mappings_data.get("source_filename"),
+        "updated_at": mappings_data.get("updated_at")
     }
+
+
+def load_merchant_terminal_mappings(merchant_key: Optional[str] = None, force_reload: bool = False) -> Dict[str, Any]:
+    """
+    Loads terminal mappings for a specific merchant.
+    Falls back to global terminal mappings if the merchant-specific file does not exist yet.
+    """
+    global _MERCHANT_CACHE
+    if merchant_key:
+        m_key = re.sub(r"[^a-zA-Z0-9]+", "_", str(merchant_key or "")).strip("_").lower()
+        if not force_reload and m_key in _MERCHANT_CACHE:
+            return _MERCHANT_CACHE[m_key]
+
+        m_path = get_merchant_terminals_path(m_key)
+        if os.path.exists(m_path):
+            try:
+                with open(m_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        _MERCHANT_CACHE[m_key] = data
+                        return data
+            except Exception:
+                pass
+
+    return load_terminal_mappings(force_reload=force_reload)
+
+
+def clear_merchant_terminal_mappings(merchant_key: Optional[str] = None) -> bool:
+    """Clears terminal mappings for a specific merchant, or all merchants if merchant_key is None."""
+    global _MERCHANT_CACHE, _CACHE
+    if merchant_key:
+        m_key = re.sub(r"[^a-zA-Z0-9]+", "_", str(merchant_key or "")).strip("_").lower()
+        if m_key in _MERCHANT_CACHE:
+            del _MERCHANT_CACHE[m_key]
+        m_path = get_merchant_terminals_path(m_key)
+        if os.path.exists(m_path):
+            try:
+                os.remove(m_path)
+            except Exception:
+                pass
+        return True
+    else:
+        _MERCHANT_CACHE.clear()
+        clear_terminal_mappings()
+        if os.path.exists(TERMINALS_DIR):
+            for f in os.listdir(TERMINALS_DIR):
+                if f.endswith("_terminals.json"):
+                    try:
+                        os.remove(os.path.join(TERMINALS_DIR, f))
+                    except Exception:
+                        pass
+        return True
+
+
+def get_merchant_terminal_summary(merchant_key: str) -> Dict[str, Any]:
+    """Returns terminal mapping metadata (count, filename, date) for a specific merchant."""
+    m_key = re.sub(r"[^a-zA-Z0-9]+", "_", str(merchant_key or "")).strip("_").lower()
+    m_path = get_merchant_terminals_path(m_key)
+    if os.path.exists(m_path):
+        try:
+            with open(m_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                ref_count = len(data.get("mappings_by_ref_id", {}))
+                tid_count = len(data.get("mappings_by_terminal_id", {}))
+                return {
+                    "has_file": True,
+                    "merchant_key": m_key,
+                    "ref_id_count": ref_count,
+                    "terminal_id_count": tid_count,
+                    "source_filename": data.get("source_filename"),
+                    "updated_at": data.get("updated_at")
+                }
+        except Exception:
+            pass
+    return {
+        "has_file": False,
+        "merchant_key": m_key,
+        "ref_id_count": 0,
+        "terminal_id_count": 0,
+        "source_filename": None,
+        "updated_at": None
+    }
+
+
+def list_all_merchant_terminal_summaries() -> Dict[str, Dict[str, Any]]:
+    """Returns a dict mapping merchant_key -> terminal summary for all merchants with stored terminal files."""
+    summaries: Dict[str, Dict[str, Any]] = {}
+    if os.path.exists(TERMINALS_DIR):
+        for fname in os.listdir(TERMINALS_DIR):
+            if fname.endswith("_terminals.json"):
+                m_key = fname.replace("_terminals.json", "")
+                summaries[m_key] = get_merchant_terminal_summary(m_key)
+    return summaries
+
+
+def load_and_save_terminal_file(
+    file_path: str,
+    merchant_key: Optional[str] = None,
+    merge: bool = True
+) -> Dict[str, Any]:
+    """
+    Parses an uploaded terminal workbook (.xlsx or .xls) and saves it.
+    If merchant_key is supplied, saves specifically to that merchant's terminal registry.
+    """
+    parsed = parse_terminal_report(file_path)
+    if merchant_key:
+        res = save_merchant_terminal_mappings(merchant_key, parsed, merge=merge)
+        return {
+            "success": True,
+            "merchant_key": res["merchant_key"],
+            "source_filename": parsed.get("source_filename"),
+            "total_mappings": res.get("total_mappings", 0),
+            "terminal_count": res.get("terminal_count", 0),
+            "new_added": res.get("new_added", 0),
+            "updated_at": res.get("updated_at")
+        }
+    else:
+        save_terminal_mappings(parsed, merge=merge)
+        return {
+            "success": True,
+            "merchant_key": None,
+            "source_filename": parsed.get("source_filename"),
+            "total_mappings": len(parsed.get("mappings_by_ref_id", {})),
+            "terminal_count": len(parsed.get("mappings_by_terminal_id", {})),
+            "new_added": len(parsed.get("mappings_by_ref_id", {})),
+            "updated_at": parsed.get("updated_at")
+        }
 
 
 def extract_cf_middle_number(order_id: str) -> str:
@@ -284,16 +484,26 @@ def extract_cf_middle_number(order_id: str) -> str:
     return ""
 
 
-def resolve_terminal_details(identifier: str, mappings: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+def resolve_terminal_details(
+    identifier: str,
+    merchant_key: Optional[Any] = None,
+    mappings: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
     """
-    Resolves an identifier (Cashfree Order ID, middle number, Partner Ref ID, Terminal ID, or pasted transaction row)
-    to its full terminal mapping record: mms_terminal_id, terminal_id, partner_ref_id, merchant_name, vpa.
+    Resolves an identifier (Order ID, middle number, Partner Ref ID, Terminal ID, or pasted row)
+    to its full terminal mapping record: mms_terminal_id, terminal_id, partner_ref_id, branch_name, merchant_name, vpa.
+    If merchant_key is provided, loads the specific merchant's terminal mappings.
+    If mappings dict is passed as second argument, it is used directly.
     """
     if not identifier:
         return None
 
+    if isinstance(merchant_key, dict) and mappings is None:
+        mappings = merchant_key
+        merchant_key = None
+
     if mappings is None:
-        mappings = load_terminal_mappings()
+        mappings = load_merchant_terminal_mappings(merchant_key)
 
     by_ref = mappings.get("mappings_by_ref_id", {})
     by_vpa = mappings.get("mappings_by_vpa", {})
@@ -331,6 +541,7 @@ def resolve_terminal_details(identifier: str, mappings: Optional[Dict[str, Any]]
                 "terminal_id": None,
                 "partner_ref_id": cand,
                 "middle_number": mid or cand,
+                "branch_name": "",
                 "vpa": cand,
                 "merchant_name": ""
             }
@@ -338,19 +549,27 @@ def resolve_terminal_details(identifier: str, mappings: Optional[Dict[str, Any]]
     return None
 
 
-def resolve_mms_terminal_id(identifier: str, mappings: Optional[Dict[str, Any]] = None) -> Optional[str]:
+def resolve_mms_terminal_id(
+    identifier: str,
+    merchant_key: Optional[Any] = None,
+    mappings: Optional[Dict[str, Any]] = None
+) -> Optional[str]:
     """
-    Resolves an identifier (Order ID, middle number, Partner Ref ID, or Terminal ID)
-    to its corresponding MMS Terminal ID.
+    Resolves an identifier to its corresponding MMS Terminal ID.
+    If merchant_key is provided, uses that merchant's terminal mappings.
+    If mappings dict is passed as second argument, it is used directly.
     """
-    rec = resolve_terminal_details(identifier, mappings)
+    if isinstance(merchant_key, dict) and mappings is None:
+        mappings = merchant_key
+        merchant_key = None
+    rec = resolve_terminal_details(identifier, merchant_key=merchant_key, mappings=mappings)
     if rec:
         return rec.get("mms_terminal_id") or rec.get("terminal_id")
     return None
 
 
 def clear_terminal_mappings() -> bool:
-    """Clears persisted mappings and resets in-memory cache."""
+    """Clears persisted global mappings and resets in-memory cache."""
     global _CACHE
     if os.path.exists(MAPPINGS_FILE):
         try:

@@ -1982,8 +1982,38 @@
       <!-- Panel 4: Terminal Reference Mappings (TID_FILE) -->
       <div id="panel-terminal" style="display: none;">
         <div class="upload-header">
-          <h2>📋 Terminal Reference Mappings (TID_FILE)</h2>
-          <p>Auto-resolves Cashfree Order ID middle numbers (e.g. <code>4860</code> from <code>330595-4860-...</code>) against <strong>Partner Ref ID / VPA</strong> to fetch <strong>MMS Terminal ID</strong> and <strong>Terminal ID</strong>. Loaded mappings persist permanently in <code>data/terminal_mappings.json</code>.</p>
+          <h2>📋 Terminal Reference Mappings &amp; Management</h2>
+          <p>Maps Cashfree Order ID middle numbers (e.g. <code>4873</code> from <code>330595-4873-...</code>) against authoritative <strong>Partner Ref ID</strong> to resolve <strong>MMS Terminal ID</strong>, <strong>Terminal ID</strong>, and <strong>Branch Name</strong> for each merchant.</p>
+        </div>
+
+        <!-- Merchant Selection Bar for Terminals -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.95rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">🏢</div>
+            <div>
+              <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a;">Select Merchant to View &amp; Manage Terminals</div>
+              <div style="display: flex; align-items: center; gap: 0.65rem; margin-top: 0.25rem;">
+                <select id="terminal-merchant-select" style="padding: 0.45rem 0.95rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.84rem; background: #ffffff; color: #0f172a; outline: none; cursor: pointer;" onchange="onTerminalMerchantSelect(this.value)">
+                  <!-- Dynamically populated from registered merchants -->
+                </select>
+                <span id="terminal-merchant-badge" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.74rem;">All Terminals</span>
+              </div>
+            </div>
+          </div>
+          <div id="terminal-merchant-meta" style="display: flex; gap: 1.25rem; align-items: center; font-size: 0.8rem; color: #475569; flex-wrap: wrap;">
+            <div style="background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 0.72rem; text-transform: uppercase; font-weight: 600; display: block;">Merchant ID</span>
+              <strong id="meta-merchant-id" style="color: #0f172a; font-family: monospace;">--</strong>
+            </div>
+            <div style="background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 0.72rem; text-transform: uppercase; font-weight: 600; display: block;">Report File</span>
+              <span id="meta-terminal-file" style="color: #0284c7; font-weight: 600;">--</span>
+            </div>
+            <div style="background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+              <span style="color: #64748b; font-size: 0.72rem; text-transform: uppercase; font-weight: 600; display: block;">Terminals Mapped</span>
+              <strong id="meta-terminal-count" style="color: #059669; font-size: 0.95rem;">0</strong>
+            </div>
+          </div>
         </div>
 
         <!-- Interactive Terminal ID Resolution & Lookup Card -->
@@ -1993,7 +2023,7 @@
               <span style="font-size: 1.35rem;">⚡</span>
               <div>
                 <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">Test Terminal ID Resolution &amp; Decision Payload</h3>
-                <p style="font-size: 0.76rem; color: #64748b; margin: 0;">Paste a Cashfree Order ID (e.g. <code>330595-4873-...</code>), a Partner Ref ID (<code>4873</code>), or a raw transaction row to verify the mapped MMS Terminal ID instantly.</p>
+                <p style="font-size: 0.76rem; color: #64748b; margin: 0;">Paste an Order ID (e.g. <code>330595-4873-...</code>), a Middle No. / Ref ID (<code>4873</code>), or a raw transaction row to verify the mapped MMS Terminal ID instantly.</p>
               </div>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="insertSampleTerminalOrderId()" style="font-size: 0.76rem; font-weight: 700; gap: 0.35rem; color: #1a73e8; border-color: #bfdbfe; background: #eff6ff;">
@@ -2011,26 +2041,26 @@
           <div id="terminal-test-result" style="display: none; margin-top: 0.85rem;"></div>
         </div>
 
-        <!-- Terminal Dropzone for Drag-and-Drop Upload -->
-        <div class="dropzone" id="terminal-tab-dropzone" style="margin-bottom: 1.25rem; padding: 1.25rem 1rem;" onclick="document.getElementById('terminal-tab-file-input').click()">
-          <div class="dropzone-icon" style="font-size: 1.8rem; margin-bottom: 0.35rem;">📋</div>
-          <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">Drop Terminal Report (.xlsx / .xls) here, or click to browse</h3>
-          <p style="font-size: 0.78rem; margin: 0;">Extracts <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, and <code>Partner Ref ID</code> from the <code>TID_FILE</code> sheet</p>
+        <!-- Terminal Re-upload / Add New Terminals Dropzone -->
+        <div class="dropzone" id="terminal-tab-dropzone" style="margin-bottom: 1.25rem; padding: 1.25rem 1rem; border-color: #93c5fd; background: #f8fafc;" onclick="document.getElementById('terminal-tab-file-input').click()">
+          <div class="dropzone-icon" style="font-size: 1.8rem; margin-bottom: 0.35rem;">📥</div>
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem; color: #1e3a8a;">Re-upload / Add New Terminals (.xlsx / .xls)</h3>
+          <p style="font-size: 0.78rem; margin: 0; color: #475569;">Drop updated Terminal Report here or click to browse. Any newly added terminal IDs will automatically merge into <strong id="reupload-merchant-name-label">the selected merchant</strong> without losing existing mappings.</p>
         </div>
 
         <!-- Terminal Top Action Bar -->
         <div class="terminal-top-bar">
           <div class="terminal-search-wrap">
-            <input type="text" class="terminal-search-input" id="terminal-tab-search-input" placeholder="🔍 Search by Middle No., MMS Terminal ID, Terminal ID, or VPA..." oninput="onTerminalSearch(this.value)" />
+            <input type="text" class="terminal-search-input" id="terminal-tab-search-input" placeholder="🔍 Search by Middle No., MMS Terminal ID, Terminal ID, Branch Name, or VPA..." oninput="onTerminalSearch(this.value)" />
           </div>
           <div class="terminal-stats-group">
             <span id="terminal-stats-pill" class="badge badge-pass" style="font-size: 0.76rem;">0 Mappings Loaded</span>
             <input type="file" id="terminal-tab-file-input" style="display: none;" accept=".xlsx,.xls" onchange="handleTerminalUploadFromTab(this.files[0])" />
             <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('terminal-tab-file-input').click()" id="btn-terminal-tab-upload">
-              📁 Upload Terminal Report (.xlsx)
+              📥 Re-upload / Add Terminals (.xlsx)
             </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="confirmResetTerminalMappings()" style="color: #dc2626; border-color: #fca5a5;">
-              🗑️ Reset Mappings
+              🗑️ Clear Mappings
             </button>
           </div>
         </div>
@@ -2041,11 +2071,12 @@
             <thead>
               <tr>
                 <th style="width: 50px;">#</th>
-                <th>Partner Ref ID / Middle No.</th>
+                <th>Order ID Middle No. / Ref ID</th>
                 <th>MMS Terminal ID</th>
                 <th>Terminal ID</th>
+                <th>Branch / Store Name</th>
                 <th>VPA / Note</th>
-                <th style="text-align: center;">Lookup Status</th>
+                <th style="text-align: center;">Status</th>
               </tr>
             </thead>
             <tbody id="terminal-tab-tbody">
@@ -2057,7 +2088,7 @@
         <div id="terminal-tab-empty" style="display: none; padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 1rem;">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
           <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Terminal Mappings Loaded</h4>
-          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Upload your Terminal Report (.xlsx) containing the <code>TID_FILE</code> sheet with columns <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, and <code>Partner Ref ID</code> to enable automated Cashfree middle number resolution.</p>
+          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Upload your Terminal Report (.xlsx / .xls) containing the <code>TID_FILE</code> sheet with columns <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, <code>Partner Ref ID</code>, and <code>BR NAME</code> to enable automated Cashfree middle number resolution.</p>
         </div>
       </div>
 
@@ -3088,6 +3119,7 @@
     };
 
     let allMerchantsCache = [];
+    let selectedTerminalMerchantKey = 'all';
 
     window.loadRegisteredMerchants = async function(selectedKey = null) {
       try {
@@ -3102,29 +3134,29 @@
         const currentVal = selectedKey || select.value || 'auto';
         select.innerHTML = '';
 
-        // Auto option
-        const optAuto = document.createElement('option');
-        optAuto.value = 'auto';
-        optAuto.textContent = '✨ Auto-Detect from Reports';
-        select.appendChild(optAuto);
+        if (data.merchants.length === 0) {
+          const optNone = document.createElement('option');
+          optNone.value = 'none';
+          optNone.textContent = '⚠️ No Merchants Registered (Click + Add Merchant)';
+          select.appendChild(optNone);
+        } else {
+          // Auto option
+          const optAuto = document.createElement('option');
+          optAuto.value = 'auto';
+          optAuto.textContent = '✨ Auto-Detect from Reports';
+          select.appendChild(optAuto);
 
-        // Pre-configured & Registered Merchants
-        data.merchants.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.key;
-          let icon = '🏢';
-          if (m.key === 'ccd' || m.key === 'xcd') icon = '☕';
-          else if (m.key === 'sbb') icon = '🏥';
-
-          let label = `${icon} ${m.display_name}`;
-          if (m.has_split_settlement) {
-            label += ' (2-Part Split Settlement: 12AM-12PM & 12PM-12AM)';
-          } else {
-            label += ' (Daily Single Settlement)';
-          }
-          opt.textContent = label;
-          select.appendChild(opt);
-        });
+          // Registered Merchants
+          data.merchants.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.key;
+            let icon = '🏢';
+            let midStr = m.primary_merchant_id ? ` [MID: ${m.primary_merchant_id}]` : '';
+            let cycleStr = m.has_split_settlement ? ' (2-Part Split Settlement)' : ' (Single Daily Settlement)';
+            opt.textContent = `${icon} ${m.display_name}${midStr}${cycleStr}`;
+            select.appendChild(opt);
+          });
+        }
 
         // Add custom merchant option
         const optAdd = document.createElement('option');
@@ -3135,13 +3167,116 @@
         // Restore selected value if valid
         if (select.querySelector(`option[value="${currentVal}"]`)) {
           select.value = currentVal;
-        } else {
+        } else if (data.merchants.length > 0) {
           select.value = 'auto';
+        } else {
+          select.value = 'none';
         }
         window.onMerchantSelectChanged();
+        window.loadTerminalMerchantOptions(selectedKey);
       } catch (err) {
         console.warn('Could not load merchants registry:', err);
       }
+    };
+
+    window.loadTerminalMerchantOptions = function(preferredKey = null) {
+      const select = document.getElementById('terminal-merchant-select');
+      if (!select) return;
+
+      const currentVal = preferredKey || select.value || selectedTerminalMerchantKey || 'all';
+      select.innerHTML = '';
+
+      if (allMerchantsCache.length === 0) {
+        const optNone = document.createElement('option');
+        optNone.value = 'none';
+        optNone.textContent = '⚠️ No Merchants Registered';
+        select.appendChild(optNone);
+        selectedTerminalMerchantKey = 'none';
+        window.onTerminalMerchantSelect('none');
+        return;
+      }
+
+      // Option: All Merchants
+      const optAll = document.createElement('option');
+      optAll.value = 'all';
+      optAll.textContent = '🌐 All Merchants (Global View)';
+      select.appendChild(optAll);
+
+      allMerchantsCache.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.key;
+        let midStr = m.primary_merchant_id ? ` [MID: ${m.primary_merchant_id}]` : '';
+        opt.textContent = `🏢 ${m.display_name}${midStr}`;
+        select.appendChild(opt);
+      });
+
+      if (select.querySelector(`option[value="${currentVal}"]`)) {
+        select.value = currentVal;
+        selectedTerminalMerchantKey = currentVal;
+      } else {
+        select.value = allMerchantsCache[0].key;
+        selectedTerminalMerchantKey = allMerchantsCache[0].key;
+      }
+
+      window.onTerminalMerchantSelect(selectedTerminalMerchantKey);
+    };
+
+    window.onTerminalMerchantSelect = async function(key) {
+      selectedTerminalMerchantKey = key;
+      const badge = document.getElementById('terminal-merchant-badge');
+      const metaMid = document.getElementById('meta-merchant-id');
+      const metaFile = document.getElementById('meta-terminal-file');
+      const metaCount = document.getElementById('meta-terminal-count');
+      const reuploadLabel = document.getElementById('reupload-merchant-name-label');
+
+      if (!key || key === 'none') {
+        if (badge) {
+          badge.textContent = 'No Merchant';
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#991b1b';
+        }
+        if (metaMid) metaMid.textContent = '--';
+        if (metaFile) metaFile.textContent = '--';
+        if (metaCount) metaCount.textContent = '0';
+        if (reuploadLabel) reuploadLabel.textContent = 'a registered merchant';
+        await window.loadTerminalMappingsTable();
+        return;
+      }
+
+      if (key === 'all') {
+        if (badge) {
+          badge.textContent = 'All Merchants';
+          badge.style.background = '#e0f2fe';
+          badge.style.color = '#0369a1';
+        }
+        if (metaMid) metaMid.textContent = 'All MIDs';
+        if (metaFile) metaFile.textContent = 'Global Registry';
+        if (reuploadLabel) reuploadLabel.textContent = 'all merchants (global)';
+      } else {
+        const match = allMerchantsCache.find(m => m.key === key);
+        const name = match ? match.display_name : key;
+        const mid = match && match.primary_merchant_id ? match.primary_merchant_id : ((match && match.merchant_ids && match.merchant_ids[0]) || '--');
+        if (badge) {
+          badge.textContent = name;
+          badge.style.background = '#f0fdf4';
+          badge.style.color = '#15803d';
+        }
+        if (metaMid) metaMid.textContent = mid;
+        if (reuploadLabel) reuploadLabel.textContent = name;
+      }
+
+      // Fetch status for this merchant
+      try {
+        const url = key !== 'all' ? `/api/terminal-mappings-status?merchant_key=${key}` : '/api/terminal-mappings-status';
+        const res = await fetch(url);
+        const sdata = await res.json();
+        if (metaFile) metaFile.textContent = sdata.source_filename || 'No report uploaded yet';
+        if (metaCount) metaCount.textContent = sdata.active_count || '0';
+      } catch (e) {
+        console.warn('Error fetching terminal status:', e);
+      }
+
+      await window.loadTerminalMappingsTable();
     };
 
     window.onMerchantSelectChanged = function() {
@@ -3152,12 +3287,22 @@
       const val = select ? select.value : 'auto';
 
       if (delBtn) {
-        delBtn.style.display = (val && val !== 'auto' && val !== '__add_new__') ? 'inline-flex' : 'none';
+        delBtn.style.display = (val && val !== 'auto' && val !== '__add_new__' && val !== 'none') ? 'inline-flex' : 'none';
       }
 
       if (val === '__add_new__') {
         window.openAddMerchantModal();
         select.value = 'auto';
+        return;
+      }
+
+      if (val === 'none') {
+        if (badge) {
+          badge.textContent = 'No Merchants';
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#991b1b';
+          badge.style.borderColor = '#fca5a5';
+        }
         return;
       }
 
@@ -3210,7 +3355,7 @@
     window.deleteCurrentMerchant = async function() {
       const select = document.getElementById('merchant-select');
       const key = select ? select.value : null;
-      if (!key || key === 'auto' || key === '__add_new__') return;
+      if (!key || key === 'auto' || key === '__add_new__' || key === 'none') return;
 
       const match = allMerchantsCache.find(m => m.key === key);
       const name = match ? match.display_name : key;
@@ -3238,7 +3383,13 @@
       if (modal) {
         modal.style.display = 'flex';
         document.getElementById('merchant-name-input').value = '';
-        document.getElementById('merchant-prefix-input').value = '';
+        const idInp = document.getElementById('merchant-id-input');
+        if (idInp) idInp.value = '';
+        const prefInp = document.getElementById('merchant-prefix-input');
+        if (prefInp) {
+          prefInp.value = '';
+          delete prefInp.dataset.manualEdited;
+        }
         const termInput = document.getElementById('merchant-terminal-file-input');
         if (termInput) termInput.value = '';
         const singleRadio = document.querySelector('input[name="settlement_type"][value="single"]');
@@ -3257,9 +3408,22 @@
 
     window.onMerchantNameInput = function(val) {
       const raw = val.trim();
-      const clean = raw.replace(/[^a-zA-Z0-9]+/g, '_').toUpperCase();
+      let clean = '';
+      const parenMatch = raw.match(/\(([^)]+)\)/);
+      if (parenMatch && parenMatch[1].trim()) {
+        clean = parenMatch[1].trim().replace(/[^a-zA-Z0-9]+/g, '').toUpperCase();
+      } else {
+        const words = raw.split(/\s+/).filter(Boolean);
+        if (words.length === 1) {
+          clean = words[0].slice(0, 4).toUpperCase();
+        } else {
+          clean = words.map(w => w[0]).join('').slice(0, 5).toUpperCase();
+        }
+      }
       const prefixInput = document.getElementById('merchant-prefix-input');
-      if (prefixInput) prefixInput.value = clean ? `${clean}_INPUTFILE` : '';
+      if (prefixInput && (!prefixInput.dataset.manualEdited || !prefixInput.value)) {
+        prefixInput.value = clean || '';
+      }
       window.updateFilePrefixPreview();
     };
 
@@ -3268,20 +3432,21 @@
     };
 
     window.updateFilePrefixPreview = function() {
-      const prefix = (document.getElementById('merchant-prefix-input')?.value.trim() || 'MERCHANT_INPUTFILE');
+      const prefix = (document.getElementById('merchant-prefix-input')?.value.trim() || 'MERCHANT');
       const isSplitRadio = document.querySelector('input[name="settlement_type"]:checked');
       const isSplit = isSplitRadio ? isSplitRadio.value === 'split' : false;
       const previewEl = document.getElementById('file-prefix-preview');
       if (previewEl) {
         previewEl.textContent = isSplit 
-          ? `${prefix}(CASHFREE)_YYYY-MM-DD_Batch1_12AM-12PM.xlsx`
-          : `${prefix}(CASHFREE)_YYYY-MM-DD.xlsx`;
+          ? `${prefix} Input file as on YYYY-MM-DD_Batch1_12AM-12PM.xlsx`
+          : `${prefix} Input file as on YYYY-MM-DD (Cf).xlsx`;
       }
     };
 
     window.submitNewMerchant = async function(event) {
       event.preventDefault();
       const name = document.getElementById('merchant-name-input').value.trim();
+      const merchantId = document.getElementById('merchant-id-input') ? document.getElementById('merchant-id-input').value.trim() : '';
       const prefix = document.getElementById('merchant-prefix-input').value.trim();
       const isSplit = document.querySelector('input[name="settlement_type"]:checked').value === 'split';
       const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
@@ -3292,10 +3457,12 @@
       const payload = {
         name: name,
         display_name: name,
+        merchant_id: merchantId,
+        merchant_ids: merchantId ? [merchantId] : [],
         key: key || undefined,
-        input_file_prefix: prefix,
+        merchant_prefix: prefix,
+        input_file_prefix: prefix ? `${prefix} Input file as on` : '',
         has_split_settlement: isSplit,
-        merchant_ids: [],
         upi_fee_rate: 0.0015,
         cc_fee_rate: 0.0225,
         softpos_label: isSplit ? 'CF_SoftPOS' : 'CashFree',
@@ -3303,7 +3470,7 @@
       };
 
       const btn = document.getElementById('btn-save-merchant');
-      if (btn) btn.textContent = 'Saving...';
+      if (btn) btn.textContent = 'Saving & Processing...';
 
       try {
         let res;
@@ -3311,8 +3478,10 @@
           const fd = new FormData();
           fd.append('name', name);
           fd.append('display_name', name);
+          if (merchantId) fd.append('merchant_id', merchantId);
           if (key) fd.append('key', key);
-          fd.append('input_file_prefix', prefix);
+          fd.append('merchant_prefix', prefix);
+          fd.append('input_file_prefix', `${prefix} Input file as on`);
           fd.append('has_split_settlement', isSplit ? 'true' : 'false');
           fd.append('terminal_file', termFile);
           res = await fetch('/api/merchants', {
@@ -3337,10 +3506,9 @@
         await window.loadRegisteredMerchants(result.merchant.key);
 
         if (result.terminal_mappings_loaded) {
-          await window.loadTerminalMappingsTable();
-          showToast(`Merchant added with ${result.terminal_mappings_loaded} terminal mappings!`, 'success');
+          showToast(`Merchant '${result.merchant.display_name}' added with ${result.terminal_mappings_loaded} terminal mappings!`, 'success');
         } else {
-          showToast(`Merchant '${result.merchant.display_name}' registered successfully!`, 'success');
+          showToast(`Merchant '${result.merchant.display_name}' (ID: ${merchantId || result.merchant.key}) registered successfully!`, 'success');
         }
       } catch (err) {
         alert('Network error registering merchant: ' + err.message);
@@ -4986,8 +5154,13 @@
       const emptyWrap = document.getElementById('terminal-tab-empty');
       if (!tbody) return;
 
+      const mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
+
       try {
-        const url = searchQuery && searchQuery.trim() ? `/api/terminal-mappings?q=${encodeURIComponent(searchQuery.trim())}` : '/api/terminal-mappings';
+        let url = `/api/terminal-mappings?`;
+        if (mKey) url += `merchant_key=${encodeURIComponent(mKey)}&`;
+        if (searchQuery && searchQuery.trim()) url += `q=${encodeURIComponent(searchQuery.trim())}&`;
+
         const resp = await fetch(url);
         const data = await resp.json();
 
@@ -5007,14 +5180,15 @@
               tr.innerHTML = `
                 <td style="color: var(--text-muted); font-size: 0.75rem;">${idx + 1}</td>
                 <td>
-                  <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-family: var(--font-mono); font-size: 0.82rem; border: 1px solid #bfdbfe;">
+                  <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-family: var(--font-mono); font-size: 0.82rem; border: 1px solid #bfdbfe; font-weight: 700;">
                     ${r.partner_ref_id || '--'}
                   </span>
                 </td>
                 <td><strong class="mono" style="color: #1a73e8; font-size: 0.85rem;">${r.mms_terminal_id || '--'}</strong></td>
                 <td><span class="mono" style="color: var(--text-main); font-size: 0.82rem;">${r.terminal_id || '--'}</span></td>
-                <td><span style="font-size: 0.8rem; color: var(--text-muted);">${r.vpa || '--'}</span></td>
-                <td style="text-align: center;"><span class="badge badge-pass" style="font-size: 0.68rem;">Active Ready</span></td>
+                <td><span style="font-weight: 600; font-size: 0.82rem; color: #334155;">${r.branch_name || '--'}</span></td>
+                <td><span style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">${r.vpa || '--'}</span></td>
+                <td style="text-align: center;"><span class="badge badge-pass" style="font-size: 0.68rem;">Active Verified ✅</span></td>
               `;
               tbody.appendChild(tr);
             });
@@ -5049,11 +5223,15 @@
       const origText = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ Loading & Mapping...';
+        btn.innerHTML = '⏳ Loading & Merging...';
       }
+
+      const mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
 
       const formData = new FormData();
       formData.append('file', file);
+      if (mKey) formData.append('merchant_key', mKey);
+      formData.append('merge', 'true');
 
       try {
         const resp = await fetch('/api/upload-terminal-file', {
@@ -5062,8 +5240,10 @@
         });
         const data = await resp.json();
         if (resp.ok && data.success) {
-          alert(`Successfully loaded ${data.total_mappings} terminal mappings (${data.terminal_count} MMS terminals) from '${file.name}'. All records are now active.`);
-          await window.loadTerminalMappingsTable();
+          const merchantNotice = mKey ? ` for merchant '${mKey}'` : '';
+          alert(`Successfully loaded ${data.total_mappings} terminal mappings (${data.new_added || 0} newly added)${merchantNotice} from '${file.name}'. All records are now active.`);
+          await window.loadRegisteredMerchants(mKey || null);
+          await window.onTerminalMerchantSelect(selectedTerminalMerchantKey);
         } else {
           throw new Error(data.detail || 'Failed to parse terminal file.');
         }
@@ -5080,13 +5260,17 @@
     };
 
     window.confirmResetTerminalMappings = async function() {
-      if (!confirm('Are you sure you want to reset and clear all stored terminal mappings?')) return;
+      const mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : null;
+      const targetDesc = mKey ? `mappings for merchant '${mKey}'` : 'all global terminal mappings';
+      if (!confirm(`Are you sure you want to clear ${targetDesc}?`)) return;
+
       try {
-        const resp = await fetch('/api/terminal-mappings', { method: 'DELETE' });
+        const url = mKey ? `/api/terminal-mappings?merchant_key=${encodeURIComponent(mKey)}` : '/api/terminal-mappings';
+        const resp = await fetch(url, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
-          alert('Terminal mappings cleared.');
-          await window.loadTerminalMappingsTable();
+          alert(data.message || 'Terminal mappings cleared.');
+          await window.onTerminalMerchantSelect(selectedTerminalMerchantKey);
         }
       } catch (err) {
         alert('Failed to clear mappings: ' + err.message);
@@ -5102,7 +5286,7 @@
       if (!inputEl || !resultWrap) return;
       const rawVal = inputEl.value.trim();
       if (!rawVal) {
-        showToast('Please enter an Order ID or Partner Ref ID to test', 'warning');
+        showToast('Please enter an Order ID or Middle No. to test', 'warning');
         inputEl.focus();
         return;
       }
@@ -5115,8 +5299,13 @@
         </div>
       `;
 
+      const mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
+
       try {
-        const resp = await fetch(`/api/resolve-terminal?query=${encodeURIComponent(rawVal)}`);
+        let url = `/api/resolve-terminal?query=${encodeURIComponent(rawVal)}`;
+        if (mKey) url += `&merchant_key=${encodeURIComponent(mKey)}`;
+
+        const resp = await fetch(url);
         const data = await resp.json();
 
         if (data.found && data.mms_terminal_id) {
@@ -5142,12 +5331,16 @@
                   <div style="font-size: 1.05rem; font-weight: 700; color: #15803d; font-family: monospace;">${data.terminal_id || '--'}</div>
                 </div>
                 <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
-                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Partner Ref ID (Middle No.)</div>
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Branch / Store Name</div>
+                  <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">${data.branch_name || '--'}</div>
+                </div>
+                <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Order Middle No. / Ref ID</div>
                   <div style="font-size: 1.05rem; font-weight: 700; color: #1d4ed8; font-family: monospace;">${data.middle_number || data.partner_ref_id || '--'}</div>
                 </div>
                 ${data.merchant_name ? `
                 <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
-                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Merchant Name</div>
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Merchant</div>
                   <div style="font-size: 0.88rem; font-weight: 700; color: #334155;">${data.merchant_name}</div>
                 </div>` : ''}
               </div>
@@ -5416,14 +5609,20 @@
       
       <form id="form-add-merchant" onsubmit="submitNewMerchant(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.15rem;">
         <div>
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Display Name <span style="color: #ef4444;">*</span></label>
-          <input type="text" id="merchant-name-input" required placeholder="e.g., Apollo Hospitals, MedPlus, Reliance Retail" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Name <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="merchant-name-input" required placeholder="e.g., Cafe Value Express (XCD), Advance Genuine Spares (AGS)" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Input File Prefix <span style="color: #ef4444;">*</span></label>
-          <input type="text" id="merchant-prefix-input" required placeholder="e.g. APOLLO_INPUTFILE" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none; font-family: monospace; font-weight: 700; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
-          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">APOLLO_INPUTFILE(CASHFREE)_YYYY-MM-DD.xlsx</span></small>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant ID <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="merchant-id-input" required placeholder="e.g., 000000000002045 or 2045 or 2095" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none; font-family: monospace; font-weight: 700;" />
+          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Authoritative Merchant ID from reports (CMS/SMMS). Used to identify which reconciliation is being run and for seamless multi-merchant integration.</small>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Prefix <span style="color: #ef4444;">*</span></label>
+          <input type="text" id="merchant-prefix-input" required placeholder="e.g. XCD, AGS, CCD" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none; font-family: monospace; font-weight: 700; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
+          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Input file preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">XCD Input file as on YYYY-MM-DD (Cf).xlsx</span></small>
         </div>
 
         <div>
@@ -5447,9 +5646,9 @@
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Terminal Mapping Report (Optional)</label>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Terminal Mapping Report (Optional / Recommended)</label>
           <input type="file" id="merchant-terminal-file-input" accept=".xlsx,.xls" style="width: 100%; font-size: 0.82rem; padding: 0.5rem 0.75rem; border: 1px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; cursor: pointer;" />
-          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Upload the Excel report (.xlsx / .xls) containing the <code>TID_FILE</code> sheet to map terminal IDs for this merchant.</small>
+          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Upload the Excel report (.xlsx / .xls) containing the <code>TID_FILE</code> sheet with columns <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, <code>Partner Ref ID</code>, and <code>BR NAME</code> to map terminal IDs for this merchant.</small>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.75rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
