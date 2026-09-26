@@ -5590,7 +5590,7 @@
       <form id="form-add-merchant" onsubmit="submitNewMerchant(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.15rem;">
         <div>
           <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Name <span style="color: #ef4444;">*</span></label>
-          <input type="text" id="merchant-name-input" required placeholder="e.g., Cafe Value Express (XCD), Advance Genuine Spares (AGS)" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
+          <input type="text" id="merchant-name-input" required placeholder="e.g., Cafe Coffee Day, Advance Genuine Spares" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none;" oninput="onMerchantNameInput(this.value)" />
         </div>
 
         <div>
@@ -5601,8 +5601,8 @@
 
         <div>
           <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Merchant Prefix <span style="color: #ef4444;">*</span></label>
-          <input type="text" id="merchant-prefix-input" required placeholder="e.g. XCD, AGS, CCD" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none; font-family: monospace; font-weight: 700; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
-          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Input file preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">XCD Input file as on YYYY-MM-DD (Cf).xlsx</span></small>
+          <input type="text" id="merchant-prefix-input" required placeholder="e.g. CCD, AGS" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; outline: none; font-family: monospace; font-weight: 700; text-transform: uppercase;" oninput="updateFilePrefixPreview()" />
+          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Input file preview: <span id="file-prefix-preview" style="color: #0284c7; font-weight: 600;">[PREFIX] Input file as on YYYY-MM-DD (Cf).xlsx</span></small>
         </div>
 
         <div>
