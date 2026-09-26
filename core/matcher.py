@@ -9,6 +9,7 @@ from collections import defaultdict
 from .detector import ReportType
 from .reader import RawReport
 from .normalizer import clean_key, clean_amount, is_amount_equal, normalize_status
+from .terminal_mapper import resolve_terminal_details
 
 
 @dataclass
@@ -128,6 +129,7 @@ class ReconciliationEngine:
         self.duplicates: List[Dict[str, Any]] = []
         self.exceptions: List[Dict[str, Any]] = []
         self.network_changes: List[Dict[str, str]] = []
+        self.status_mismatches: List[Dict[str, Any]] = []
 
         # Master successful reconciled SMMS records for Summary
         self.successful_smms_reconciled: List[Dict[str, Any]] = []
@@ -147,6 +149,72 @@ class ReconciliationEngine:
         self.eb_report = eb
         self.airtel_report = airtel
         self.settle_report = settle
+
+    def _extract_outlet_info(
+        self,
+        cms_r: Optional[Dict[str, Any]] = None,
+        smms_r: Optional[Dict[str, Any]] = None,
+        pg_r: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Resolves the outlet / store display string for a transaction across CMS, SMMS, and PG reports.
+        Returns format: e.g. 'XKD8M3 - CCD value express' or 'XKD8M3' or store name.
+        """
+        term_id = ""
+        branch_name = ""
+        merchant_name = ""
+
+        # 1. From CMS record
+        if cms_r:
+            term_id = str(cms_r.get("Merchant MMS Terminal ID") or cms_r.get("MMS Terminal ID") or cms_r.get("Terminal ID") or "").strip()
+            branch_name = str(cms_r.get("Branch Name") or cms_r.get("Store Name") or cms_r.get("Outlet Name") or cms_r.get("Branch / Store Name") or "").strip()
+            merchant_name = str(cms_r.get("Merchant Name") or "").strip()
+
+        # 2. From SMMS record if not found
+        if not term_id and smms_r:
+            term_id = str(smms_r.get("Merchant MMS Terminal ID") or smms_r.get("Terminal ID") or smms_r.get("Store ID") or "").strip()
+
+        # 3. From PG record if not found (e.g. Cashfree Order ID middle number)
+        cf_order_id = ""
+        if pg_r:
+            cf_order_id = str(pg_r.get("Order Id") or pg_r.get("Reference Id") or "").strip()
+
+        # Try to resolve via terminal mappings
+        lookup_keys = [term_id, cf_order_id]
+        if cms_r:
+            lookup_keys.extend([
+                str(cms_r.get("Partner Unique Txn ID") or "").strip(),
+                str(cms_r.get("Invoice Number") or "").strip()
+            ])
+
+        for lk in lookup_keys:
+            if lk and lk not in ("--", "nan", "none", ""):
+                details = resolve_terminal_details(lk)
+                if details:
+                    if not term_id or term_id in ("--", "nan", "none"):
+                        term_id = details.get("mms_terminal_id") or details.get("terminal_id") or ""
+                    if not branch_name:
+                        branch_name = details.get("branch_name") or ""
+                    if not merchant_name:
+                        merchant_name = details.get("merchant_name") or ""
+                    if term_id and branch_name:
+                        break
+
+        # Clean placeholders
+        if term_id in ("--", "nan", "none", "null"):
+            term_id = ""
+        if branch_name in ("--", "nan", "none", "null"):
+            branch_name = ""
+
+        if term_id and branch_name:
+            return f"{term_id} - {branch_name}"
+        elif term_id:
+            return term_id
+        elif branch_name:
+            return branch_name
+        elif merchant_name:
+            return merchant_name
+        return "--"
 
     def _classify_partner(self, smms_row: Dict[str, Any], cms_row: Optional[Dict[str, Any]] = None) -> str:
         """Determines partner: CashFree, EaseBuzz, or Airtel Bank."""
@@ -245,18 +313,29 @@ class ReconciliationEngine:
 
         # Index partner records
         cf_by_ref: Dict[str, Dict[str, Any]] = {}
+        cf_by_order: Dict[str, Dict[str, Any]] = {}
         if self.cf_report:
             for r in self.cf_report.records:
                 bref = clean_key(r.get("Bank Reference No."))
+                order_id = clean_key(r.get("Order Id"))
+                ref_id = clean_key(r.get("Reference Id"))
                 if bref:
                     _index_record(cf_by_ref, bref, r)
+                if order_id:
+                    _index_record(cf_by_order, order_id, r)
+                if ref_id:
+                    _index_record(cf_by_order, ref_id, r)
 
         eb_by_utr: Dict[str, Dict[str, Any]] = {}
+        eb_by_tid: Dict[str, Dict[str, Any]] = {}
         if self.eb_report:
             for r in self.eb_report.records:
                 utr = clean_key(r.get("UTR"))
+                tid = clean_key(r.get("UPI tid") or r.get("ID"))
                 if utr:
                     _index_record(eb_by_utr, utr, r)
+                if tid:
+                    _index_record(eb_by_tid, tid, r)
 
         air_by_pid: Dict[str, Dict[str, Any]] = {}
         air_by_tid: Dict[str, Dict[str, Any]] = {}
@@ -275,6 +354,132 @@ class ReconciliationEngine:
         matched_eb_keys: Set[str] = set()
         matched_air_keys: Set[str] = set()
         handled_failed_keys: Set[str] = set()
+
+        def _find_pg_record(partner_name: str, rrn: str, sp_id: str = "") -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+            """Finds the corresponding PG record and returns (gateway_name, pg_record)."""
+            p_lower = str(partner_name or "").lower()
+            if ("cashfree" in p_lower or p_lower == "cf") and self.cf_report:
+                rec = _find_record(cf_by_ref, rrn) or (_find_record(cf_by_order, sp_id) if sp_id else None)
+                if rec:
+                    return "Cashfree", rec
+            elif ("easebuzz" in p_lower or p_lower == "eb") and self.eb_report:
+                rec = _find_record(eb_by_utr, rrn) or (_find_record(eb_by_tid, sp_id) if sp_id else None)
+                if rec:
+                    return "Easebuzz", rec
+            elif ("airtel" in p_lower or p_lower == "air") and self.airtel_report:
+                rec = _find_record(air_by_pid, rrn) or (_find_record(air_by_tid, sp_id) if sp_id else None)
+                if rec:
+                    return "Airtel", rec
+
+            # Fallback search across all available reports if not found by primary partner
+            if self.cf_report:
+                rec = _find_record(cf_by_ref, rrn) or (_find_record(cf_by_order, sp_id) if sp_id else None)
+                if rec:
+                    return "Cashfree", rec
+            if self.eb_report:
+                rec = _find_record(eb_by_utr, rrn) or (_find_record(eb_by_tid, sp_id) if sp_id else None)
+                if rec:
+                    return "Easebuzz", rec
+            if self.airtel_report:
+                rec = _find_record(air_by_pid, rrn) or (_find_record(air_by_tid, sp_id) if sp_id else None)
+                if rec:
+                    return "Airtel", rec
+
+            return None, None
+
+        def _get_pg_statuses(gw: str, p_rec: Dict[str, Any]) -> Tuple[str, str, Optional[float]]:
+            if gw == "Cashfree":
+                st_raw = str(p_rec.get("Transaction Status") or "").strip()
+                amt = clean_amount(p_rec.get("Amount"))
+            elif gw == "Easebuzz":
+                st_raw = str(p_rec.get("Status") or "").strip()
+                amt = clean_amount(p_rec.get("Amount"))
+            else:  # Airtel
+                st_raw = str(p_rec.get("Transaction Status") or "").strip()
+                amt = clean_amount(p_rec.get("Original Input Amt"))
+            st_norm = normalize_status(st_raw)
+            return st_raw, st_norm, amt
+
+        def _record_status_mismatch_entry(
+            gw: str,
+            pg_raw: str,
+            pg_norm: str,
+            cms_raw: str,
+            cms_norm: str,
+            smms_raw: str,
+            smms_norm: str,
+            key_rrn: str,
+            key_sp_id: str,
+            amt_val: Optional[float],
+            cms_row: Optional[Dict[str, Any]],
+            smms_row: Optional[Dict[str, Any]],
+            pg_row: Optional[Dict[str, Any]]
+        ):
+            c_raw_str = str(cms_raw or "").strip()
+            if c_raw_str in ("2", "2.0", "0", "0.0"):
+                cms_disp = f"Failed (Status {c_raw_str})"
+            elif c_raw_str in ("1", "1.0"):
+                cms_disp = f"Success (Status {c_raw_str})"
+            else:
+                cms_disp = c_raw_str or cms_norm
+
+            pg_disp = pg_raw or pg_norm
+            smms_disp = smms_raw or smms_norm or "--"
+
+            if pg_norm == "Success" and (cms_norm != "Success" or (smms_norm and smms_norm != "Success")):
+                note = f"PG {gw} is SUCCESS ({pg_disp}), but CMS recorded as {cms_disp}"
+            elif pg_norm != "Success" and cms_norm == "Success":
+                note = f"PG {gw} is {pg_disp}, but CMS recorded as SUCCESS"
+            elif pg_norm == "Success" and smms_norm and smms_norm != "Success":
+                note = f"PG {gw} & CMS are SUCCESS, but SMMS recorded as {smms_disp}"
+            else:
+                note = f"Status Conflict: PG is {pg_disp}, CMS is {cms_disp}, SMMS is {smms_disp}"
+
+            outlet_str = self._extract_outlet_info(cms_row, smms_row, pg_row)
+            m_key = key_rrn or key_sp_id
+            m_id = key_sp_id or (pg_row.get("Reference Id") or pg_row.get("Transaction Id") if pg_row else "")
+
+            entry = dict(cms_row or smms_row or pg_row or {})
+            entry.update({
+                "gateway": gw,
+                "pg_status": pg_disp,
+                "pg_status_norm": pg_norm,
+                "cms_status": cms_disp,
+                "cms_status_norm": cms_norm,
+                "smms_status": smms_disp,
+                "smms_status_norm": smms_norm,
+                "swinkpay_txn_id": m_id,
+                "utr": key_rrn,
+                "amount": amt_val,
+                "outlet": outlet_str,
+                "discrepancy_note": note,
+                "reconciliation_status": "Status Mismatch",
+                # Standard recon columns for reporting
+                "Source System": f"{gw} vs CMS",
+                "Match Key": m_key,
+                "Matched Transaction ID": m_id,
+                "CMS Amount": clean_amount(cms_row.get("Transaction Amount")) if cms_row else None,
+                "Partner Amount": amt_val,
+                "Amount Difference": None,
+                "CMS Status": cms_disp,
+                "Partner Status": pg_disp,
+                "Reconciliation Status": "Status Mismatch",
+                "Exception Reason": note,
+                "Outlet": outlet_str,
+                "Settlement Details": ""
+            })
+            self.status_mismatches.append(entry)
+            self.exceptions.append(entry)
+            if key_rrn:
+                _record_matched_key(handled_failed_keys, key_rrn)
+            if key_sp_id:
+                _record_matched_key(handled_failed_keys, key_sp_id)
+            if gw == "Cashfree":
+                _record_matched_key(matched_cf_keys, key_rrn)
+            elif gw == "Easebuzz":
+                _record_matched_key(matched_eb_keys, key_rrn)
+            elif gw == "Airtel":
+                _record_matched_key(matched_air_keys, key_rrn)
 
         # 3. Master Reconciliation: Iterate through SMMS records
         for smms_r in self.smms_report.records:
@@ -326,7 +531,31 @@ class ReconciliationEngine:
                 _record_matched_key(matched_cms_keys, smms_sp_id)
 
             cms_amt = clean_amount(cms_r.get("Transaction Amount"))
-            cms_status = normalize_status(cms_r.get("Transaction Status"))
+            cms_raw_status = str(cms_r.get("Transaction Status") or "").strip()
+            cms_status = normalize_status(cms_raw_status)
+            smms_raw_status = str(smms_r.get("Transaction Status") or "").strip()
+
+            # Cross-system check with Payment Gateway report (Cashfree, Easebuzz, Airtel)
+            pg_gw, pg_r = _find_pg_record(partner, smms_rrn, smms_sp_id)
+            if pg_r:
+                pg_raw_st, pg_norm_st, pg_amt = _get_pg_statuses(pg_gw, pg_r)
+                if (pg_norm_st and cms_status and pg_norm_st != cms_status) or (pg_norm_st and smms_status and pg_norm_st != smms_status):
+                    _record_status_mismatch_entry(
+                        gw=pg_gw,
+                        pg_raw=pg_raw_st,
+                        pg_norm=pg_norm_st,
+                        cms_raw=cms_raw_status,
+                        cms_norm=cms_status,
+                        smms_raw=smms_raw_status,
+                        smms_norm=smms_status,
+                        key_rrn=smms_rrn,
+                        key_sp_id=smms_sp_id,
+                        amt_val=cms_amt if cms_amt is not None else pg_amt,
+                        cms_row=cms_r,
+                        smms_row=smms_r,
+                        pg_row=pg_r
+                    )
+                    continue
 
             # Check if Failed, Reversed, or other non-success status (3, 4, 5, 6)
             if cms_status != "Success" or smms_status != "Success":
@@ -459,13 +688,30 @@ class ReconciliationEngine:
                     self.cms_not_in_cf.append(entry)
                     self.exceptions.append(entry)
                 else:
-                    cf_r = _find_record(cf_by_ref, smms_rrn)
+                    cf_r = _find_record(cf_by_ref, smms_rrn) or (smms_sp_id and _find_record(cf_by_order, smms_sp_id))
                     if cf_r:
                         cf_amt = clean_amount(cf_r.get("Amount"))
-                        cf_status = normalize_status(cf_r.get("Transaction Status"))
+                        cf_raw_st = str(cf_r.get("Transaction Status") or "").strip()
+                        cf_status = normalize_status(cf_raw_st)
                         _record_matched_key(matched_cf_keys, smms_rrn)
                         
-                        if is_amount_equal(cms_amt, cf_amt, self.tolerance):
+                        if cf_status != cms_status:
+                            _record_status_mismatch_entry(
+                                gw="Cashfree",
+                                pg_raw=cf_raw_st,
+                                pg_norm=cf_status,
+                                cms_raw=cms_raw_status,
+                                cms_norm=cms_status,
+                                smms_raw=smms_raw_status,
+                                smms_norm=smms_status,
+                                key_rrn=smms_rrn,
+                                key_sp_id=smms_sp_id,
+                                amt_val=cms_amt,
+                                cms_row=cms_r,
+                                smms_row=smms_r,
+                                pg_row=cf_r
+                            )
+                        elif is_amount_equal(cms_amt, cf_amt, self.tolerance):
                             partner_matched = True
                             entry = dict(cms_r)
                             entry.update({
@@ -539,13 +785,30 @@ class ReconciliationEngine:
                     self.cms_not_in_eb.append(entry)
                     self.exceptions.append(entry)
                 else:
-                    eb_r = _find_record(eb_by_utr, smms_rrn)
+                    eb_r = _find_record(eb_by_utr, smms_rrn) or (smms_sp_id and _find_record(eb_by_tid, smms_sp_id))
                     if eb_r:
                         eb_amt = clean_amount(eb_r.get("Amount"))
-                        eb_status = normalize_status(eb_r.get("Status"))
+                        eb_raw_st = str(eb_r.get("Status") or "").strip()
+                        eb_status = normalize_status(eb_raw_st)
                         _record_matched_key(matched_eb_keys, smms_rrn)
 
-                        if is_amount_equal(cms_amt, eb_amt, self.tolerance):
+                        if eb_status != cms_status:
+                            _record_status_mismatch_entry(
+                                gw="Easebuzz",
+                                pg_raw=eb_raw_st,
+                                pg_norm=eb_status,
+                                cms_raw=cms_raw_status,
+                                cms_norm=cms_status,
+                                smms_raw=smms_raw_status,
+                                smms_norm=smms_status,
+                                key_rrn=smms_rrn,
+                                key_sp_id=smms_sp_id,
+                                amt_val=cms_amt,
+                                cms_row=cms_r,
+                                smms_row=smms_r,
+                                pg_row=eb_r
+                            )
+                        elif is_amount_equal(cms_amt, eb_amt, self.tolerance):
                             partner_matched = True
                             entry = dict(cms_r)
                             entry.update({
@@ -634,10 +897,27 @@ class ReconciliationEngine:
 
                     if air_r:
                         air_amt = clean_amount(air_r.get("Original Input Amt"))
-                        air_status = normalize_status(air_r.get("Transaction Status"))
+                        air_raw_st = str(air_r.get("Transaction Status") or "").strip()
+                        air_status = normalize_status(air_raw_st)
                         _record_matched_key(matched_air_keys, smms_rrn)
 
-                        if is_amount_equal(cms_amt, air_amt, self.tolerance):
+                        if air_status != cms_status:
+                            _record_status_mismatch_entry(
+                                gw="Airtel",
+                                pg_raw=air_raw_st,
+                                pg_norm=air_status,
+                                cms_raw=cms_raw_status,
+                                cms_norm=cms_status,
+                                smms_raw=smms_raw_status,
+                                smms_norm=smms_status,
+                                key_rrn=smms_rrn,
+                                key_sp_id=smms_sp_id,
+                                amt_val=cms_amt,
+                                cms_row=cms_r,
+                                smms_row=smms_r,
+                                pg_row=air_r
+                            )
+                        elif is_amount_equal(cms_amt, air_amt, self.tolerance):
                             partner_matched = True
                             entry = dict(cms_r)
                             entry.update({
@@ -811,8 +1091,27 @@ class ReconciliationEngine:
                     cms_r = _find_record(cms_by_rrn, bref)
                     if cms_r:
                         cms_amt = clean_amount(cms_r.get("Transaction Amount"))
-                        cms_status = normalize_status(cms_r.get("Transaction Status"))
+                        cms_raw_st = str(cms_r.get("Transaction Status") or "").strip()
+                        cms_status = normalize_status(cms_raw_st)
                         _record_matched_key(matched_cf_keys, bref)
+
+                        if cf_status != cms_status:
+                            _record_status_mismatch_entry(
+                                gw="Cashfree",
+                                pg_raw=str(cf_r.get("Transaction Status") or "").strip(),
+                                pg_norm=cf_status,
+                                cms_raw=cms_raw_st,
+                                cms_norm=cms_status,
+                                smms_raw="",
+                                smms_norm="",
+                                key_rrn=bref,
+                                key_sp_id=clean_key(cms_r.get("SwinkPay Txn ID")),
+                                amt_val=cms_amt if cms_amt is not None else cf_amt,
+                                cms_row=cms_r,
+                                smms_row=None,
+                                pg_row=cf_r
+                            )
+                            continue
 
                         if is_amount_equal(cms_amt, cf_amt, self.tolerance):
                             entry = dict(cms_r)
@@ -907,8 +1206,27 @@ class ReconciliationEngine:
                     cms_r = _find_record(cms_by_rrn, utr)
                     if cms_r:
                         cms_amt = clean_amount(cms_r.get("Transaction Amount"))
-                        cms_status = normalize_status(cms_r.get("Transaction Status"))
+                        cms_raw_st = str(cms_r.get("Transaction Status") or "").strip()
+                        cms_status = normalize_status(cms_raw_st)
                         _record_matched_key(matched_eb_keys, utr)
+
+                        if eb_status != cms_status:
+                            _record_status_mismatch_entry(
+                                gw="Easebuzz",
+                                pg_raw=str(eb_r.get("Status") or "").strip(),
+                                pg_norm=eb_status,
+                                cms_raw=cms_raw_st,
+                                cms_norm=cms_status,
+                                smms_raw="",
+                                smms_norm="",
+                                key_rrn=utr,
+                                key_sp_id=clean_key(cms_r.get("SwinkPay Txn ID")),
+                                amt_val=cms_amt if cms_amt is not None else eb_amt,
+                                cms_row=cms_r,
+                                smms_row=None,
+                                pg_row=eb_r
+                            )
+                            continue
 
                         if is_amount_equal(cms_amt, eb_amt, self.tolerance):
                             entry = dict(cms_r)
@@ -1008,11 +1326,30 @@ class ReconciliationEngine:
 
                     if cms_r:
                         cms_amt = clean_amount(cms_r.get("Transaction Amount"))
-                        cms_status = normalize_status(cms_r.get("Transaction Status"))
+                        cms_raw_st = str(cms_r.get("Transaction Status") or "").strip()
+                        cms_status = normalize_status(cms_raw_st)
                         if pid:
                             _record_matched_key(matched_air_keys, pid)
                         if tid:
                             _record_matched_key(matched_air_keys, tid)
+
+                        if air_status != cms_status:
+                            _record_status_mismatch_entry(
+                                gw="Airtel",
+                                pg_raw=str(air_r.get("Transaction Status") or "").strip(),
+                                pg_norm=air_status,
+                                cms_raw=cms_raw_st,
+                                cms_norm=cms_status,
+                                smms_raw="",
+                                smms_norm="",
+                                key_rrn=pid or tid,
+                                key_sp_id=clean_key(cms_r.get("SwinkPay Txn ID")),
+                                amt_val=cms_amt if cms_amt is not None else air_amt,
+                                cms_row=cms_r,
+                                smms_row=None,
+                                pg_row=air_r
+                            )
+                            continue
 
                         s_r = _find_record(settle_by_ref, pid) if pid else None
                         settle_details = {}

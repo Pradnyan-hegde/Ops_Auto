@@ -2586,6 +2586,48 @@
         </div>
       </div>
 
+      <!-- Status Mismatches & Status Conflicts (PG vs CMS / SMMS) Section -->
+      <div class="table-card" id="status-mismatch-section" style="margin-top: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem;">
+              <span>⚖️ Status Conflicts & Status Mismatches (PG vs CMS / SMMS)</span>
+              <span id="status-mismatch-badge" class="badge badge-pass">0 Conflicts</span>
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+              Cross-system status verification between Payment Gateways (Cashfree, Easebuzz, Airtel) and SwinkPay systems (CMS & SMMS). Highlights transactions where the gateway collected payment (SUCCESS / Payment Received) but CMS or SMMS recorded Failed / Pending, or vice versa.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-mismatches" onclick="copyStatusMismatches(this)" style="display: none;">📋 Copy Mismatches</button>
+          </div>
+        </div>
+
+        <div id="status-mismatch-table-wrap" style="overflow-x: auto; display: none;">
+          <table>
+            <thead>
+              <tr>
+                <th>PG (Gateway)</th>
+                <th>Status in PG</th>
+                <th>CMS Status</th>
+                <th>SMMS Status</th>
+                <th>SwinkPay Txn ID</th>
+                <th>UTR / RRN</th>
+                <th class="text-right">Amount</th>
+                <th>Outlet / Terminal</th>
+                <th>Discrepancy Details</th>
+              </tr>
+            </thead>
+            <tbody id="status-mismatch-tbody">
+              <!-- Dynamically populated by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="status-mismatch-empty" style="display: block; padding: 1.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+          ✅ All transaction statuses match across Payment Gateways, CMS, and SMMS. Zero status conflicts detected.
+        </div>
+      </div>
+
     </section>
 
   </main>
@@ -4090,6 +4132,10 @@
       currentMissingPayloads = data.missing_pg_payloads || [];
       renderMissingPgSection(currentMissingPayloads);
 
+      // 7. Status Conflicts & Status Mismatches (PG vs CMS / SMMS)
+      const mismatches = data.status_mismatches || (data.xcd_status && data.xcd_status.status_mismatches) || [];
+      renderStatusMismatchSection(mismatches);
+
       resultsSection.style.display = 'block';
       resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
@@ -4648,6 +4694,103 @@
         setTimeout(() => { btn.innerHTML = orig; }, 2500);
       });
     };
+
+    // ==========================================
+    // Status Conflicts & Status Mismatches (PG vs CMS / SMMS)
+    // ==========================================
+    let currentStatusMismatches = [];
+
+    function renderStatusMismatchSection(mismatches) {
+      currentStatusMismatches = mismatches || [];
+      const badge = document.getElementById('status-mismatch-badge');
+      const tableWrap = document.getElementById('status-mismatch-table-wrap');
+      const emptyDiv = document.getElementById('status-mismatch-empty');
+      const tbody = document.getElementById('status-mismatch-tbody');
+      const btnCopy = document.getElementById('btn-copy-mismatches');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (currentStatusMismatches.length > 0) {
+        if (badge) {
+          badge.className = 'badge badge-fail';
+          badge.textContent = `${currentStatusMismatches.length} Conflict${currentStatusMismatches.length > 1 ? 's' : ''}`;
+        }
+        if (tableWrap) tableWrap.style.display = 'block';
+        if (emptyDiv) emptyDiv.style.display = 'none';
+        if (btnCopy) btnCopy.style.display = 'inline-flex';
+
+        currentStatusMismatches.forEach(item => {
+          const tr = document.createElement('tr');
+          const gw = item.gateway || 'Unknown';
+          const tagClass = (gw.toLowerCase().includes('cashfree') || gw.toLowerCase().includes('cf')) ? 'tag-cf' :
+                           ((gw.toLowerCase().includes('easebuzz') || gw.toLowerCase().includes('eb')) ? 'tag-eb' : 'tag-air');
+
+          // PG status badge
+          const pgNorm = (item.pg_status_norm || '').toLowerCase();
+          let pgBadgeClass = 'badge badge-pass';
+          if (pgNorm.includes('fail') || pgNorm.includes('decline') || pgNorm.includes('drop')) {
+            pgBadgeClass = 'badge badge-fail';
+          } else if (pgNorm.includes('pend') || pgNorm.includes('process')) {
+            pgBadgeClass = 'badge badge-warn';
+          }
+
+          // CMS status badge
+          const cmsNorm = (item.cms_status_norm || '').toLowerCase();
+          const cmsRaw = (item.cms_status || '').toLowerCase();
+          let cmsBadgeClass = 'badge badge-pass';
+          if (cmsNorm.includes('fail') || cmsRaw.includes('failed') || cmsRaw.includes('status 2')) {
+            cmsBadgeClass = 'badge badge-fail';
+          } else if (!cmsNorm || cmsNorm === '--') {
+            cmsBadgeClass = 'badge';
+          }
+
+          // SMMS status badge
+          const smmsNorm = (item.smms_status_norm || '').toLowerCase();
+          const smmsRaw = (item.smms_status || '').toLowerCase();
+          let smmsBadgeClass = 'badge badge-pass';
+          if (smmsNorm.includes('fail') || smmsRaw.includes('failed')) {
+            smmsBadgeClass = 'badge badge-fail';
+          } else if (smmsRaw.includes('missing') || !smmsNorm || smmsNorm === '--') {
+            smmsBadgeClass = 'badge';
+          }
+
+          tr.innerHTML = `
+            <td><span class="xcd-partner-tag ${tagClass}">${gw}</span></td>
+            <td><span class="${pgBadgeClass}">${item.pg_status || item.pg_status_norm || '--'}</span></td>
+            <td><span class="${cmsBadgeClass}">${item.cms_status || item.cms_status_norm || '--'}</span></td>
+            <td><span class="${smmsBadgeClass}">${item.smms_status || item.smms_status_norm || '--'}</span></td>
+            <td><code class="mono" style="font-size:0.8rem;">${item.swinkpay_txn_id || '--'}</code></td>
+            <td><code class="mono" style="font-size:0.8rem;">${item.utr || '--'}</code></td>
+            <td class="text-right mono font-semibold">${formatCurrency(item.amount)}</td>
+            <td><strong style="font-size:0.82rem; color:#1e293b;">${item.outlet || '--'}</strong></td>
+            <td><span style="font-size:0.78rem; color:#b91c1c; font-weight:600;">${item.discrepancy_note || '--'}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } else {
+        if (badge) {
+          badge.className = 'badge badge-pass';
+          badge.textContent = '0 Conflicts';
+        }
+        if (tableWrap) tableWrap.style.display = 'none';
+        if (emptyDiv) emptyDiv.style.display = 'block';
+        if (btnCopy) btnCopy.style.display = 'none';
+      }
+    }
+
+    function copyStatusMismatches(btn) {
+      if (!currentStatusMismatches || currentStatusMismatches.length === 0) return;
+      let text = 'Payment Gateway\tStatus in PG\tCMS Status\tSMMS Status\tSwinkPay Txn ID\tUTR / RRN\tAmount\tOutlet / Terminal\tDiscrepancy Details\n';
+      currentStatusMismatches.forEach(m => {
+        text += `${m.gateway}\t${m.pg_status}\t${m.cms_status}\t${m.smms_status}\t${m.swinkpay_txn_id}\t${m.utr}\t${m.amount}\t${m.outlet}\t${m.discrepancy_note}\n`;
+      });
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      });
+    }
 
     // Daily Operations Email Summary Functions
     function renderEmailSummary(data) {

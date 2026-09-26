@@ -172,9 +172,11 @@ def parse_terminal_report(file_path: str) -> Dict[str, Any]:
                 if clean_n:
                     mappings_by_vpa[clean_n] = effective_mms
 
-        # Index by Terminal ID
+        # Index by Terminal ID and MMS Terminal ID
         if tid and tid != "--":
             mappings_by_terminal_id[tid] = record_payload
+        if effective_mms and effective_mms != "--":
+            mappings_by_terminal_id[effective_mms] = record_payload
 
     result = {
         "updated_at": datetime.now().isoformat(),
@@ -545,6 +547,14 @@ def resolve_terminal_details(
                 "vpa": cand,
                 "merchant_name": ""
             }
+
+        # Check if candidate matches any record's mms_terminal_id directly
+        for rec_src in (by_ref, by_tid):
+            for r_val in rec_src.values():
+                if clean_key(r_val.get("mms_terminal_id")) == cand:
+                    rec = dict(r_val)
+                    rec["middle_number"] = mid or cand
+                    return rec
 
     return None
 

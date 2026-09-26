@@ -339,6 +339,7 @@ def execute_recon_for_files(
         engine.cms_air_matched
     )
     xcd_status["dates"] = dates_with_counts
+    xcd_status["status_mismatches"] = getattr(engine, "status_mismatches", [])
 
     # Detect Network Changes (CMS Network vs Cashfree Payment Mode)
     network_changes = getattr(engine, "network_changes", []) or detect_network_changes(
@@ -508,6 +509,7 @@ def execute_recon_for_files(
             "network_changes": network_changes,
             "outlet_count": outlet_count,
             "missing_pg_payloads": missing_pg_payloads,
+            "status_mismatches": getattr(engine, "status_mismatches", []),
             "merchant": xcd_status["merchant"],
             "adjustments": adjustments_summary,
             "airtel_invoice_summary": airtel_invoice_summary,
@@ -539,6 +541,7 @@ def execute_recon_for_files(
         "discrepancies": {
             "failed_or_reversed": len(engine.failed_or_reversed),
             "adjustments": len(all_adjs),
+            "status_mismatches": len(getattr(engine, "status_mismatches", [])),
             "cms_not_in_smms": len(engine.cms_not_in_smms),
             "smms_not_in_cms": len(engine.smms_not_in_cms),
             "cms_not_in_cf": len(getattr(engine, "cms_not_in_cf", [])),
@@ -561,7 +564,8 @@ def execute_recon_for_files(
         "network_changes": network_changes,
         "missing_pg_payloads": missing_pg_payloads,
         "missing_pg_discrepancies": missing_pg_discrepancies,
-        "airtel_invoice_summary": airtel_invoice_summary
+        "airtel_invoice_summary": airtel_invoice_summary,
+        "status_mismatches": getattr(engine, "status_mismatches", [])
     }
 
 

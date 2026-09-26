@@ -131,13 +131,20 @@ def normalize_status(val: Any) -> str:
         return "Status 6"
 
     sl = s.lower()
-    if sl in ("success", "successful", "captured", "completed", "paid", "received", "settled", "c", "misc cr", "true"):
+    if sl in (
+        "success", "successful", "captured", "completed", "paid", "received",
+        "settled", "c", "misc cr", "true", "payment received", "cbdc received",
+        "payment credited", "payment success", "approved"
+    ) or (("received" in sl or "success" in sl) and not any(neg in sl for neg in ("fail", "not", "decline", "reject", "cancel"))):
         return "Success"
-    elif sl in ("failed", "failure", "fail", "declined", "f", "rejected", "false"):
+    elif sl in (
+        "failed", "failure", "fail", "declined", "f", "rejected", "false",
+        "payment failed", "user_dropped", "bounced", "not settled", "not_settled"
+    ) or any(neg in sl for neg in ("fail", "decline", "reject", "bounce", "user_drop")):
         return "Failed"
-    elif sl in ("reversed", "refunded", "refund", "r"):
+    elif sl in ("reversed", "refunded", "refund", "r") or "refund" in sl or "reversal" in sl:
         return "Reversed"
-    elif sl in ("pending", "in_process", "initiated"):
+    elif sl in ("pending", "in_process", "initiated") or "process" in sl or "pending" in sl:
         return "Pending"
 
     return s

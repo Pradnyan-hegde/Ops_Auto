@@ -401,6 +401,8 @@ class ExcelReportBuilder:
             self._write_table_sheet("Unmatched_Airtel", self.engine.unmatched_airtel)
         if self.engine.duplicates:
             self._write_table_sheet("Duplicates", self.engine.duplicates)
+        if getattr(self.engine, "status_mismatches", []):
+            self._write_table_sheet("Status_Mismatches", self.engine.status_mismatches)
         if self.engine.exceptions:
             self._write_table_sheet("Exceptions", self.engine.exceptions)
 
