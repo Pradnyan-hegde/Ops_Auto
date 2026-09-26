@@ -42,7 +42,15 @@ from core.sync_builder import build_smms_sync_workbook
 from core.pg_payload_builder import build_missing_pg_payloads
 from core.network_builder import detect_network_changes, build_change_network_workbook
 from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
-from core.terminal_mapper import load_and_save_terminal_file, load_terminal_mappings, DATA_DIR, clear_terminal_mappings
+from core.terminal_mapper import (
+    load_and_save_terminal_file,
+    load_terminal_mappings,
+    DATA_DIR,
+    clear_terminal_mappings,
+    resolve_terminal_details,
+    resolve_mms_terminal_id,
+    extract_cf_middle_number
+)
 from core.merchant import (
     get_merchant_profile,
     detect_merchant,
@@ -512,6 +520,7 @@ def execute_recon_for_files(
     return {
         "output_filename": output_filename,
         "date": date_str,
+        "recon_name": xcd_status["recon_name"],
         "merchant": xcd_status["merchant"],
         "summary": aggregator.grand_total,
         "partner_subtotals": aggregator.partner_subtotals,
@@ -550,22 +559,60 @@ def get_all_merchants():
 
 @app.post("/api/merchants")
 async def create_merchant_profile(request: Request):
-    """Registers or updates a merchant profile dynamically."""
-    try:
-        data = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+    """Registers or updates a merchant profile dynamically. Supports JSON or FormData with optional terminal file."""
+    content_type = request.headers.get("content-type", "")
+    terminal_file_saved = False
+    terminal_mappings_count = 0
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        name = str(form.get("name") or form.get("display_name") or "").strip()
+        data = {
+            "name": name,
+            "display_name": name,
+            "key": form.get("key"),
+            "input_file_prefix": form.get("input_file_prefix"),
+            "has_split_settlement": str(form.get("has_split_settlement")).lower() in ("true", "1", "split"),
+            "gateways": ["CashFree", "EaseBuzz", "Airtel Bank"]
+        }
+        term_upload = form.get("terminal_file")
+        if term_upload and hasattr(term_upload, "filename") and term_upload.filename:
+            temp_path = os.path.join(SESSIONS_DIR, f"merchant_term_{uuid.uuid4().hex[:8]}_{term_upload.filename}")
+            os.makedirs(SESSIONS_DIR, exist_ok=True)
+            with open(temp_path, "wb") as f_out:
+                f_out.write(await term_upload.read())
+            try:
+                res = load_and_save_terminal_file(temp_path, merge=True)
+                terminal_file_saved = True
+                terminal_mappings_count = res.get("total_mappings", 0)
+            except Exception as e:
+                print(f"[MerchantCreate] Terminal upload notice: {e}")
+            finally:
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+    else:
+        try:
+            data = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON body.")
 
     name = data.get("name") or data.get("display_name")
     if not name:
         raise HTTPException(status_code=400, detail="Merchant name is required.")
 
     profile = save_merchant_profile(data)
-    return {
+    resp = {
         "status": "success",
         "message": f"Merchant '{profile.display_name}' registered successfully.",
         "merchant": profile.to_dict()
     }
+    if terminal_file_saved:
+        resp["terminal_mappings_loaded"] = terminal_mappings_count
+        resp["message"] += f" Loaded {terminal_mappings_count} terminal mappings from attached terminal report."
+    return resp
 
 
 @app.delete("/api/merchants/{key}")
@@ -915,6 +962,8 @@ def upload_recon_file(
         ],
         "dates": parsed["dates"],
         "xcd_status": xcd_status,
+        "recon_name": xcd_status.get("recon_name", f"{xcd_status['merchant']['key'].upper()} Recon"),
+        "merchant": xcd_status["merchant"],
         "outlet_count": outlet_count,
         "sync_file": sync_file_info,
         "network_file": network_file_info,
@@ -1524,25 +1573,29 @@ async def save_settings(request: Request):
 
 
 @app.post("/api/upload-terminal-file")
-def upload_terminal_file(file: UploadFile = File(...)):
+def upload_terminal_file(
+    file: UploadFile = File(...),
+    merchant_key: Optional[str] = Form(None)
+):
     """
     Uploads and parses the Terminal Report Excel workbook (TID_FILE).
     Extracts TERMINAL ID, MMS TERMINAL ID, and Partner Ref ID mappings.
-    Saves to data/terminal_mappings.json for permanent auto-resolution.
+    Saves and merges into data/terminal_mappings.json for permanent auto-resolution.
     """
     if not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported for terminal mapping.")
 
-    temp_path = os.path.join(SESSIONS_DIR, f"temp_terminal_{uuid.uuid4().hex[:8]}.xlsx")
+    temp_path = os.path.join(SESSIONS_DIR, f"temp_terminal_{uuid.uuid4().hex[:8]}_{file.filename}")
     os.makedirs(SESSIONS_DIR, exist_ok=True)
     try:
         with open(temp_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        res = load_and_save_terminal_file(temp_path)
+        res = load_and_save_terminal_file(temp_path, merge=True)
         return JSONResponse(content={
             "success": True,
             "filename": file.filename,
+            "merchant_key": merchant_key,
             "total_mappings": res.get("total_mappings", 0),
             "terminal_count": res.get("terminal_count", 0),
             "updated_at": res.get("updated_at"),
@@ -1575,11 +1628,86 @@ def get_terminal_mappings_status():
     }
 
 
+@app.get("/api/resolve-terminal")
+def resolve_terminal_endpoint(query: str):
+    """
+    Direct lookup endpoint to resolve an Order ID (extracts middle number),
+    Partner Ref ID, or full transaction row to MMS Terminal ID, Terminal ID, and merchant details.
+    """
+    q = str(query).strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Query parameter 'query' cannot be blank.")
+
+    mappings = load_terminal_mappings()
+    rec = resolve_terminal_details(q, mappings)
+
+    if rec:
+        mms = rec.get("mms_terminal_id") or rec.get("terminal_id")
+        tid = rec.get("terminal_id")
+        pref = rec.get("partner_ref_id")
+        vpa = rec.get("vpa")
+        mname = rec.get("merchant_name")
+        mid = rec.get("middle_number") or pref or ""
+
+        # Extract amount, utr, date if a full row was pasted
+        extracted_utr = ""
+        extracted_amt = ""
+        extracted_date = ""
+
+        # Check for Bank Ref No / UTR in pasted text
+        m_utr = re.search(r'\b(CB\d{8,15}|\d{12})\b', q)
+        if m_utr:
+            extracted_utr = m_utr.group(1).strip()
+        m_amt = re.search(r'\bINR\s*([\d\.]+)', q) or re.search(r'\t([\d\.]+)\t', q)
+        if m_amt:
+            extracted_amt = m_amt.group(1).strip()
+        m_dt = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})', q)
+        if m_dt:
+            extracted_date = m_dt.group(1).strip()
+
+        payload = {
+            "amount": extracted_amt or "0.00",
+            "terminalID": mms or "",
+            "utr": extracted_utr or "",
+            "dateAndTime": extracted_date or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        return {
+            "success": True,
+            "query": q,
+            "middle_number": mid,
+            "found": True,
+            "mms_terminal_id": mms,
+            "terminal_id": tid,
+            "partner_ref_id": pref,
+            "vpa": vpa,
+            "merchant_name": mname,
+            "payload": payload,
+            "payload_json": json.dumps(payload, indent=2),
+            "message": f"Successfully mapped to MMS Terminal ID '{mms}' (Terminal ID: {tid or '--'})."
+        }
+
+    mid = extract_cf_middle_number(q)
+    return {
+        "success": True,
+        "query": q,
+        "middle_number": mid or q,
+        "found": False,
+        "mms_terminal_id": None,
+        "terminal_id": None,
+        "partner_ref_id": mid or q,
+        "vpa": None,
+        "merchant_name": None,
+        "payload": None,
+        "message": f"Partner Ref ID / Middle Number '{mid or q}' not found in loaded mappings. Please upload the Terminal Report."
+    }
+
+
 @app.get("/api/terminal-mappings")
 def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: int = 0):
     """
     Returns the list of loaded terminal mapping records.
-    Supports optional search filter across Partner Ref ID, MMS Terminal ID, Terminal ID, and VPA.
+    Supports optional search filter across Partner Ref ID, MMS Terminal ID, Terminal ID, VPA, and Merchant Name.
     """
     mappings = load_terminal_mappings()
     ref_map = mappings.get("mappings_by_ref_id", {})
@@ -1593,6 +1721,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
         tid = v.get("terminal_id", "")
         pref = v.get("partner_ref_id") or k
         vpa = v.get("vpa", "")
+        m_name = v.get("merchant_name", "")
         key = (str(pref).strip(), str(mms).strip(), str(tid).strip())
         if key not in seen:
             seen.add(key)
@@ -1600,7 +1729,8 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
                 "partner_ref_id": str(pref).strip(),
                 "mms_terminal_id": str(mms).strip(),
                 "terminal_id": str(tid).strip(),
-                "vpa": str(vpa).strip()
+                "vpa": str(vpa).strip(),
+                "merchant_name": str(m_name).strip()
             })
 
     for k, v in tid_map.items():
@@ -1608,6 +1738,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
         tid = v.get("terminal_id") or k
         pref = v.get("partner_ref_id", "")
         vpa = v.get("vpa", "")
+        m_name = v.get("merchant_name", "")
         key = (str(pref).strip(), str(mms).strip(), str(tid).strip())
         if key not in seen:
             seen.add(key)
@@ -1615,7 +1746,8 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
                 "partner_ref_id": str(pref).strip(),
                 "mms_terminal_id": str(mms).strip(),
                 "terminal_id": str(tid).strip(),
-                "vpa": str(vpa).strip()
+                "vpa": str(vpa).strip(),
+                "merchant_name": str(m_name).strip()
             })
 
     # Optional search query filter
@@ -1627,6 +1759,7 @@ def get_terminal_mappings(q: Optional[str] = None, limit: int = 1000, offset: in
             or query in r.get("mms_terminal_id", "").lower()
             or query in r.get("terminal_id", "").lower()
             or query in r.get("vpa", "").lower()
+            or query in r.get("merchant_name", "").lower()
         ]
 
     total_count = len(records)

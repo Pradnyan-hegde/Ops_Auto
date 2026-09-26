@@ -73,7 +73,7 @@ DEFAULT_MERCHANT_PROFILES: Dict[str, MerchantProfile] = {
     "ags": MerchantProfile(
         key="ags",
         display_name="Advance Genuine Spares (AGS)",
-        merchant_ids=["000000000002095", "2095"],
+        merchant_ids=["0000000000002095", "000000000002095", "2095"],
         merchant_keywords=["ADVANCE GENUINE SPARES", "GENUINE SPARES", "ADVANCE SPARES", "AGS"],
         gateways=["CashFree", "EaseBuzz", "Airtel Bank"],
         has_split_settlement=False,  # Single Daily Settlement

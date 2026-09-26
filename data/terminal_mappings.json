@@ -1,0 +1,118 @@
+{
+  "updated_at": "2026-09-26T07:35:00.000000",
+  "source_filename": "Terminal Report_Of 26_09_2026_07_22_16.xlsx",
+  "total_rows_scanned": 350,
+  "ref_id_count": 8,
+  "terminal_id_count": 5,
+  "mappings_by_ref_id": {
+    "4873": {
+      "mms_terminal_id": "X6QT0V",
+      "terminal_id": "111001475",
+      "partner_ref_id": "4873",
+      "vpa": "cici",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "4803": {
+      "mms_terminal_id": "X6QT0V",
+      "terminal_id": "111001475",
+      "partner_ref_id": "4803",
+      "vpa": "tn= 4803",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "4877": {
+      "mms_terminal_id": "X9OF3X",
+      "terminal_id": "139001311",
+      "partner_ref_id": "4877",
+      "vpa": "tn= 4877",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "138960": {
+      "mms_terminal_id": "XJGTVC",
+      "terminal_id": "139001335",
+      "partner_ref_id": "138960",
+      "vpa": "D&tn= 138960",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "4860": {
+      "mms_terminal_id": "X47VVH",
+      "terminal_id": "101001206",
+      "partner_ref_id": "4860",
+      "vpa": "idfc",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "2015": {
+      "mms_terminal_id": "XJ6T4F",
+      "terminal_id": "113001371",
+      "partner_ref_id": "2015",
+      "vpa": "tn= 4030",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "4030": {
+      "mms_terminal_id": "XJ6T4F",
+      "terminal_id": "113001371",
+      "partner_ref_id": "4030",
+      "vpa": "tn= 4030",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    }
+  },
+  "mappings_by_vpa": {
+    "cici": "X6QT0V",
+    "tn= 4803": "X6QT0V",
+    "4803": "X6QT0V",
+    "tn= 4877": "X9OF3X",
+    "4877": "X9OF3X",
+    "138960": "XJGTVC",
+    "idfc": "X47VVH",
+    "tn= 4030": "XJ6T4F",
+    "4030": "XJ6T4F"
+  },
+  "mappings_by_terminal_id": {
+    "111001475": {
+      "mms_terminal_id": "X6QT0V",
+      "terminal_id": "111001475",
+      "partner_ref_id": "4873",
+      "vpa": "cici",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "139001311": {
+      "mms_terminal_id": "X9OF3X",
+      "terminal_id": "139001311",
+      "partner_ref_id": "4877",
+      "vpa": "tn= 4877",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "139001335": {
+      "mms_terminal_id": "XJGTVC",
+      "terminal_id": "139001335",
+      "partner_ref_id": "138960",
+      "vpa": "D&tn= 138960",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "101001206": {
+      "mms_terminal_id": "X47VVH",
+      "terminal_id": "101001206",
+      "partner_ref_id": "4860",
+      "vpa": "idfc",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    },
+    "113001371": {
+      "mms_terminal_id": "XJ6T4F",
+      "terminal_id": "113001371",
+      "partner_ref_id": "2015",
+      "vpa": "tn= 4030",
+      "merchant_id": "000000000002045",
+      "merchant_name": "CCD value express"
+    }
+  }
+}

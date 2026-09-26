@@ -1986,6 +1986,38 @@
           <p>Auto-resolves Cashfree Order ID middle numbers (e.g. <code>4860</code> from <code>330595-4860-...</code>) against <strong>Partner Ref ID / VPA</strong> to fetch <strong>MMS Terminal ID</strong> and <strong>Terminal ID</strong>. Loaded mappings persist permanently in <code>data/terminal_mappings.json</code>.</p>
         </div>
 
+        <!-- Interactive Terminal ID Resolution & Lookup Card -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+              <span style="font-size: 1.35rem;">⚡</span>
+              <div>
+                <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">Test Terminal ID Resolution &amp; Decision Payload</h3>
+                <p style="font-size: 0.76rem; color: #64748b; margin: 0;">Paste a Cashfree Order ID (e.g. <code>330595-4873-...</code>), a Partner Ref ID (<code>4873</code>), or a raw transaction row to verify the mapped MMS Terminal ID instantly.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="insertSampleTerminalOrderId()" style="font-size: 0.76rem; font-weight: 700; gap: 0.35rem; color: #1a73e8; border-color: #bfdbfe; background: #eff6ff;">
+              🧪 Insert Sample (4873)
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+            <input type="text" id="test-terminal-input" placeholder="Paste Cashfree Order ID (e.g. 330595-4873-AXL...), Middle No. (4873), or full row..." style="flex: 1; min-width: 300px; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.82rem; font-family: monospace; outline: none;" onkeydown="if(event.key === 'Enter') { event.preventDefault(); testResolveTerminalId(); }" />
+            <button type="button" class="btn btn-primary btn-sm" onclick="testResolveTerminalId()" style="font-weight: 700; padding: 0.6rem 1.15rem;">
+              ⚡ Resolve Terminal ID
+            </button>
+          </div>
+
+          <div id="terminal-test-result" style="display: none; margin-top: 0.85rem;"></div>
+        </div>
+
+        <!-- Terminal Dropzone for Drag-and-Drop Upload -->
+        <div class="dropzone" id="terminal-tab-dropzone" style="margin-bottom: 1.25rem; padding: 1.25rem 1rem;" onclick="document.getElementById('terminal-tab-file-input').click()">
+          <div class="dropzone-icon" style="font-size: 1.8rem; margin-bottom: 0.35rem;">📋</div>
+          <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">Drop Terminal Report (.xlsx / .xls) here, or click to browse</h3>
+          <p style="font-size: 0.78rem; margin: 0;">Extracts <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, and <code>Partner Ref ID</code> from the <code>TID_FILE</code> sheet</p>
+        </div>
+
         <!-- Terminal Top Action Bar -->
         <div class="terminal-top-bar">
           <div class="terminal-search-wrap">
@@ -2560,6 +2592,40 @@
 
     let uploadedFiles = [];
 
+    // Global toast notification utility
+    window.showToast = function(msg, type = 'info') {
+      let toastContainer = document.getElementById('toast-container');
+      if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; pointer-events: none;';
+        document.body.appendChild(toastContainer);
+      }
+      const toast = document.createElement('div');
+      toast.style.cssText = 'padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); pointer-events: auto; transition: all 0.3s ease; transform: translateY(10px); opacity: 0;';
+      if (type === 'success') {
+        toast.style.background = '#065f46';
+        toast.style.color = '#ffffff';
+      } else if (type === 'warning' || type === 'error') {
+        toast.style.background = '#991b1b';
+        toast.style.color = '#ffffff';
+      } else {
+        toast.style.background = '#1e293b';
+        toast.style.color = '#38bdf8';
+      }
+      toast.textContent = msg;
+      toastContainer.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 350);
+      }, 4000);
+    };
+
     // Mode Switching across all 4 operational tabs
     window.switchUploadMode = function(mode) {
       const modeTabs = {
@@ -2946,26 +3012,48 @@
       const file = (fileOrFiles instanceof FileList && fileOrFiles.length > 0) ? fileOrFiles[0] : fileOrFiles;
       if (!file) return;
 
-      if (slotFiles[slot]) {
-        if (!auxiliaryFiles.some(f => f.name === file.name)) {
-          auxiliaryFiles.push(file);
-        }
-      } else {
-        slotFiles[slot] = file;
-        slotMeta[slot] = { filename: file.name, file_size: file.size };
-      }
-      updateSlotsUI();
-
       try {
         const formData = new FormData();
         formData.append('files', file);
         const resp = await fetch('/api/detect-files', { method: 'POST', body: formData });
         const res = await resp.json();
-        if (res.detected && res.detected[slot]) {
-          slotMeta[slot] = res.detected[slot];
+
+        let targetSlot = slot;
+        if (res.detected) {
+          const detectedKeys = Object.keys(res.detected);
+          if (detectedKeys.length > 0) {
+            const detectedSlot = detectedKeys[0];
+            if (detectedSlot !== slot && recognizedSlots.includes(detectedSlot)) {
+              targetSlot = detectedSlot;
+              showToast(`File '${file.name}' auto-routed to ${slotDisplayNames[detectedSlot] || detectedSlot}.`, 'info');
+            }
+          }
+        }
+
+        if (slotFiles[targetSlot]) {
+          if (!auxiliaryFiles.some(f => f.name === file.name)) {
+            auxiliaryFiles.push(file);
+          }
+        } else {
+          slotFiles[targetSlot] = file;
+          slotMeta[targetSlot] = (res.detected && res.detected[targetSlot]) || { filename: file.name, file_size: file.size };
+        }
+
+        if (res.required_slots) {
+          latestRequiredSlots = res.required_slots;
+        }
+        if (res.detected_merchant && res.detected_merchant.key) {
+          const mSelect = document.getElementById('merchant-select');
+          if (mSelect && (mSelect.value === 'auto' || !mSelect.dataset.userLocked)) {
+            mSelect.value = res.detected_merchant.key;
+            onMerchantSelectChanged();
+          }
         }
       } catch (e) {
-        // preserve fallback metadata
+        if (!slotFiles[slot]) {
+          slotFiles[slot] = file;
+          slotMeta[slot] = { filename: file.name, file_size: file.size };
+        }
       }
       updateSlotsUI();
     };
@@ -3122,6 +3210,8 @@
         modal.style.display = 'flex';
         document.getElementById('merchant-name-input').value = '';
         document.getElementById('merchant-prefix-input').value = '';
+        const termInput = document.getElementById('merchant-terminal-file-input');
+        if (termInput) termInput.value = '';
         const singleRadio = document.querySelector('input[name="settlement_type"][value="single"]');
         if (singleRadio) singleRadio.checked = true;
         window.updateFilePrefixPreview();
@@ -3132,6 +3222,8 @@
     window.closeAddMerchantModal = function() {
       const modal = document.getElementById('modal-add-merchant');
       if (modal) modal.style.display = 'none';
+      const termInput = document.getElementById('merchant-terminal-file-input');
+      if (termInput) termInput.value = '';
     };
 
     window.onMerchantNameInput = function(val) {
@@ -3165,6 +3257,9 @@
       const isSplit = document.querySelector('input[name="settlement_type"]:checked').value === 'split';
       const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
+      const termFileInput = document.getElementById('merchant-terminal-file-input');
+      const termFile = (termFileInput && termFileInput.files && termFileInput.files.length > 0) ? termFileInput.files[0] : null;
+
       const payload = {
         name: name,
         display_name: name,
@@ -3182,11 +3277,27 @@
       if (btn) btn.textContent = 'Saving...';
 
       try {
-        const res = await fetch('/api/merchants', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        let res;
+        if (termFile) {
+          const fd = new FormData();
+          fd.append('name', name);
+          fd.append('display_name', name);
+          if (key) fd.append('key', key);
+          fd.append('input_file_prefix', prefix);
+          fd.append('has_split_settlement', isSplit ? 'true' : 'false');
+          fd.append('terminal_file', termFile);
+          res = await fetch('/api/merchants', {
+            method: 'POST',
+            body: fd
+          });
+        } else {
+          res = await fetch('/api/merchants', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
         const result = await res.json();
         if (!res.ok) {
           alert('Error saving merchant: ' + (result.detail || 'Unknown error'));
@@ -3195,6 +3306,13 @@
         
         window.closeAddMerchantModal();
         await window.loadRegisteredMerchants(result.merchant.key);
+
+        if (result.terminal_mappings_loaded) {
+          await window.loadTerminalMappingsTable();
+          showToast(`Merchant added with ${result.terminal_mappings_loaded} terminal mappings!`, 'success');
+        } else {
+          showToast(`Merchant '${result.merchant.display_name}' registered successfully!`, 'success');
+        }
       } catch (err) {
         alert('Network error registering merchant: ' + err.message);
       } finally {
@@ -3295,6 +3413,16 @@
       const filesArray = Array.from(fileList);
       if (filesArray.length === 0) return;
 
+      // Clean reset slot files before auto-classifying new upload batch
+      allSlotKeys.forEach(s => {
+        slotFiles[s] = null;
+        delete slotMeta[s];
+        const inp = document.getElementById('slot-input-' + s);
+        if (inp) inp.value = '';
+      });
+      auxiliaryFiles = [];
+      updateSlotsUI();
+
       const formData = new FormData();
       filesArray.forEach(f => formData.append('files', f));
 
@@ -3358,14 +3486,8 @@
           });
         }
       } catch (err) {
-        // Fallback: assign sequentially if backend detection had issue
-        filesArray.forEach(f => {
-          const emptySlot = recognizedSlots.find(s => !slotFiles[s]);
-          if (emptySlot) {
-            slotFiles[emptySlot] = f;
-            slotMeta[emptySlot] = { filename: f.name, file_size: f.size };
-          }
-        });
+        console.error('File detection failed:', err);
+        showToast('Error during report analysis: ' + err.message, 'warning');
       }
 
       updateSlotsUI();
@@ -3516,6 +3638,26 @@
 
     // Reconcile action
     btnReconcile.addEventListener('click', async () => {
+      // 1. Mandatory check: CMS and SMMS must both be loaded
+      if (!slotFiles['CMS'] || !slotFiles['SMMS']) {
+        errorBox.innerHTML = `<strong>⚠️ Mandatory Reports Required:</strong> Both <strong>CMS Report</strong> and <strong>SMMS Settlement Report</strong> are mandatory. Please upload both reports to start reconciliation.`;
+        errorBox.style.display = 'block';
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast('Both CMS and SMMS reports are mandatory', 'error');
+        return;
+      }
+
+      // 2. Gateway check: if Cashfree/Easebuzz/Airtel transactions exist in CMS/SMMS, the PG report must be uploaded
+      const missingMandatory = (latestRequiredSlots || []).filter(s => !slotFiles[s]);
+      if (missingMandatory.length > 0) {
+        const missingNames = missingMandatory.map(s => slotDisplayNames[s] || s).join(', ');
+        errorBox.innerHTML = `<strong>⚠️ Reconciliation Blocked:</strong> Missing mandatory report(s): <strong>${missingNames}</strong>.<br>Active transactions for these gateways are present in CMS/SMMS. All reports with active transactions must be uploaded to perform reconciliation.`;
+        errorBox.style.display = 'block';
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast(`Missing mandatory report: ${missingNames}`, 'error');
+        return;
+      }
+
       const activeFiles = [];
       allSlotKeys.forEach(s => {
         if (slotFiles[s]) {
@@ -3579,8 +3721,10 @@
 
         renderResults(data);
       } catch (err) {
-        errorBox.textContent = err.message;
+        errorBox.innerHTML = `<strong>⚠️ Reconciliation Blocked / Failed:</strong><br>${err.message}`;
         errorBox.style.display = 'block';
+        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast(err.message, 'error');
       } finally {
         loadingState.style.display = 'none';
       }
@@ -4853,6 +4997,143 @@
     };
 
     // ==========================================
+    // Interactive Terminal Resolution Test Handlers
+    // ==========================================
+    window.testResolveTerminalId = async function() {
+      const inputEl = document.getElementById('test-terminal-input');
+      const resultWrap = document.getElementById('terminal-test-result');
+      if (!inputEl || !resultWrap) return;
+      const rawVal = inputEl.value.trim();
+      if (!rawVal) {
+        showToast('Please enter an Order ID or Partner Ref ID to test', 'warning');
+        inputEl.focus();
+        return;
+      }
+
+      resultWrap.style.display = 'block';
+      resultWrap.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; color: #64748b; font-size: 0.85rem; padding: 0.75rem;">
+          <div class="spinner" style="width: 18px; height: 18px; border-width: 2px;"></div>
+          <span>Resolving terminal mapping from loaded reference records...</span>
+        </div>
+      `;
+
+      try {
+        const resp = await fetch(`/api/resolve-terminal?query=${encodeURIComponent(rawVal)}`);
+        const data = await resp.json();
+
+        if (data.found && data.mms_terminal_id) {
+          resultWrap.innerHTML = `
+            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 1rem 1.25rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="badge badge-pass" style="font-size: 0.76rem;">✅ RESOLVED</span>
+                  <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">Mapping Found &amp; Active</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="copyTerminalTestPayload()" style="font-size: 0.74rem; padding: 0.25rem 0.65rem;" id="btn-copy-test-payload">
+                  📋 Copy Decision Payload
+                </button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+                <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">MMS Terminal ID</div>
+                  <div style="font-size: 1.2rem; font-weight: 800; color: #0f172a; font-family: monospace;">${data.mms_terminal_id}</div>
+                </div>
+                <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Terminal ID</div>
+                  <div style="font-size: 1.05rem; font-weight: 700; color: #15803d; font-family: monospace;">${data.terminal_id || '--'}</div>
+                </div>
+                <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Partner Ref ID (Middle No.)</div>
+                  <div style="font-size: 1.05rem; font-weight: 700; color: #1d4ed8; font-family: monospace;">${data.middle_number || data.partner_ref_id || '--'}</div>
+                </div>
+                ${data.merchant_name ? `
+                <div style="background: #ffffff; padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid #dcfce7;">
+                  <div style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Merchant Name</div>
+                  <div style="font-size: 0.88rem; font-weight: 700; color: #334155;">${data.merchant_name}</div>
+                </div>` : ''}
+              </div>
+
+              ${data.payload ? `
+              <div style="margin-top: 0.5rem;">
+                <div style="font-size: 0.72rem; color: #475569; font-weight: 600; margin-bottom: 0.25rem;">SwinkPay Decision API Payload Preview:</div>
+                <pre id="terminal-test-payload-text" style="background: #0f172a; color: #f8fafc; padding: 0.65rem 0.85rem; border-radius: 8px; font-size: 0.78rem; font-family: monospace; overflow-x: auto; margin: 0;">${data.payload_json || JSON.stringify(data.payload, null, 2)}</pre>
+              </div>` : ''}
+            </div>
+          `;
+          showToast(`Terminal ID resolved: ${data.mms_terminal_id}`, 'success');
+        } else {
+          resultWrap.innerHTML = `
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 1rem 1.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span class="badge badge-fail" style="font-size: 0.76rem;">❌ NOT FOUND</span>
+                <span style="font-size: 0.85rem; font-weight: 700; color: #b91c1c;">No Terminal Mapping Found</span>
+              </div>
+              <p style="font-size: 0.82rem; color: #7f1d1d; margin: 0 0 0.5rem 0;">${data.message}</p>
+              <div style="font-size: 0.76rem; color: #64748b;">
+                Extracted Middle Number / Query: <code style="background: #ffffff; padding: 2px 6px; border: 1px solid #fca5a5; border-radius: 4px; font-weight: 700; color: #991b1b;">${data.middle_number || rawVal}</code>
+              </div>
+            </div>
+          `;
+          showToast(`No mapping found for ${data.middle_number || rawVal}`, 'warning');
+        }
+      } catch (err) {
+        resultWrap.innerHTML = `
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 0.85rem; color: #991b1b; font-size: 0.82rem;">
+            Error resolving terminal: ${err.message}
+          </div>
+        `;
+      }
+    };
+
+    window.insertSampleTerminalOrderId = function() {
+      const inp = document.getElementById('test-terminal-input');
+      if (inp) {
+        inp.value = '330595-4873-AXL706427102c4545c5a848c8186d8bd169axisupioffline';
+        window.testResolveTerminalId();
+      }
+    };
+
+    window.copyTerminalTestPayload = function() {
+      const codeEl = document.getElementById('terminal-test-payload-text');
+      const btn = document.getElementById('btn-copy-test-payload');
+      if (!codeEl) return;
+      navigator.clipboard.writeText(codeEl.textContent.trim()).then(() => {
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ Copied!';
+          setTimeout(() => { btn.innerHTML = orig; }, 2000);
+        }
+        showToast('Decision payload copied to clipboard', 'info');
+      });
+    };
+
+    // Terminal dropzone drag & drop setup
+    const termDropzone = document.getElementById('terminal-tab-dropzone');
+    if (termDropzone) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        termDropzone.addEventListener(eventName, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          termDropzone.classList.add('dragover');
+        }, false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        termDropzone.addEventListener(eventName, e => {
+          e.preventDefault();
+          e.stopPropagation();
+          termDropzone.classList.remove('dragover');
+        }, false);
+      });
+      termDropzone.addEventListener('drop', e => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleTerminalUploadFromTab(e.dataTransfer.files[0]);
+        }
+      }, false);
+    }
+
+    // ==========================================
     // Postman Credentials & Telemetry Handlers
     // ==========================================
     async function loadApiSettings() {
@@ -5066,6 +5347,12 @@
               </div>
             </label>
           </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Terminal Mapping Report (Optional)</label>
+          <input type="file" id="merchant-terminal-file-input" accept=".xlsx,.xls" style="width: 100%; font-size: 0.82rem; padding: 0.5rem 0.75rem; border: 1px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; cursor: pointer;" />
+          <small style="display: block; font-size: 0.74rem; color: #64748b; margin-top: 0.35rem;">Upload the Excel report (.xlsx / .xls) containing the <code>TID_FILE</code> sheet to map terminal IDs for this merchant.</small>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.75rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">

@@ -18,7 +18,9 @@ test_scratch/
 *.csv
 
 # Data and logs
-data/
+data/*
+!data/terminal_mappings.json
+!data/merchants.json
 scratch/
 *.log
 .system_generated/
