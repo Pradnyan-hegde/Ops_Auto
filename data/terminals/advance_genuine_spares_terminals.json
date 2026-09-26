@@ -1,0 +1,298 @@
+{
+  "updated_at": "2026-09-26T14:24:58.757270",
+  "source_filename": "temp_terminal_779d3ff7_Terminal Report_Of 26_09_2026_14_20_44.xls",
+  "total_rows_scanned": 23,
+  "ref_id_count": 23,
+  "terminal_id_count": 6,
+  "mappings_by_ref_id": {
+    "5129": {
+      "mms_terminal_id": "SV4CV7",
+      "terminal_id": "VJA-AUT",
+      "partner_ref_id": "5129",
+      "vpa": "SWINKZSV4CV7@cmsidfc",
+      "branch_name": "Shanthi Bhavani",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "4618": {
+      "mms_terminal_id": "SD87LS",
+      "terminal_id": "GNT-AUT",
+      "partner_ref_id": "4618",
+      "vpa": "SWINKZSD87LS@cmsidfc",
+      "branch_name": "B Naveen",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "8360": {
+      "mms_terminal_id": "SEGXL5",
+      "terminal_id": "NLR-AUT",
+      "partner_ref_id": "8360",
+      "vpa": "SWINKZSEGXL5@cmsidfc",
+      "branch_name": "T chaitanya Thrinath",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "7022": {
+      "mms_terminal_id": "SFNRRH",
+      "terminal_id": "TPT-AUT",
+      "partner_ref_id": "7022",
+      "vpa": "SWINKZSFNRRH@cmsidfc",
+      "branch_name": "P Pavan Kumar",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "8723": {
+      "mms_terminal_id": "AAAX4A",
+      "terminal_id": "VJA-GVPT",
+      "partner_ref_id": "8723",
+      "vpa": "SWINKZAAAX4A@cmsidfc",
+      "branch_name": "Vijayawada Governorpet",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "2108": {
+      "mms_terminal_id": "AKCPCD",
+      "terminal_id": "BSH IEA",
+      "partner_ref_id": "2108",
+      "vpa": "SWINKZAKCPCD@cmsidfc",
+      "branch_name": "Divya",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "13280": {
+      "mms_terminal_id": "SV4CV7",
+      "terminal_id": "VJA-AUT",
+      "partner_ref_id": "13280",
+      "vpa": "upi://pay?cu=INR&pa=epos78516313280sflo.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "Shanthi Bhavani",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "176651": {
+      "mms_terminal_id": "SV4CV7",
+      "terminal_id": "VJA-AUT",
+      "partner_ref_id": "176651",
+      "vpa": "upi://pay?cu=INR&pa=epos176651t21y%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "Shanthi Bhavani",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "cvaaad1b502b4d47b82ad41e3a0068b8": {
+      "mms_terminal_id": "SV4CV7",
+      "terminal_id": "VJA-AUT",
+      "partner_ref_id": "cvaaad1b502b4d47b82ad41e3a0068b8",
+      "vpa": "spf2095sv4cv7@yesbank",
+      "branch_name": "Shanthi Bhavani",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "cva9e6c50cb54ef5b616556aa128362b": {
+      "mms_terminal_id": "SD87LS",
+      "terminal_id": "GNT-AUT",
+      "partner_ref_id": "cva9e6c50cb54ef5b616556aa128362b",
+      "vpa": "spf2095sd87ls@yesbank",
+      "branch_name": "B Naveen",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "13283": {
+      "mms_terminal_id": "SD87LS",
+      "terminal_id": "GNT-AUT",
+      "partner_ref_id": "13283",
+      "vpa": "upi://pay?cu=INR&pa=epos78516313283upnm.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "B Naveen",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "176650": {
+      "mms_terminal_id": "SD87LS",
+      "terminal_id": "GNT-AUT",
+      "partner_ref_id": "176650",
+      "vpa": "upi://pay?cu=INR&pa=epos176650sjm4%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "B Naveen",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "232070": {
+      "mms_terminal_id": "SEGXL5",
+      "terminal_id": "NLR-AUT",
+      "partner_ref_id": "232070",
+      "vpa": "upi://pay?cu=INR&pa=epos232070yrmu%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "T chaitanya Thrinath",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "13282": {
+      "mms_terminal_id": "SEGXL5",
+      "terminal_id": "NLR-AUT",
+      "partner_ref_id": "13282",
+      "vpa": "upi://pay?cu=INR&pa=epos78516313282gnep.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "T chaitanya Thrinath",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "cva594c39fb2412ea97c395999e729f1": {
+      "mms_terminal_id": "SEGXL5",
+      "terminal_id": "NLR-AUT",
+      "partner_ref_id": "cva594c39fb2412ea97c395999e729f1",
+      "vpa": "spf2095segxl5@yesbank",
+      "branch_name": "T chaitanya Thrinath",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "cvaf4795fd9b488885b805b69d8727b0": {
+      "mms_terminal_id": "SFNRRH",
+      "terminal_id": "TPT-AUT",
+      "partner_ref_id": "cvaf4795fd9b488885b805b69d8727b0",
+      "vpa": "spf2095sfnrrh@yesbank",
+      "branch_name": "P Pavan Kumar",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "13281": {
+      "mms_terminal_id": "SFNRRH",
+      "terminal_id": "TPT-AUT",
+      "partner_ref_id": "13281",
+      "vpa": "upi://pay?cu=INR&pa=epos78516313281tnuj.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "P Pavan Kumar",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "176640": {
+      "mms_terminal_id": "SFNRRH",
+      "terminal_id": "TPT-AUT",
+      "partner_ref_id": "176640",
+      "vpa": "upi://pay?cu=INR&pa=epos176640dl6s%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "P Pavan Kumar",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "cva1e8d90b814b98aea9318fe8631bed": {
+      "mms_terminal_id": "AAAX4A",
+      "terminal_id": "VJA-GVPT",
+      "partner_ref_id": "cva1e8d90b814b98aea9318fe8631bed",
+      "vpa": "spf2095aaax4a@yesbank",
+      "branch_name": "Vijayawada Governorpet",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "25452": {
+      "mms_terminal_id": "AAAX4A",
+      "terminal_id": "VJA-GVPT",
+      "partner_ref_id": "25452",
+      "vpa": "upi://pay?cu=INR&pa=epos25452by4e.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "Vijayawada Governorpet",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "232072": {
+      "mms_terminal_id": "AAAX4A",
+      "terminal_id": "VJA-GVPT",
+      "partner_ref_id": "232072",
+      "vpa": "upi://pay?cu=INR&pa=epos232072prjb%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "Vijayawada Governorpet",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "227812": {
+      "mms_terminal_id": "AKCPCD",
+      "terminal_id": "BSH IEA",
+      "partner_ref_id": "227812",
+      "vpa": "upi://pay?cu=INR&pa=epos227812z4mp%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "Divya",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "cva704c61a9f431ebb82c822a88d0c86": {
+      "mms_terminal_id": "AKCPCD",
+      "terminal_id": "BSH IEA",
+      "partner_ref_id": "cva704c61a9f431ebb82c822a88d0c86",
+      "vpa": "spf2095akcpcd@yesbank",
+      "branch_name": "Divya",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    }
+  },
+  "mappings_by_vpa": {
+    "SWINKZSV4CV7@cmsidfc": "SV4CV7",
+    "SWINKZSD87LS@cmsidfc": "SD87LS",
+    "SWINKZSEGXL5@cmsidfc": "SEGXL5",
+    "SWINKZSFNRRH@cmsidfc": "SFNRRH",
+    "SWINKZAAAX4A@cmsidfc": "AAAX4A",
+    "SWINKZAKCPCD@cmsidfc": "AKCPCD",
+    "upi://pay?cu=INR&pa=epos78516313280sflo.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SV4CV7",
+    "upi://pay?cu=INR&pa=epos176651t21y%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SV4CV7",
+    "spf2095sv4cv7@yesbank": "SV4CV7",
+    "spf2095sd87ls@yesbank": "SD87LS",
+    "upi://pay?cu=INR&pa=epos78516313283upnm.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SD87LS",
+    "upi://pay?cu=INR&pa=epos176650sjm4%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SD87LS",
+    "upi://pay?cu=INR&pa=epos232070yrmu%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SEGXL5",
+    "upi://pay?cu=INR&pa=epos78516313282gnep.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SEGXL5",
+    "spf2095segxl5@yesbank": "SEGXL5",
+    "spf2095sfnrrh@yesbank": "SFNRRH",
+    "upi://pay?cu=INR&pa=epos78516313281tnuj.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SFNRRH",
+    "upi://pay?cu=INR&pa=epos176640dl6s%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "SFNRRH",
+    "spf2095aaax4a@yesbank": "AAAX4A",
+    "upi://pay?cu=INR&pa=epos25452by4e.cfqr%40axisbank&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "AAAX4A",
+    "upi://pay?cu=INR&pa=epos232072prjb%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "AAAX4A",
+    "upi://pay?cu=INR&pa=epos227812z4mp%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES": "AKCPCD",
+    "spf2095akcpcd@yesbank": "AKCPCD"
+  },
+  "mappings_by_terminal_id": {
+    "VJA-AUT": {
+      "mms_terminal_id": "SV4CV7",
+      "terminal_id": "VJA-AUT",
+      "partner_ref_id": "cvaaad1b502b4d47b82ad41e3a0068b8",
+      "vpa": "spf2095sv4cv7@yesbank",
+      "branch_name": "Shanthi Bhavani",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "GNT-AUT": {
+      "mms_terminal_id": "SD87LS",
+      "terminal_id": "GNT-AUT",
+      "partner_ref_id": "176650",
+      "vpa": "upi://pay?cu=INR&pa=epos176650sjm4%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "B Naveen",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "NLR-AUT": {
+      "mms_terminal_id": "SEGXL5",
+      "terminal_id": "NLR-AUT",
+      "partner_ref_id": "cva594c39fb2412ea97c395999e729f1",
+      "vpa": "spf2095segxl5@yesbank",
+      "branch_name": "T chaitanya Thrinath",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "TPT-AUT": {
+      "mms_terminal_id": "SFNRRH",
+      "terminal_id": "TPT-AUT",
+      "partner_ref_id": "176640",
+      "vpa": "upi://pay?cu=INR&pa=epos176640dl6s%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "P Pavan Kumar",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "VJA-GVPT": {
+      "mms_terminal_id": "AAAX4A",
+      "terminal_id": "VJA-GVPT",
+      "partner_ref_id": "232072",
+      "vpa": "upi://pay?cu=INR&pa=epos232072prjb%40cashfreensdlpb&pn=ADVANCE+GENUINE+SPARES&tn=ADVANCE+GENUINE+SPARES",
+      "branch_name": "Vijayawada Governorpet",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    },
+    "BSH IEA": {
+      "mms_terminal_id": "AKCPCD",
+      "terminal_id": "BSH IEA",
+      "partner_ref_id": "cva704c61a9f431ebb82c822a88d0c86",
+      "vpa": "spf2095akcpcd@yesbank",
+      "branch_name": "Divya",
+      "merchant_id": "0000000000002095",
+      "merchant_name": "ADVANCE GENUINE SPARES"
+    }
+  },
+  "merchant_key": "advance_genuine_spares"
+}

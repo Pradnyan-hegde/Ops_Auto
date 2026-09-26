@@ -152,20 +152,50 @@ class TestSyncAndPayloads(unittest.TestCase):
         self.assertEqual(p["amount"], "75.50")
         self.assertEqual(p["date_and_time"], "2026-09-10 14:20:00")
 
-    def test_download_sync_file_endpoint(self):
-        session_id = "test_sync_session_789"
-        session_dir = os.path.join(SESSIONS_DIR, session_id)
-        os.makedirs(session_dir, exist_ok=True)
-        try:
-            sync_file = os.path.join(session_dir, "Sync_Transactions_2026-09-17.xlsx")
-            build_smms_sync_workbook([{"SwinkPay Txn ID": "SPTEST1"}], sync_file)
+    def test_cms_presence_and_smms_sync_false_prevents_pull(self):
+        # CMS report has transactions with SMMS Sync Status = False
+        cms_records = [
+            {
+                "RRN/UTR": "663334820426",
+                "SwinkPay Txn ID": "SPUpUZynpBv20VWs5rMb",
+                "Transaction Amount": 70.0,
+                "Transaction Status": "1",
+                "SMMS Sync Status": False,
+                "Merchant MMS Terminal ID": "XKD8M3"
+            },
+            {
+                "RRN/UTR": "626733023899",
+                "SwinkPay Txn ID": "SPUpGgC95scN2zFT5rgT",
+                "Transaction Amount": 45.0,
+                "Transaction Status": "1",
+                "SMMS Sync Status": "FALSE",
+                "Merchant MMS Terminal ID": "X1JYYO"
+            }
+        ]
+        cms_report = DummyReport(cms_records)
 
-            resp = download_sync_file(session_id)
-            self.assertEqual(resp.filename, "Sync_Transactions_2026-09-17.xlsx")
-            self.assertEqual(resp.media_type, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        finally:
-            import shutil
-            shutil.rmtree(session_dir, ignore_errors=True)
+        # Unmatched CF and Airtel that exist in CMS report
+        unmatched_cf = [
+            {
+                "Order Id": "330595-4873-PTM531639E00B29483E9329DF21C159CFA2axisupioffline",
+                "Bank Reference No.": "626733023899",
+                "Amount": 45.0,
+                "Transaction Time": "2026-09-24 00:10:56"
+            }
+        ]
+        unmatched_airtel = [
+            {
+                "Transaction Id": "PH609240095819517",
+                "PARTNER_TXN_ID": "663334820426",
+                "Original Input Amt": 70.0,
+                "Date and Time": "2026-09-24 00:03:42"
+            }
+        ]
+        engine = DummyEngine(cms_report=cms_report, unmatched_cf=unmatched_cf, unmatched_airtel=unmatched_airtel)
+
+        # Verify build_missing_pg_payloads skips them because they already exist in CMS!
+        payloads = build_missing_pg_payloads(engine)
+        self.assertEqual(len(payloads), 0, "Transactions in CMS with SMMS Sync Status=False must not be pulled!")
 
 
 if __name__ == "__main__":

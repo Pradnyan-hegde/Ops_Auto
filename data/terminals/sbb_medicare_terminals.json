@@ -1,0 +1,199 @@
+{
+  "updated_at": "2026-09-26T14:29:23.038577",
+  "source_filename": "merchant_term_81ac04a5_Terminal Report_Of 26_09_2026_14_27_40.xls",
+  "total_rows_scanned": 14,
+  "ref_id_count": 13,
+  "terminal_id_count": 6,
+  "mappings_by_ref_id": {
+    "SwinkPay": {
+      "mms_terminal_id": "SZHWSG",
+      "terminal_id": "SZHWSG",
+      "partner_ref_id": "SwinkPay",
+      "vpa": "SWINKZSZHWSG@cmsidfc",
+      "branch_name": "K Lokesh Babu",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "4132": {
+      "mms_terminal_id": "SDIZ9P",
+      "terminal_id": "SBB001",
+      "partner_ref_id": "4132",
+      "vpa": "SWINKZSDIZ9P@cmsidfc",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "3243": {
+      "mms_terminal_id": "S6X7G1",
+      "terminal_id": "SBB003",
+      "partner_ref_id": "3243",
+      "vpa": "SWINKZS6X7G1@cmsidfc",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "5562": {
+      "mms_terminal_id": "SFL942",
+      "terminal_id": "SBB004",
+      "partner_ref_id": "5562",
+      "vpa": "SWINKZSFL942@cmsidfc",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "8256": {
+      "mms_terminal_id": "SRTGZW",
+      "terminal_id": "SBB005",
+      "partner_ref_id": "8256",
+      "vpa": "SWINKZSRTGZW@cmsidfc",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "6296": {
+      "mms_terminal_id": "SMD7W3",
+      "terminal_id": "SBB006",
+      "partner_ref_id": "6296",
+      "vpa": "SWINKZSMD7W3@cmsidfc",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "cva1b60e71e24182b41e59533fe77046": {
+      "mms_terminal_id": "SDIZ9P",
+      "terminal_id": "SBB001",
+      "partner_ref_id": "cva1b60e71e24182b41e59533fe77046",
+      "vpa": "spf2145sdiz9p@yesbank",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "215128": {
+      "mms_terminal_id": "SDIZ9P",
+      "terminal_id": "SBB001",
+      "partner_ref_id": "215128",
+      "vpa": "upi://pay?cu=INR&pa=epos215128nuz8%40cashfreensdlpb&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "20398": {
+      "mms_terminal_id": "S6X7G1",
+      "terminal_id": "SBB003",
+      "partner_ref_id": "20398",
+      "vpa": "upi://pay?cu=INR&pa=epos20398cbz6.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "17498": {
+      "mms_terminal_id": "SFL942",
+      "terminal_id": "SBB004",
+      "partner_ref_id": "17498",
+      "vpa": "upi://pay?cu=INR&pa=epos17498lsui.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "17499": {
+      "mms_terminal_id": "SRTGZW",
+      "terminal_id": "SBB005",
+      "partner_ref_id": "17499",
+      "vpa": "upi://pay?cu=INR&pa=epos17499ob10.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "17500": {
+      "mms_terminal_id": "SMD7W3",
+      "terminal_id": "SBB006",
+      "partner_ref_id": "17500",
+      "vpa": "upi://pay?cu=INR&pa=epos17500n9d4.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "cva2129d92c44609a3f62925d9ba447d": {
+      "mms_terminal_id": "SMD7W3",
+      "terminal_id": "SBB006",
+      "partner_ref_id": "cva2129d92c44609a3f62925d9ba447d",
+      "vpa": "spf2145smd7w3@yesbank",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    }
+  },
+  "mappings_by_vpa": {
+    "SWINKZSZHWSG@cmsidfc": "SZHWSG",
+    "SWINKZSDIZ9P@cmsidfc": "SDIZ9P",
+    "SWINKZS6X7G1@cmsidfc": "S6X7G1",
+    "SWINKZSFL942@cmsidfc": "SFL942",
+    "SWINKZSRTGZW@cmsidfc": "SRTGZW",
+    "SWINKZSMD7W3@cmsidfc": "SMD7W3",
+    "E2324026": "SDIZ9P",
+    "spf2145sdiz9p@yesbank": "SDIZ9P",
+    "upi://pay?cu=INR&pa=epos215128nuz8%40cashfreensdlpb&pn=SBB+MEDICARE&tn=": "SDIZ9P",
+    "upi://pay?cu=INR&pa=epos20398cbz6.cfqr%40axisbank&pn=SBB+MEDICARE&tn=": "S6X7G1",
+    "upi://pay?cu=INR&pa=epos17498lsui.cfqr%40axisbank&pn=SBB+MEDICARE&tn=": "SFL942",
+    "upi://pay?cu=INR&pa=epos17499ob10.cfqr%40axisbank&pn=SBB+MEDICARE&tn=": "SRTGZW",
+    "upi://pay?cu=INR&pa=epos17500n9d4.cfqr%40axisbank&pn=SBB+MEDICARE&tn=": "SMD7W3",
+    "spf2145smd7w3@yesbank": "SMD7W3"
+  },
+  "mappings_by_terminal_id": {
+    "SZHWSG": {
+      "mms_terminal_id": "SZHWSG",
+      "terminal_id": "SZHWSG",
+      "partner_ref_id": "SwinkPay",
+      "vpa": "SWINKZSZHWSG@cmsidfc",
+      "branch_name": "K Lokesh Babu",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "SBB001": {
+      "mms_terminal_id": "SDIZ9P",
+      "terminal_id": "SBB001",
+      "partner_ref_id": "215128",
+      "vpa": "upi://pay?cu=INR&pa=epos215128nuz8%40cashfreensdlpb&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "SBB003": {
+      "mms_terminal_id": "S6X7G1",
+      "terminal_id": "SBB003",
+      "partner_ref_id": "20398",
+      "vpa": "upi://pay?cu=INR&pa=epos20398cbz6.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "SBB004": {
+      "mms_terminal_id": "SFL942",
+      "terminal_id": "SBB004",
+      "partner_ref_id": "17498",
+      "vpa": "upi://pay?cu=INR&pa=epos17498lsui.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "SBB005": {
+      "mms_terminal_id": "SRTGZW",
+      "terminal_id": "SBB005",
+      "partner_ref_id": "17499",
+      "vpa": "upi://pay?cu=INR&pa=epos17499ob10.cfqr%40axisbank&pn=SBB+MEDICARE&tn=",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    },
+    "SBB006": {
+      "mms_terminal_id": "SMD7W3",
+      "terminal_id": "SBB006",
+      "partner_ref_id": "cva2129d92c44609a3f62925d9ba447d",
+      "vpa": "spf2145smd7w3@yesbank",
+      "branch_name": "K LOKESH BABU",
+      "merchant_id": "0000000000002145",
+      "merchant_name": "SBB MEDICARE"
+    }
+  },
+  "merchant_key": "sbb_medicare"
+}

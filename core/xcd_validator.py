@@ -53,7 +53,7 @@ def validate_all_clear(
     # 1 & 3: Check unmatched exception lists
     if details["cms_not_in_smms_count"] > 0:
         blocking_reasons.append(
-            f"{details['cms_not_in_smms_count']} transaction(s) in CMS_Not_in_SMMS (unmatched between CMS and SMMS)"
+            f"{details['cms_not_in_smms_count']} transaction(s) in CMS_Not_in_SMMS (present in CMS but missing in SMMS / SMMS Sync Status=False; use SMMS Sync File)"
         )
 
     if details["smms_not_in_cms_count"] > 0:

@@ -47,6 +47,76 @@
     "cc_fee_rate": 0.0225,
     "default_gst_rate": 0.18
   },
+  "advance_genuine_spares": {
+    "key": "advance_genuine_spares",
+    "display_name": "ADVANCE GENUINE SPARES",
+    "merchant_ids": [],
+    "merchant_keywords": [
+      "ADVANCE GENUINE SPARES",
+      "ADVANCE_GENUINE_SPARES"
+    ],
+    "gateways": [
+      "CashFree",
+      "EaseBuzz",
+      "Airtel Bank"
+    ],
+    "has_split_settlement": false,
+    "softpos_label": "CashFree",
+    "input_file_prefix": "ADVANCE_GENUINE_SPARES_INPUTFILE",
+    "terminal_file_name": "Terminal Report_Of 26_09_2026_14_20_44.xls",
+    "terminal_mappings_count": 23,
+    "upi_fee_rate": 0.0015,
+    "cc_fee_rate": 0.0225,
+    "default_gst_rate": 0.18
+  },
+  "advance_auto_parts": {
+    "key": "advance_auto_parts",
+    "display_name": "ADVANCE AUTO PARTS",
+    "merchant_ids": [
+      "0000000000002085"
+    ],
+    "merchant_keywords": [
+      "ADVANCE AUTO PARTS",
+      "ADVANCE_AUTO_PARTS"
+    ],
+    "gateways": [
+      "CashFree",
+      "EaseBuzz",
+      "Airtel Bank"
+    ],
+    "has_split_settlement": false,
+    "softpos_label": "CashFree",
+    "input_file_prefix": "AAP Input file as on",
+    "terminal_file_name": "Terminal Report_Of 26_09_2026_14_26_23.xls",
+    "terminal_mappings_count": 92,
+    "upi_fee_rate": 0.0015,
+    "cc_fee_rate": 0.0225,
+    "default_gst_rate": 0.18
+  },
+  "sbb_medicare": {
+    "key": "sbb_medicare",
+    "display_name": "SBB MEDICARE",
+    "merchant_ids": [
+      "0000000000002145"
+    ],
+    "merchant_keywords": [
+      "SBB MEDICARE",
+      "SBB_MEDICARE"
+    ],
+    "gateways": [
+      "CashFree",
+      "EaseBuzz",
+      "Airtel Bank"
+    ],
+    "has_split_settlement": true,
+    "softpos_label": "CF_SoftPOS",
+    "input_file_prefix": "SBB Input file as on",
+    "terminal_file_name": "Terminal Report_Of 26_09_2026_14_27_40.xls",
+    "terminal_mappings_count": 13,
+    "upi_fee_rate": 0.0015,
+    "cc_fee_rate": 0.0225,
+    "default_gst_rate": 0.18
+  },
   "__deleted__": [
     "xcd",
     "ccd",

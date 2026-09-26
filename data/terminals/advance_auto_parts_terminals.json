@@ -1,0 +1,1155 @@
+{
+  "updated_at": "2026-09-26T14:26:55.887028",
+  "source_filename": "merchant_term_d82a1b5f_Terminal Report_Of 26_09_2026_14_26_23.xls",
+  "total_rows_scanned": 114,
+  "ref_id_count": 92,
+  "terminal_id_count": 22,
+  "mappings_by_ref_id": {
+    "7767": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "7767",
+      "vpa": "SWINKZALANS8@cmsidfc",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "7995": {
+      "mms_terminal_id": "AZCX1J",
+      "terminal_id": "GIV",
+      "partner_ref_id": "7995",
+      "vpa": "SWINKZAZCX1J@cmsidfc",
+      "branch_name": "G DURGA PRASAD",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "7221": {
+      "mms_terminal_id": "ABW9NU",
+      "terminal_id": "PRR",
+      "partner_ref_id": "7221",
+      "vpa": "SWINKZABW9NU@cmsidfc",
+      "branch_name": "D MURALI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "4975": {
+      "mms_terminal_id": "ASCN2N",
+      "terminal_id": "GOV",
+      "partner_ref_id": "4975",
+      "vpa": "SWINKZASCN2N@cmsidfc",
+      "branch_name": "V SHAKEERUNNISA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3146": {
+      "mms_terminal_id": "ALEBR2",
+      "terminal_id": "GUN",
+      "partner_ref_id": "3146",
+      "vpa": "SWINKZALEBR2@cmsidfc",
+      "branch_name": "T ANANTA SAI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "4014": {
+      "mms_terminal_id": "AV1QS0",
+      "terminal_id": "GNR",
+      "partner_ref_id": "4014",
+      "vpa": "SWINKZAV1QS0@cmsidfc",
+      "branch_name": "K RAJU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "7009": {
+      "mms_terminal_id": "AKE7I4",
+      "terminal_id": "ADQ",
+      "partner_ref_id": "7009",
+      "vpa": "SWINKZAKE7I4@cmsidfc",
+      "branch_name": "V V SUBBARAO",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "9482": {
+      "mms_terminal_id": "A0MN9W",
+      "terminal_id": "ONG",
+      "partner_ref_id": "9482",
+      "vpa": "SWINKZA0MN9W@cmsidfc",
+      "branch_name": "G ASHOK",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "6378": {
+      "mms_terminal_id": "AJKJUE",
+      "terminal_id": "NLO",
+      "partner_ref_id": "6378",
+      "vpa": "SWINKZAJKJUE@cmsidfc",
+      "branch_name": "T GOVIND",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "6937": {
+      "mms_terminal_id": "ACGF5S",
+      "terminal_id": "NIG",
+      "partner_ref_id": "6937",
+      "vpa": "SWINKZACGF5S@cmsidfc",
+      "branch_name": "K HEMANTH KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "1909": {
+      "mms_terminal_id": "AX4QUH",
+      "terminal_id": "CHT",
+      "partner_ref_id": "1909",
+      "vpa": "SWINKZAX4QUH@cmsidfc",
+      "branch_name": "K BALACHANDRA BABU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "7170": {
+      "mms_terminal_id": "A28YCQ",
+      "terminal_id": "API",
+      "partner_ref_id": "7170",
+      "vpa": "SWINKZA28YCQ@cmsidfc",
+      "branch_name": "D SAI JAGADEESH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "6430": {
+      "mms_terminal_id": "ACCYOI",
+      "terminal_id": "CUH",
+      "partner_ref_id": "6430",
+      "vpa": "SWINKZACCYOI@cmsidfc",
+      "branch_name": "SK MOULANA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "6120": {
+      "mms_terminal_id": "AE6GFE",
+      "terminal_id": "POD",
+      "partner_ref_id": "6120",
+      "vpa": "SWINKZAE6GFE@cmsidfc",
+      "branch_name": "B VISHNU SAI REDDY",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "7958": {
+      "mms_terminal_id": "AVZ0KM",
+      "terminal_id": "TRU",
+      "partner_ref_id": "7958",
+      "vpa": "SWINKZAVZ0KM@cmsidfc",
+      "branch_name": "R MEHER RAVI KISHORE",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "4518": {
+      "mms_terminal_id": "A0UUD1",
+      "terminal_id": "VIY",
+      "partner_ref_id": "4518",
+      "vpa": "SWINKZA0UUD1@cmsidfc",
+      "branch_name": "B AJAY KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "7287": {
+      "mms_terminal_id": "AE5MML",
+      "terminal_id": "JGM",
+      "partner_ref_id": "7287",
+      "vpa": "SWINKZAE5MML@cmsidfc",
+      "branch_name": "P RAMA KRISHNA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3333": {
+      "mms_terminal_id": "ALUD7E",
+      "terminal_id": "RTY",
+      "partner_ref_id": "3333",
+      "vpa": "SWINKZALUD7E@cmsidfc",
+      "branch_name": "D SAILAJA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3078": {
+      "mms_terminal_id": "AD30K4",
+      "terminal_id": "KOA",
+      "partner_ref_id": "3078",
+      "vpa": "SWINKZAD30K4@cmsidfc",
+      "branch_name": "D JAYALAKSHMI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3214": {
+      "mms_terminal_id": "ANZI04",
+      "terminal_id": "HOC",
+      "partner_ref_id": "3214",
+      "vpa": "SWINKZANZI04@cmsidfc",
+      "branch_name": "GHANTA UGANDHAR KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "9883": {
+      "mms_terminal_id": "ALXVRS",
+      "terminal_id": "TEI",
+      "partner_ref_id": "9883",
+      "vpa": "SWINKZALXVRS@cmsidfc",
+      "branch_name": "Syed Moulali",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "4858": {
+      "mms_terminal_id": "A2CUYV",
+      "terminal_id": "BVP",
+      "partner_ref_id": "4858",
+      "vpa": "SWINKZA2CUYV@cmsidfc",
+      "branch_name": "Hemalatha",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "2085": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "",
+      "vpa": "spf-2085-ALANS8@mairtel",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232082": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "232082",
+      "vpa": "upi://pay?cu=INR&pa=epos232082zjfo%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3850": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "3850",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063850w731xs.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva525e18ac648c599c22a2513ee7b10": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "cva525e18ac648c599c22a2513ee7b10",
+      "vpa": "spf2085alans8@yesbank",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "163814": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "163814",
+      "vpa": "upi://pay?cu=INR&pa=epos163814ugqt.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva47d670fa14395b0997c5adc320f92": {
+      "mms_terminal_id": "AZCX1J",
+      "terminal_id": "GIV",
+      "partner_ref_id": "cva47d670fa14395b0997c5adc320f92",
+      "vpa": "spf2085azcx1j@yesbank",
+      "branch_name": "G DURGA PRASAD",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "163818": {
+      "mms_terminal_id": "AZCX1J",
+      "terminal_id": "GIV",
+      "partner_ref_id": "163818",
+      "vpa": "upi://pay?cu=INR&pa=epos163818vp9s.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "G DURGA PRASAD",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3984": {
+      "mms_terminal_id": "AZCX1J",
+      "terminal_id": "GIV",
+      "partner_ref_id": "3984",
+      "vpa": "upi://pay?cu=INR&pa=epos63710639845nvrqj.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "G DURGA PRASAD",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232085": {
+      "mms_terminal_id": "AZCX1J",
+      "terminal_id": "GIV",
+      "partner_ref_id": "232085",
+      "vpa": "upi://pay?cu=INR&pa=epos2320855x0c%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "G DURGA PRASAD",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cvafcc5e1d954f64b10f32d905bac6e6": {
+      "mms_terminal_id": "ABW9NU",
+      "terminal_id": "PRR",
+      "partner_ref_id": "cvafcc5e1d954f64b10f32d905bac6e6",
+      "vpa": "spf2085abw9nu@yesbank",
+      "branch_name": "D MURALI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3985": {
+      "mms_terminal_id": "ABW9NU",
+      "terminal_id": "PRR",
+      "partner_ref_id": "3985",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063985fejopk.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "D MURALI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232088": {
+      "mms_terminal_id": "ABW9NU",
+      "terminal_id": "PRR",
+      "partner_ref_id": "232088",
+      "vpa": "upi://pay?cu=INR&pa=epos232088ujkc%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D MURALI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232093": {
+      "mms_terminal_id": "ASCN2N",
+      "terminal_id": "GOV",
+      "partner_ref_id": "232093",
+      "vpa": "upi://pay?cu=INR&pa=epos232093zksq%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "V SHAKEERUNNISA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3986": {
+      "mms_terminal_id": "ASCN2N",
+      "terminal_id": "GOV",
+      "partner_ref_id": "3986",
+      "vpa": "upi://pay?cu=INR&pa=epos63710639862nhr6b.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "V SHAKEERUNNISA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "163825": {
+      "mms_terminal_id": "ASCN2N",
+      "terminal_id": "GOV",
+      "partner_ref_id": "163825",
+      "vpa": "upi://pay?cu=INR&pa=epos163825zb1m.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "V SHAKEERUNNISA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cvaead5e653e4a49818b9973445830a6": {
+      "mms_terminal_id": "ASCN2N",
+      "terminal_id": "GOV",
+      "partner_ref_id": "cvaead5e653e4a49818b9973445830a6",
+      "vpa": "spf2085ascn2n@yesbank",
+      "branch_name": "V SHAKEERUNNISA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva7771c62154ffc9b18d0a54c83fc43": {
+      "mms_terminal_id": "ALEBR2",
+      "terminal_id": "GUN",
+      "partner_ref_id": "cva7771c62154ffc9b18d0a54c83fc43",
+      "vpa": "spf2085alebr2@yesbank",
+      "branch_name": "T ANANTA SAI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "163827": {
+      "mms_terminal_id": "ALEBR2",
+      "terminal_id": "GUN",
+      "partner_ref_id": "163827",
+      "vpa": "upi://pay?cu=INR&pa=epos163827q208.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "T ANANTA SAI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3990": {
+      "mms_terminal_id": "ALEBR2",
+      "terminal_id": "GUN",
+      "partner_ref_id": "3990",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063990wq9mle.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "T ANANTA SAI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232094": {
+      "mms_terminal_id": "ALEBR2",
+      "terminal_id": "GUN",
+      "partner_ref_id": "232094",
+      "vpa": "upi://pay?cu=INR&pa=epos232094svrx%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "T ANANTA SAI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232096": {
+      "mms_terminal_id": "AV1QS0",
+      "terminal_id": "GNR",
+      "partner_ref_id": "232096",
+      "vpa": "upi://pay?cu=INR&pa=epos232096duia%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "K RAJU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva1aaf752bb4da48c08a0a51b85ec34": {
+      "mms_terminal_id": "AV1QS0",
+      "terminal_id": "GNR",
+      "partner_ref_id": "cva1aaf752bb4da48c08a0a51b85ec34",
+      "vpa": "spf2085av1qs0@yesbank",
+      "branch_name": "K RAJU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3987": {
+      "mms_terminal_id": "AV1QS0",
+      "terminal_id": "GNR",
+      "partner_ref_id": "3987",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063987rh3kfl.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "K RAJU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva8ad9eaf91449aa016517de4ccb03d": {
+      "mms_terminal_id": "AKE7I4",
+      "terminal_id": "ADQ",
+      "partner_ref_id": "cva8ad9eaf91449aa016517de4ccb03d",
+      "vpa": "spf2085ake7i4@yesbank",
+      "branch_name": "V V SUBBARAO",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3988": {
+      "mms_terminal_id": "AKE7I4",
+      "terminal_id": "ADQ",
+      "partner_ref_id": "3988",
+      "vpa": "upi://pay?cu=INR&pa=epos63710639887nfvar.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "V V SUBBARAO",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232103": {
+      "mms_terminal_id": "AKE7I4",
+      "terminal_id": "ADQ",
+      "partner_ref_id": "232103",
+      "vpa": "upi://pay?cu=INR&pa=epos232103rlgm%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "V V SUBBARAO",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva97bf6aa554cb6b6297d489ba27a9f": {
+      "mms_terminal_id": "A0MN9W",
+      "terminal_id": "ONG",
+      "partner_ref_id": "cva97bf6aa554cb6b6297d489ba27a9f",
+      "vpa": "spf2085a0mn9w@yesbank",
+      "branch_name": "G ASHOK",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3991": {
+      "mms_terminal_id": "A0MN9W",
+      "terminal_id": "ONG",
+      "partner_ref_id": "3991",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063991qsgc17.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "G ASHOK",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232108": {
+      "mms_terminal_id": "A0MN9W",
+      "terminal_id": "ONG",
+      "partner_ref_id": "232108",
+      "vpa": "upi://pay?cu=INR&pa=epos232108xaov%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "G ASHOK",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232113": {
+      "mms_terminal_id": "AJKJUE",
+      "terminal_id": "NLO",
+      "partner_ref_id": "232113",
+      "vpa": "upi://pay?cu=INR&pa=epos232113qp5t%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "T GOVIND",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3989": {
+      "mms_terminal_id": "AJKJUE",
+      "terminal_id": "NLO",
+      "partner_ref_id": "3989",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063989v0y2gh.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "T GOVIND",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva5c4079b614cd292cf04455e632cca": {
+      "mms_terminal_id": "AJKJUE",
+      "terminal_id": "NLO",
+      "partner_ref_id": "cva5c4079b614cd292cf04455e632cca",
+      "vpa": "spf2085ajkjue@yesbank",
+      "branch_name": "T GOVIND",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva312655fa74c558006c8d72efaeeea": {
+      "mms_terminal_id": "ACGF5S",
+      "terminal_id": "NIG",
+      "partner_ref_id": "cva312655fa74c558006c8d72efaeeea",
+      "vpa": "spf2085acgf5s@yesbank",
+      "branch_name": "K HEMANTH KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3992": {
+      "mms_terminal_id": "ACGF5S",
+      "terminal_id": "NIG",
+      "partner_ref_id": "3992",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063992ctf741.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "K HEMANTH KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232115": {
+      "mms_terminal_id": "ACGF5S",
+      "terminal_id": "NIG",
+      "partner_ref_id": "232115",
+      "vpa": "upi://pay?cu=INR&pa=epos232115ur8v%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "K HEMANTH KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232116": {
+      "mms_terminal_id": "AX4QUH",
+      "terminal_id": "CHT",
+      "partner_ref_id": "232116",
+      "vpa": "upi://pay?cu=INR&pa=epos232116z26g%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "K BALACHANDRA BABU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cvaf5ff28eef4ce6bb5dd4f78ac52820": {
+      "mms_terminal_id": "AX4QUH",
+      "terminal_id": "CHT",
+      "partner_ref_id": "cvaf5ff28eef4ce6bb5dd4f78ac52820",
+      "vpa": "spf2085ax4quh@yesbank",
+      "branch_name": "K BALACHANDRA BABU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3993": {
+      "mms_terminal_id": "AX4QUH",
+      "terminal_id": "CHT",
+      "partner_ref_id": "3993",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063993ayxeor.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "K BALACHANDRA BABU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva622761d1446ff886ca7433daefbd2": {
+      "mms_terminal_id": "A28YCQ",
+      "terminal_id": "API",
+      "partner_ref_id": "cva622761d1446ff886ca7433daefbd2",
+      "vpa": "spf2085a28ycq@yesbank",
+      "branch_name": "D SAI JAGADEESH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3994": {
+      "mms_terminal_id": "A28YCQ",
+      "terminal_id": "API",
+      "partner_ref_id": "3994",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063994uktlzv.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "D SAI JAGADEESH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232129": {
+      "mms_terminal_id": "A28YCQ",
+      "terminal_id": "API",
+      "partner_ref_id": "232129",
+      "vpa": "upi://pay?cu=INR&pa=epos232129h4wn%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D SAI JAGADEESH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva1dc2c0a41448d8f8ba039dcd96b45": {
+      "mms_terminal_id": "ACCYOI",
+      "terminal_id": "CUH",
+      "partner_ref_id": "cva1dc2c0a41448d8f8ba039dcd96b45",
+      "vpa": "spf2085accyoi@yesbank",
+      "branch_name": "SK MOULANA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3995": {
+      "mms_terminal_id": "ACCYOI",
+      "terminal_id": "CUH",
+      "partner_ref_id": "3995",
+      "vpa": "upi://pay?cu=INR&pa=epos63710639955jlufr.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "SK MOULANA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232139": {
+      "mms_terminal_id": "ACCYOI",
+      "terminal_id": "CUH",
+      "partner_ref_id": "232139",
+      "vpa": "upi://pay?cu=INR&pa=epos232139yuxj%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "SK MOULANA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3996": {
+      "mms_terminal_id": "AE6GFE",
+      "terminal_id": "POD",
+      "partner_ref_id": "3996",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063996twh4er.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "B VISHNU SAI REDDY",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232142": {
+      "mms_terminal_id": "AE6GFE",
+      "terminal_id": "POD",
+      "partner_ref_id": "232142",
+      "vpa": "upi://pay?cu=INR&pa=epos232142bv8n%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "B VISHNU SAI REDDY",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva1a985ce4d42699ea7e5dcabc86dfd": {
+      "mms_terminal_id": "AE6GFE",
+      "terminal_id": "POD",
+      "partner_ref_id": "cva1a985ce4d42699ea7e5dcabc86dfd",
+      "vpa": "spf2085ae6gfe@yesbank",
+      "branch_name": "B VISHNU SAI REDDY",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva0b7f8466e4f2cbaeb6c6ffd04407d": {
+      "mms_terminal_id": "AVZ0KM",
+      "terminal_id": "TRU",
+      "partner_ref_id": "cva0b7f8466e4f2cbaeb6c6ffd04407d",
+      "vpa": "spf2085avz0km@yesbank",
+      "branch_name": "R MEHER RAVI KISHORE",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3997": {
+      "mms_terminal_id": "AVZ0KM",
+      "terminal_id": "TRU",
+      "partner_ref_id": "3997",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063997m0zpb7.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "R MEHER RAVI KISHORE",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232147": {
+      "mms_terminal_id": "AVZ0KM",
+      "terminal_id": "TRU",
+      "partner_ref_id": "232147",
+      "vpa": "upi://pay?cu=INR&pa=epos232147qh9y%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "R MEHER RAVI KISHORE",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cvaa36caf4894f3e9ad1041416ff9f17": {
+      "mms_terminal_id": "A0UUD1",
+      "terminal_id": "VIY",
+      "partner_ref_id": "cvaa36caf4894f3e9ad1041416ff9f17",
+      "vpa": "spf2085a0uud1@yesbank",
+      "branch_name": "B AJAY KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3998": {
+      "mms_terminal_id": "A0UUD1",
+      "terminal_id": "VIY",
+      "partner_ref_id": "3998",
+      "vpa": "upi://pay?cu=INR&pa=epos637106399826wtpa.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "B AJAY KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232152": {
+      "mms_terminal_id": "A0UUD1",
+      "terminal_id": "VIY",
+      "partner_ref_id": "232152",
+      "vpa": "upi://pay?cu=INR&pa=epos2321524jw8%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "B AJAY KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232306": {
+      "mms_terminal_id": "AE5MML",
+      "terminal_id": "JGM",
+      "partner_ref_id": "232306",
+      "vpa": "upi://pay?cu=INR&pa=epos232306d6qk%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "P RAMA KRISHNA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva3a10c2d68491688f2fc1fd43b4f49": {
+      "mms_terminal_id": "AE5MML",
+      "terminal_id": "JGM",
+      "partner_ref_id": "cva3a10c2d68491688f2fc1fd43b4f49",
+      "vpa": "spf2085ae5mml@yesbank",
+      "branch_name": "P RAMA KRISHNA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "3999": {
+      "mms_terminal_id": "AE5MML",
+      "terminal_id": "JGM",
+      "partner_ref_id": "3999",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063999ahdvi5.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "P RAMA KRISHNA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva1328d4718498da09c0706f290431b": {
+      "mms_terminal_id": "ALUD7E",
+      "terminal_id": "RTY",
+      "partner_ref_id": "cva1328d4718498da09c0706f290431b",
+      "vpa": "spf2085alud7e@yesbank",
+      "branch_name": "D SAILAJA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "4000": {
+      "mms_terminal_id": "ALUD7E",
+      "terminal_id": "RTY",
+      "partner_ref_id": "4000",
+      "vpa": "upi://pay?cu=INR&pa=epos63710640003l09re.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "D SAILAJA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232320": {
+      "mms_terminal_id": "ALUD7E",
+      "terminal_id": "RTY",
+      "partner_ref_id": "232320",
+      "vpa": "upi://pay?cu=INR&pa=epos232320kqm8%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D SAILAJA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva2f19aa0aa495eb0845b0f5717128c": {
+      "mms_terminal_id": "AD30K4",
+      "terminal_id": "KOA",
+      "partner_ref_id": "cva2f19aa0aa495eb0845b0f5717128c",
+      "vpa": "spf2085ad30k4@yesbank",
+      "branch_name": "D JAYALAKSHMI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "4001": {
+      "mms_terminal_id": "AD30K4",
+      "terminal_id": "KOA",
+      "partner_ref_id": "4001",
+      "vpa": "upi://pay?cu=INR&pa=epos6371064001kw7dvs.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "D JAYALAKSHMI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232330": {
+      "mms_terminal_id": "AD30K4",
+      "terminal_id": "KOA",
+      "partner_ref_id": "232330",
+      "vpa": "upi://pay?cu=INR&pa=epos232330b2ce%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D JAYALAKSHMI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232341": {
+      "mms_terminal_id": "ANZI04",
+      "terminal_id": "HOC",
+      "partner_ref_id": "232341",
+      "vpa": "upi://pay?cu=INR&pa=epos232341dilf%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "GHANTA UGANDHAR KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "5482": {
+      "mms_terminal_id": "ANZI04",
+      "terminal_id": "HOC",
+      "partner_ref_id": "5482",
+      "vpa": "upi://pay?cu=INR&pa=epos6371065482t3w7x6.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "GHANTA UGANDHAR KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva6a0c3ddd940579e46c4c75b8154b2": {
+      "mms_terminal_id": "ANZI04",
+      "terminal_id": "HOC",
+      "partner_ref_id": "cva6a0c3ddd940579e46c4c75b8154b2",
+      "vpa": "spf2085anzi04@yesbank",
+      "branch_name": "GHANTA UGANDHAR KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "12915": {
+      "mms_terminal_id": "ALXVRS",
+      "terminal_id": "TEI",
+      "partner_ref_id": "12915",
+      "vpa": "upi://pay?cu=INR&pa=epos63710612915co1q.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "Syed Moulali",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cva83482b1a84825ba2f07b7a63b7f96": {
+      "mms_terminal_id": "ALXVRS",
+      "terminal_id": "TEI",
+      "partner_ref_id": "cva83482b1a84825ba2f07b7a63b7f96",
+      "vpa": "spf2085alxvrs@yesbank",
+      "branch_name": "Syed Moulali",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "232344": {
+      "mms_terminal_id": "ALXVRS",
+      "terminal_id": "TEI",
+      "partner_ref_id": "232344",
+      "vpa": "upi://pay?cu=INR&pa=epos2323448dg3%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "Syed Moulali",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "195539": {
+      "mms_terminal_id": "A2CUYV",
+      "terminal_id": "BVP",
+      "partner_ref_id": "195539",
+      "vpa": "upi://pay?cu=INR&pa=epos195539ebw1%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "Hemalatha",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "cvaf87b71dee4f0d8ef124e10cd4ff04": {
+      "mms_terminal_id": "A2CUYV",
+      "terminal_id": "BVP",
+      "partner_ref_id": "cvaf87b71dee4f0d8ef124e10cd4ff04",
+      "vpa": "spf2085a2cuyv@yesbank",
+      "branch_name": "Hemalatha",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    }
+  },
+  "mappings_by_vpa": {
+    "SWINKZALANS8@cmsidfc": "ALANS8",
+    "SWINKZAZCX1J@cmsidfc": "AZCX1J",
+    "SWINKZABW9NU@cmsidfc": "ABW9NU",
+    "SWINKZASCN2N@cmsidfc": "ASCN2N",
+    "SWINKZALEBR2@cmsidfc": "ALEBR2",
+    "SWINKZAV1QS0@cmsidfc": "AV1QS0",
+    "SWINKZAKE7I4@cmsidfc": "AKE7I4",
+    "SWINKZA0MN9W@cmsidfc": "A0MN9W",
+    "SWINKZAJKJUE@cmsidfc": "AJKJUE",
+    "SWINKZACGF5S@cmsidfc": "ACGF5S",
+    "SWINKZAX4QUH@cmsidfc": "AX4QUH",
+    "SWINKZA28YCQ@cmsidfc": "A28YCQ",
+    "SWINKZACCYOI@cmsidfc": "ACCYOI",
+    "SWINKZAE6GFE@cmsidfc": "AE6GFE",
+    "SWINKZAVZ0KM@cmsidfc": "AVZ0KM",
+    "SWINKZA0UUD1@cmsidfc": "A0UUD1",
+    "SWINKZAE5MML@cmsidfc": "AE5MML",
+    "SWINKZALUD7E@cmsidfc": "ALUD7E",
+    "SWINKZAD30K4@cmsidfc": "AD30K4",
+    "SWINKZANZI04@cmsidfc": "ANZI04",
+    "SWINKZALXVRS@cmsidfc": "ALXVRS",
+    "SWINKZA2CUYV@cmsidfc": "A2CUYV",
+    "E2097479": "ALANS8",
+    "spf-2085-ALANS8@mairtel": "ALANS8",
+    "2085": "A2CUYV",
+    "upi://pay?cu=INR&pa=epos232082zjfo%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ALANS8",
+    "upi://pay?cu=INR&pa=epos6371063850w731xs.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ALANS8",
+    "spf2085alans8@yesbank": "ALANS8",
+    "upi://pay?cu=INR&pa=epos163814ugqt.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=": "ALANS8",
+    "spf-2085-AZCX1J@mairtel": "AZCX1J",
+    "spf2085azcx1j@yesbank": "AZCX1J",
+    "upi://pay?cu=INR&pa=epos163818vp9s.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=": "AZCX1J",
+    "upi://pay?cu=INR&pa=epos63710639845nvrqj.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AZCX1J",
+    "upi://pay?cu=INR&pa=epos2320855x0c%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AZCX1J",
+    "spf-2085-ABW9NU@mairtel": "ABW9NU",
+    "spf2085abw9nu@yesbank": "ABW9NU",
+    "upi://pay?cu=INR&pa=epos6371063985fejopk.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ABW9NU",
+    "upi://pay?cu=INR&pa=epos232088ujkc%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ABW9NU",
+    "spf-2085-ASCN2N@mairtel": "ASCN2N",
+    "upi://pay?cu=INR&pa=epos232093zksq%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ASCN2N",
+    "upi://pay?cu=INR&pa=epos63710639862nhr6b.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ASCN2N",
+    "upi://pay?cu=INR&pa=epos163825zb1m.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=": "ASCN2N",
+    "spf2085ascn2n@yesbank": "ASCN2N",
+    "spf-2085-ALEBR2@mairtel": "ALEBR2",
+    "spf2085alebr2@yesbank": "ALEBR2",
+    "upi://pay?cu=INR&pa=epos163827q208.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=": "ALEBR2",
+    "upi://pay?cu=INR&pa=epos6371063990wq9mle.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ALEBR2",
+    "upi://pay?cu=INR&pa=epos232094svrx%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ALEBR2",
+    "spf-2085-AV1QS0@mairtel": "AV1QS0",
+    "upi://pay?cu=INR&pa=epos232096duia%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AV1QS0",
+    "spf2085av1qs0@yesbank": "AV1QS0",
+    "upi://pay?cu=INR&pa=epos6371063987rh3kfl.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AV1QS0",
+    "spf-2085-AKE7I4@mairtel": "AKE7I4",
+    "spf2085ake7i4@yesbank": "AKE7I4",
+    "upi://pay?cu=INR&pa=epos63710639887nfvar.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AKE7I4",
+    "upi://pay?cu=INR&pa=epos232103rlgm%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AKE7I4",
+    "spf-2085-A0MN9W@mairtel": "A0MN9W",
+    "spf2085a0mn9w@yesbank": "A0MN9W",
+    "upi://pay?cu=INR&pa=epos6371063991qsgc17.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "A0MN9W",
+    "upi://pay?cu=INR&pa=epos232108xaov%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "A0MN9W",
+    "spf-2085-AJKJUE@mairtel": "AJKJUE",
+    "upi://pay?cu=INR&pa=epos232113qp5t%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AJKJUE",
+    "upi://pay?cu=INR&pa=epos6371063989v0y2gh.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AJKJUE",
+    "spf2085ajkjue@yesbank": "AJKJUE",
+    "spf-2085-ACGF5S@mairtel": "ACGF5S",
+    "spf2085acgf5s@yesbank": "ACGF5S",
+    "upi://pay?cu=INR&pa=epos6371063992ctf741.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ACGF5S",
+    "upi://pay?cu=INR&pa=epos232115ur8v%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ACGF5S",
+    "upi://pay?cu=INR&pa=epos232116z26g%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AX4QUH",
+    "spf2085ax4quh@yesbank": "AX4QUH",
+    "spf-2085-AX4QUH@mairtel": "AX4QUH",
+    "upi://pay?cu=INR&pa=epos6371063993ayxeor.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AX4QUH",
+    "spf-2085-A28YCQ@mairtel": "A28YCQ",
+    "spf2085a28ycq@yesbank": "A28YCQ",
+    "upi://pay?cu=INR&pa=epos6371063994uktlzv.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "A28YCQ",
+    "upi://pay?cu=INR&pa=epos232129h4wn%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "A28YCQ",
+    "spf-2085-ACCYOI@mairtel": "ACCYOI",
+    "spf2085accyoi@yesbank": "ACCYOI",
+    "upi://pay?cu=INR&pa=epos63710639955jlufr.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ACCYOI",
+    "upi://pay?cu=INR&pa=epos232139yuxj%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ACCYOI",
+    "upi://pay?cu=INR&pa=epos6371063996twh4er.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AE6GFE",
+    "upi://pay?cu=INR&pa=epos232142bv8n%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AE6GFE",
+    "spf2085ae6gfe@yesbank": "AE6GFE",
+    "spf-2085-AE6GFE@mairtel": "AE6GFE",
+    "spf-2085-AVZ0KM@mairtel": "AVZ0KM",
+    "spf2085avz0km@yesbank": "AVZ0KM",
+    "upi://pay?cu=INR&pa=epos6371063997m0zpb7.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AVZ0KM",
+    "upi://pay?cu=INR&pa=epos232147qh9y%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AVZ0KM",
+    "spf-2085-A0UUD1@mairtel": "A0UUD1",
+    "spf2085a0uud1@yesbank": "A0UUD1",
+    "upi://pay?cu=INR&pa=epos637106399826wtpa.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "A0UUD1",
+    "upi://pay?cu=INR&pa=epos2321524jw8%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "A0UUD1",
+    "spf-2085-AE5MML@mairtel": "AE5MML",
+    "upi://pay?cu=INR&pa=epos232306d6qk%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AE5MML",
+    "spf2085ae5mml@yesbank": "AE5MML",
+    "upi://pay?cu=INR&pa=epos6371063999ahdvi5.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AE5MML",
+    "spf-2085-ALUD7E@mairtel": "ALUD7E",
+    "spf2085alud7e@yesbank": "ALUD7E",
+    "upi://pay?cu=INR&pa=epos63710640003l09re.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ALUD7E",
+    "upi://pay?cu=INR&pa=epos232320kqm8%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ALUD7E",
+    "spf-2085-AD30K4@mairtel": "AD30K4",
+    "spf2085ad30k4@yesbank": "AD30K4",
+    "upi://pay?cu=INR&pa=epos6371064001kw7dvs.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "AD30K4",
+    "upi://pay?cu=INR&pa=epos232330b2ce%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "AD30K4",
+    "spf-2085-ANZI04@mairtel": "ANZI04",
+    "upi://pay?cu=INR&pa=epos232341dilf%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ANZI04",
+    "upi://pay?cu=INR&pa=epos6371065482t3w7x6.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS": "ANZI04",
+    "spf2085anzi04@yesbank": "ANZI04",
+    "upi://pay?cu=INR&pa=epos63710612915co1q.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=": "ALXVRS",
+    "spf-2085-ALXVRS@mairtel": "ALXVRS",
+    "spf2085alxvrs@yesbank": "ALXVRS",
+    "upi://pay?cu=INR&pa=epos2323448dg3%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "ALXVRS",
+    "upi://pay?cu=INR&pa=epos195539ebw1%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=": "A2CUYV",
+    "spf2085a2cuyv@yesbank": "A2CUYV",
+    "spf-2085-A2CUYV@mairtel": "A2CUYV"
+  },
+  "mappings_by_terminal_id": {
+    "IEA": {
+      "mms_terminal_id": "ALANS8",
+      "terminal_id": "IEA",
+      "partner_ref_id": "163814",
+      "vpa": "upi://pay?cu=INR&pa=epos163814ugqt.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "S SRIKANTH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "GIV": {
+      "mms_terminal_id": "AZCX1J",
+      "terminal_id": "GIV",
+      "partner_ref_id": "232085",
+      "vpa": "upi://pay?cu=INR&pa=epos2320855x0c%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "G DURGA PRASAD",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "PRR": {
+      "mms_terminal_id": "ABW9NU",
+      "terminal_id": "PRR",
+      "partner_ref_id": "232088",
+      "vpa": "upi://pay?cu=INR&pa=epos232088ujkc%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D MURALI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "GOV": {
+      "mms_terminal_id": "ASCN2N",
+      "terminal_id": "GOV",
+      "partner_ref_id": "cvaead5e653e4a49818b9973445830a6",
+      "vpa": "spf2085ascn2n@yesbank",
+      "branch_name": "V SHAKEERUNNISA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "GUN": {
+      "mms_terminal_id": "ALEBR2",
+      "terminal_id": "GUN",
+      "partner_ref_id": "232094",
+      "vpa": "upi://pay?cu=INR&pa=epos232094svrx%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "T ANANTA SAI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "GNR": {
+      "mms_terminal_id": "AV1QS0",
+      "terminal_id": "GNR",
+      "partner_ref_id": "3987",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063987rh3kfl.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "K RAJU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "ADQ": {
+      "mms_terminal_id": "AKE7I4",
+      "terminal_id": "ADQ",
+      "partner_ref_id": "232103",
+      "vpa": "upi://pay?cu=INR&pa=epos232103rlgm%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "V V SUBBARAO",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "ONG": {
+      "mms_terminal_id": "A0MN9W",
+      "terminal_id": "ONG",
+      "partner_ref_id": "232108",
+      "vpa": "upi://pay?cu=INR&pa=epos232108xaov%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "G ASHOK",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "NLO": {
+      "mms_terminal_id": "AJKJUE",
+      "terminal_id": "NLO",
+      "partner_ref_id": "cva5c4079b614cd292cf04455e632cca",
+      "vpa": "spf2085ajkjue@yesbank",
+      "branch_name": "T GOVIND",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "NIG": {
+      "mms_terminal_id": "ACGF5S",
+      "terminal_id": "NIG",
+      "partner_ref_id": "232115",
+      "vpa": "upi://pay?cu=INR&pa=epos232115ur8v%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "K HEMANTH KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "CHT": {
+      "mms_terminal_id": "AX4QUH",
+      "terminal_id": "CHT",
+      "partner_ref_id": "3993",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063993ayxeor.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "K BALACHANDRA BABU",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "API": {
+      "mms_terminal_id": "A28YCQ",
+      "terminal_id": "API",
+      "partner_ref_id": "232129",
+      "vpa": "upi://pay?cu=INR&pa=epos232129h4wn%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D SAI JAGADEESH",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "CUH": {
+      "mms_terminal_id": "ACCYOI",
+      "terminal_id": "CUH",
+      "partner_ref_id": "232139",
+      "vpa": "upi://pay?cu=INR&pa=epos232139yuxj%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "SK MOULANA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "POD": {
+      "mms_terminal_id": "AE6GFE",
+      "terminal_id": "POD",
+      "partner_ref_id": "",
+      "vpa": "spf-2085-AE6GFE@mairtel",
+      "branch_name": "B VISHNU SAI REDDY",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "TRU": {
+      "mms_terminal_id": "AVZ0KM",
+      "terminal_id": "TRU",
+      "partner_ref_id": "232147",
+      "vpa": "upi://pay?cu=INR&pa=epos232147qh9y%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "R MEHER RAVI KISHORE",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "VIY": {
+      "mms_terminal_id": "A0UUD1",
+      "terminal_id": "VIY",
+      "partner_ref_id": "232152",
+      "vpa": "upi://pay?cu=INR&pa=epos2321524jw8%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "B AJAY KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "JGM": {
+      "mms_terminal_id": "AE5MML",
+      "terminal_id": "JGM",
+      "partner_ref_id": "3999",
+      "vpa": "upi://pay?cu=INR&pa=epos6371063999ahdvi5.cfqr%40axisbank&pn=ADVANCE+AUTOPARTS",
+      "branch_name": "P RAMA KRISHNA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "RTY": {
+      "mms_terminal_id": "ALUD7E",
+      "terminal_id": "RTY",
+      "partner_ref_id": "232320",
+      "vpa": "upi://pay?cu=INR&pa=epos232320kqm8%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D SAILAJA",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "KOA": {
+      "mms_terminal_id": "AD30K4",
+      "terminal_id": "KOA",
+      "partner_ref_id": "232330",
+      "vpa": "upi://pay?cu=INR&pa=epos232330b2ce%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "D JAYALAKSHMI",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "HOC": {
+      "mms_terminal_id": "ANZI04",
+      "terminal_id": "HOC",
+      "partner_ref_id": "cva6a0c3ddd940579e46c4c75b8154b2",
+      "vpa": "spf2085anzi04@yesbank",
+      "branch_name": "GHANTA UGANDHAR KUMAR",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "TEI": {
+      "mms_terminal_id": "ALXVRS",
+      "terminal_id": "TEI",
+      "partner_ref_id": "232344",
+      "vpa": "upi://pay?cu=INR&pa=epos2323448dg3%40cashfreensdlpb&pn=ADVANCE+AUTOPARTS&tn=",
+      "branch_name": "Syed Moulali",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    },
+    "BVP": {
+      "mms_terminal_id": "A2CUYV",
+      "terminal_id": "BVP",
+      "partner_ref_id": "",
+      "vpa": "spf-2085-A2CUYV@mairtel",
+      "branch_name": "Hemalatha",
+      "merchant_id": "0000000000002085",
+      "merchant_name": "ADVANCE AUTO PARTS"
+    }
+  },
+  "merchant_key": "advance_auto_parts"
+}

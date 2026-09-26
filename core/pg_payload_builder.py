@@ -18,7 +18,7 @@ import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from .normalizer import clean_amount
+from .normalizer import clean_amount, clean_key
 from .terminal_mapper import (
     resolve_mms_terminal_id,
     resolve_terminal_details,
@@ -130,6 +130,34 @@ def build_missing_pg_payloads(
 
     results: List[Dict[str, Any]] = []
 
+    # Build fast lookup of all RRNs/UTRs/Txn IDs present in CMS report
+    # If a transaction exists in CMS (regardless of SMMS Sync Status), it is already in CMS and MUST NOT be pulled!
+    cms_keys = set()
+    if getattr(engine, "cms_report", None) and getattr(engine.cms_report, "records", None):
+        for cr in engine.cms_report.records:
+            cr_rrn = clean_key(cr.get("RRN/UTR") or cr.get("RRN") or cr.get("UTR"))
+            cr_sp = clean_key(cr.get("SwinkPay Txn ID") or cr.get("SwinkPay Transaction ID"))
+            if cr_rrn:
+                cms_keys.add(cr_rrn)
+                if cr_rrn.isdigit():
+                    cms_keys.add(cr_rrn.lstrip("0"))
+                    cms_keys.add(cr_rrn.zfill(12))
+            if cr_sp:
+                cms_keys.add(cr_sp)
+
+    def _is_in_cms(key: str) -> bool:
+        if not key:
+            return False
+        k = clean_key(key)
+        if not k:
+            return False
+        if k in cms_keys:
+            return True
+        if k.isdigit():
+            if k.lstrip("0") in cms_keys or k.zfill(12) in cms_keys:
+                return True
+        return False
+
     # 1. Cashfree unmatched
     unmatched_cf = getattr(engine, "unmatched_cf", [])
     if unmatched_cf:
@@ -140,6 +168,10 @@ def build_missing_pg_payloads(
             amount_str = format_payload_amount(cf_r.get("Amount"))
             utr_str = str(cf_r.get("Bank Reference No.") or cf_r.get("UTR No.") or cf_r.get("Reference Id") or "").strip()
             dt_str = format_payload_datetime(cf_r.get("Transaction Time") or cf_r.get("Transaction Date"))
+
+            # If transaction is already in CMS (even if SMMS Sync Status is False), no need to pull!
+            if _is_in_cms(utr_str) or _is_in_cms(order_id):
+                continue
 
             middle_number = extract_cf_middle_number(order_id)
             parts = order_id.split("-")
@@ -195,6 +227,10 @@ def build_missing_pg_payloads(
             dt_str = format_payload_datetime(eb_r.get("Transaction Date") or eb_r.get("Date"))
             term_id = str(eb_r.get("Virtual Account Label") or "").strip()
 
+            # If transaction is already in CMS, no need to pull!
+            if _is_in_cms(utr_str) or _is_in_cms(order_id):
+                continue
+
             # If terminal ID is numeric, check if it maps to an MMS Terminal ID in terminal_mappings
             resolved_tid = resolve_mms_terminal_id(term_id, terminal_mappings)
             if resolved_tid:
@@ -227,6 +263,10 @@ def build_missing_pg_payloads(
             amount_str = format_payload_amount(air_r.get("Original Input Amt") or air_r.get("Amount"))
             utr_str = str(air_r.get("PARTNER_TXN_ID") or air_r.get("REF_TXN_NO_ORG") or order_id).strip()
             dt_str = format_payload_datetime(air_r.get("Date and Time") or air_r.get("Transaction Date"))
+
+            # If transaction is already in CMS, no need to pull!
+            if _is_in_cms(utr_str) or _is_in_cms(order_id):
+                continue
 
             # Extract terminal from Transaction To e.g. spf-2045-xh2vuy@mairtel -> XH2VUY
             txn_to = str(air_r.get("Transaction To") or "").strip()

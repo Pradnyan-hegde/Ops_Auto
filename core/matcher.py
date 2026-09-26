@@ -753,6 +753,13 @@ class ReconciliationEngine:
                             self.adjustments.append(entry)
                         self.failed_or_reversed.append(entry)
                 else:
+                    sync_st_val = cms_r.get("SMMS Sync Status")
+                    is_sync_false = (sync_st_val is False) or (str(sync_st_val).strip().lower() in ("false", "0", "no"))
+                    reason_msg = (
+                        f"Transaction in CMS with SMMS Sync Status=False (RRN: {crrn})"
+                        if is_sync_false
+                        else f"Transaction in CMS but not found in SMMS (RRN: {crrn})"
+                    )
                     entry = dict(cms_r)
                     entry.update({
                         "Source System": "CMS",
@@ -764,7 +771,7 @@ class ReconciliationEngine:
                         "CMS Status": c_status,
                         "Partner Status": "",
                         "Reconciliation Status": "Missing in SMMS",
-                        "Exception Reason": f"Transaction in CMS but not found in SMMS (RRN: {crrn})",
+                        "Exception Reason": reason_msg,
                         "Settlement Details": ""
                     })
                     self.cms_not_in_smms.append(entry)
@@ -778,6 +785,78 @@ class ReconciliationEngine:
                 if bref and not _is_key_matched(matched_cf_keys, bref):
                     cf_status = normalize_status(cf_r.get("Transaction Status"))
                     cf_amt = clean_amount(cf_r.get("Amount"))
+
+                    # If Failed or Reversed, record in failed_or_reversed
+                    if cf_status in ("Failed", "Reversed"):
+                        if not _is_key_matched(handled_failed_keys, bref):
+                            _record_matched_key(handled_failed_keys, bref)
+                            entry = dict(cf_r)
+                            entry.update({
+                                "Source System": "Cashfree",
+                                "Match Key": bref,
+                                "Matched Transaction ID": cf_r.get("Reference Id") or cf_r.get("Order Id") or "",
+                                "CMS Amount": None,
+                                "Partner Amount": cf_amt,
+                                "Amount Difference": None,
+                                "CMS Status": "",
+                                "Partner Status": cf_status,
+                                "Reconciliation Status": cf_status,
+                                "Exception Reason": f"Cashfree {cf_status} transaction (RRN: {bref})",
+                                "Settlement Details": ""
+                            })
+                            self.failed_or_reversed.append(entry)
+                        continue
+
+                    # If not matched via SMMS, check if transaction exists directly in CMS
+                    cms_r = _find_record(cms_by_rrn, bref)
+                    if cms_r:
+                        cms_amt = clean_amount(cms_r.get("Transaction Amount"))
+                        cms_status = normalize_status(cms_r.get("Transaction Status"))
+                        _record_matched_key(matched_cf_keys, bref)
+
+                        if is_amount_equal(cms_amt, cf_amt, self.tolerance):
+                            entry = dict(cms_r)
+                            entry.update({
+                                "Source System": "Cashfree",
+                                "Match Key": bref,
+                                "Matched Transaction ID": cf_r.get("Reference Id") or cf_r.get("Order Id") or "",
+                                "CMS Amount": cms_amt,
+                                "Partner Amount": cf_amt,
+                                "Amount Difference": 0.0,
+                                "CMS Status": cms_status,
+                                "Partner Status": cf_status,
+                                "Reconciliation Status": "Matched",
+                                "Exception Reason": "",
+                                "Cashfree Payment Mode": cf_r.get("Payment Mode") or "",
+                                "Settlement UTR": cf_r.get("UTR No.") or "",
+                                "Settlement Date": str(cf_r.get("Settled On") or ""),
+                                "Settlement Amount": clean_amount(cf_r.get("Settlement Amount")),
+                                "Settlement Status": str(cf_r.get("Settlement") or "")
+                            })
+                            self.cms_cf_matched.append(entry)
+                        else:
+                            diff = round((cms_amt or 0.0) - (cf_amt or 0.0), 2)
+                            entry = dict(cms_r)
+                            entry.update({
+                                "Source System": "Cashfree",
+                                "Match Key": bref,
+                                "Matched Transaction ID": cf_r.get("Reference Id") or cf_r.get("Order Id") or "",
+                                "CMS Amount": cms_amt,
+                                "Partner Amount": cf_amt,
+                                "Amount Difference": diff,
+                                "CMS Status": cms_status,
+                                "Partner Status": cf_status,
+                                "Reconciliation Status": "Amount Mismatch",
+                                "Exception Reason": f"Amount mismatch between CMS ({cms_amt}) and Cashfree ({cf_amt})",
+                                "Cashfree Payment Mode": cf_r.get("Payment Mode") or "",
+                                "Settlement UTR": cf_r.get("UTR No.") or "",
+                                "Settlement Date": str(cf_r.get("Settled On") or ""),
+                                "Settlement Amount": clean_amount(cf_r.get("Settlement Amount")),
+                                "Settlement Status": str(cf_r.get("Settlement") or "")
+                            })
+                            self.exceptions.append(entry)
+                        continue
+
                     entry = dict(cf_r)
                     entry.update({
                         "Source System": "Cashfree",
@@ -792,13 +871,8 @@ class ReconciliationEngine:
                         "Exception Reason": f"Cashfree transaction not found in CMS/SMMS (RRN: {bref})",
                         "Settlement Details": ""
                     })
-                    if cf_status in ("Failed", "Reversed"):
-                        if not _is_key_matched(handled_failed_keys, bref):
-                            _record_matched_key(handled_failed_keys, bref)
-                            self.failed_or_reversed.append(entry)
-                    else:
-                        self.unmatched_cf.append(entry)
-                        self.exceptions.append(entry)
+                    self.unmatched_cf.append(entry)
+                    self.exceptions.append(entry)
 
         # Easebuzz unmatched
         if self.eb_report:
@@ -807,6 +881,70 @@ class ReconciliationEngine:
                 if utr and not _is_key_matched(matched_eb_keys, utr):
                     eb_status = normalize_status(eb_r.get("Status"))
                     eb_amt = clean_amount(eb_r.get("Amount"))
+
+                    # If Failed or Reversed, record in failed_or_reversed
+                    if eb_status in ("Failed", "Reversed"):
+                        if not _is_key_matched(handled_failed_keys, utr):
+                            _record_matched_key(handled_failed_keys, utr)
+                            entry = dict(eb_r)
+                            entry.update({
+                                "Source System": "Easebuzz",
+                                "Match Key": utr,
+                                "Matched Transaction ID": eb_r.get("ID") or eb_r.get("UPI tid") or "",
+                                "CMS Amount": None,
+                                "Partner Amount": eb_amt,
+                                "Amount Difference": None,
+                                "CMS Status": "",
+                                "Partner Status": eb_status,
+                                "Reconciliation Status": eb_status,
+                                "Exception Reason": f"Easebuzz {eb_status} transaction (UTR: {utr})",
+                                "Settlement Details": ""
+                            })
+                            self.failed_or_reversed.append(entry)
+                        continue
+
+                    # If not matched via SMMS, check if transaction exists directly in CMS
+                    cms_r = _find_record(cms_by_rrn, utr)
+                    if cms_r:
+                        cms_amt = clean_amount(cms_r.get("Transaction Amount"))
+                        cms_status = normalize_status(cms_r.get("Transaction Status"))
+                        _record_matched_key(matched_eb_keys, utr)
+
+                        if is_amount_equal(cms_amt, eb_amt, self.tolerance):
+                            entry = dict(cms_r)
+                            entry.update({
+                                "Source System": "Easebuzz",
+                                "Match Key": utr,
+                                "Matched Transaction ID": eb_r.get("ID") or eb_r.get("UPI tid") or "",
+                                "CMS Amount": cms_amt,
+                                "Partner Amount": eb_amt,
+                                "Amount Difference": 0.0,
+                                "CMS Status": cms_status,
+                                "Partner Status": eb_status,
+                                "Reconciliation Status": "Matched",
+                                "Exception Reason": "",
+                                "Settlement Details": ""
+                            })
+                            self.cms_eb_matched.append(entry)
+                        else:
+                            diff = round((cms_amt or 0.0) - (eb_amt or 0.0), 2)
+                            entry = dict(cms_r)
+                            entry.update({
+                                "Source System": "Easebuzz",
+                                "Match Key": utr,
+                                "Matched Transaction ID": eb_r.get("ID") or eb_r.get("UPI tid") or "",
+                                "CMS Amount": cms_amt,
+                                "Partner Amount": eb_amt,
+                                "Amount Difference": diff,
+                                "CMS Status": cms_status,
+                                "Partner Status": eb_status,
+                                "Reconciliation Status": "Amount Mismatch",
+                                "Exception Reason": f"Amount mismatch between CMS ({cms_amt}) and Easebuzz ({eb_amt})",
+                                "Settlement Details": ""
+                            })
+                            self.exceptions.append(entry)
+                        continue
+
                     entry = dict(eb_r)
                     entry.update({
                         "Source System": "Easebuzz",
@@ -821,25 +959,110 @@ class ReconciliationEngine:
                         "Exception Reason": f"Easebuzz transaction not in matched CMS (UTR: {utr})",
                         "Settlement Details": ""
                     })
-                    if eb_status in ("Failed", "Reversed"):
-                        if not _is_key_matched(handled_failed_keys, utr):
-                            _record_matched_key(handled_failed_keys, utr)
-                            self.failed_or_reversed.append(entry)
-                    else:
-                        self.unmatched_eb.append(entry)
-                        self.exceptions.append(entry)
+                    self.unmatched_eb.append(entry)
+                    self.exceptions.append(entry)
 
         # Airtel unmatched
         if self.airtel_report:
             for air_r in self.airtel_report.records:
                 pid = clean_key(air_r.get("PARTNER_TXN_ID"))
-                if pid and not _is_key_matched(matched_air_keys, pid):
+                tid = clean_key(air_r.get("Transaction Id"))
+
+                is_matched = False
+                if pid and _is_key_matched(matched_air_keys, pid):
+                    is_matched = True
+                elif tid and _is_key_matched(matched_air_keys, tid):
+                    is_matched = True
+
+                if not is_matched:
                     air_status = normalize_status(air_r.get("Transaction Status"))
                     air_amt = clean_amount(air_r.get("Original Input Amt"))
+
+                    # If Failed or Reversed, record in failed_or_reversed
+                    if air_status in ("Failed", "Reversed"):
+                        if pid and not _is_key_matched(handled_failed_keys, pid):
+                            _record_matched_key(handled_failed_keys, pid)
+                        elif tid and not _is_key_matched(handled_failed_keys, tid):
+                            _record_matched_key(handled_failed_keys, tid)
+                        entry = dict(air_r)
+                        entry.update({
+                            "Source System": "Airtel",
+                            "Match Key": pid or tid,
+                            "Matched Transaction ID": air_r.get("Transaction Id") or "",
+                            "CMS Amount": None,
+                            "Partner Amount": air_amt,
+                            "Amount Difference": None,
+                            "CMS Status": "",
+                            "Partner Status": air_status,
+                            "Reconciliation Status": air_status,
+                            "Exception Reason": f"Airtel {air_status} transaction (RRN: {pid or tid})",
+                            "Settlement Details": ""
+                        })
+                        self.failed_or_reversed.append(entry)
+                        continue
+
+                    # If not matched via SMMS, check if transaction exists directly in CMS
+                    cms_r = _find_record(cms_by_rrn, pid) if pid else None
+                    if not cms_r and tid:
+                        cms_r = _find_record(cms_by_sp_id, tid)
+
+                    if cms_r:
+                        cms_amt = clean_amount(cms_r.get("Transaction Amount"))
+                        cms_status = normalize_status(cms_r.get("Transaction Status"))
+                        if pid:
+                            _record_matched_key(matched_air_keys, pid)
+                        if tid:
+                            _record_matched_key(matched_air_keys, tid)
+
+                        s_r = _find_record(settle_by_ref, pid) if pid else None
+                        settle_details = {}
+                        if s_r:
+                            settle_details = {
+                                "Settlement UTR": s_r.get("UTR Num") or "",
+                                "Settlement Date": s_r.get("Settlement Date") or "",
+                                "Settlement Amount": clean_amount(s_r.get("Net Credit Amnt") or s_r.get("ORIG_AMNT")),
+                                "Settlement Status": "Settled" if s_r.get("Transaction Type") == "C" else (s_r.get("Transaction Type") or "Settled")
+                            }
+
+                        if is_amount_equal(cms_amt, air_amt, self.tolerance):
+                            entry = dict(cms_r)
+                            entry.update({
+                                "Source System": "Airtel",
+                                "Match Key": pid or tid,
+                                "Matched Transaction ID": air_r.get("Transaction Id") or "",
+                                "CMS Amount": cms_amt,
+                                "Partner Amount": air_amt,
+                                "Amount Difference": 0.0,
+                                "CMS Status": cms_status,
+                                "Partner Status": air_status,
+                                "Reconciliation Status": "Matched",
+                                "Exception Reason": "",
+                                **settle_details
+                            })
+                            self.cms_air_matched.append(entry)
+                        else:
+                            diff = round((cms_amt or 0.0) - (air_amt or 0.0), 2)
+                            entry = dict(cms_r)
+                            entry.update({
+                                "Source System": "Airtel",
+                                "Match Key": pid or tid,
+                                "Matched Transaction ID": air_r.get("Transaction Id") or "",
+                                "CMS Amount": cms_amt,
+                                "Partner Amount": air_amt,
+                                "Amount Difference": diff,
+                                "CMS Status": cms_status,
+                                "Partner Status": air_status,
+                                "Reconciliation Status": "Amount Mismatch",
+                                "Exception Reason": f"Amount mismatch between CMS ({cms_amt}) and Airtel ({air_amt})",
+                                **settle_details
+                            })
+                            self.exceptions.append(entry)
+                        continue
+
                     entry = dict(air_r)
                     entry.update({
                         "Source System": "Airtel",
-                        "Match Key": pid,
+                        "Match Key": pid or tid,
                         "Matched Transaction ID": air_r.get("Transaction Id") or "",
                         "CMS Amount": None,
                         "Partner Amount": air_amt,
@@ -847,16 +1070,11 @@ class ReconciliationEngine:
                         "CMS Status": "",
                         "Partner Status": air_status,
                         "Reconciliation Status": "Missing in CMS" if air_status == "Success" else air_status,
-                        "Exception Reason": f"Airtel transaction not found in CMS/SMMS (RRN: {pid})",
+                        "Exception Reason": f"Airtel transaction not found in CMS/SMMS (RRN: {pid or tid})",
                         "Settlement Details": ""
                     })
-                    if air_status in ("Failed", "Reversed"):
-                        if not _is_key_matched(handled_failed_keys, pid):
-                            _record_matched_key(handled_failed_keys, pid)
-                            self.failed_or_reversed.append(entry)
-                    else:
-                        self.unmatched_airtel.append(entry)
-                        self.exceptions.append(entry)
+                    self.unmatched_airtel.append(entry)
+                    self.exceptions.append(entry)
 
         # 8. Detect Network Changes (CMS Network vs Cashfree Payment Mode)
         from .network_builder import detect_network_changes
