@@ -4801,9 +4801,8 @@
       });
     };
 
-    // Initial 5-slot state & terminal mapping status
+    // Initial 5-slot state
     updateSlotsUI();
-    checkTerminalMappingStatus();
 
     btnCopyAllPayloads.addEventListener('click', () => {
       if (!currentMissingPayloads || currentMissingPayloads.length === 0) return;
@@ -5651,9 +5650,10 @@
     };
 
     // Load initial mappings & settings on page start
-    const savedInitialTab = localStorage.getItem('ops_active_tab') || 'daily';
-    switchUploadMode(savedInitialTab);
-    loadRegisteredMerchants();
+    loadRegisteredMerchants().then(() => {
+      const savedInitialTab = localStorage.getItem('ops_active_tab') || 'daily';
+      switchUploadMode(savedInitialTab);
+    });
     loadApiSettings();
     updateSlotsUI();
   </script>
