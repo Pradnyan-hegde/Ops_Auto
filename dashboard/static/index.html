@@ -2005,9 +2005,6 @@
               </div>
             </div>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="openAddMerchantModal()" style="font-weight: 700; gap: 0.35rem; border-color: #cbd5e1;">
-            <span>➕</span> Add Another Merchant
-          </button>
         </div>
 
         <!-- 3. Selected Merchant Details Card -->
@@ -2706,7 +2703,12 @@
       errorBox.style.display = 'none';
 
       if (mode === 'terminal') {
-        loadTerminalMappingsTable();
+        if (!selectedTerminalMerchantKey || selectedTerminalMerchantKey === 'none') {
+          if (allMerchantsCache && allMerchantsCache.length > 0) {
+            selectedTerminalMerchantKey = allMerchantsCache[0].key;
+          }
+        }
+        window.loadTerminalMerchantOptions(selectedTerminalMerchantKey);
       } else if (mode === 'pull') {
         loadApiSettings();
         syncPullTabQueue();
@@ -5127,6 +5129,34 @@
     let currentTerminalMappings = [];
     let terminalSearchDebounce = null;
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatVpaDisplay(vpaRaw) {
+      if (!vpaRaw) return '--';
+      let str = String(vpaRaw).trim();
+      if (str.startsWith('{') && str.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(str);
+          if (parsed.merchantVpa) return parsed.merchantVpa;
+          if (parsed.qrString) {
+            const match = parsed.qrString.match(/[?&]pa=([^&]+)/);
+            if (match && match[1]) return decodeURIComponent(match[1]);
+          }
+        } catch (e) {
+          // fallback to trimmed text
+        }
+      }
+      return str;
+    }
+
     window.loadTerminalMappingsTable = async function(searchQuery = '') {
       const tbody = document.getElementById('terminal-tab-tbody');
       const pill = document.getElementById('terminal-stats-pill');
@@ -5135,7 +5165,17 @@
       const emptyWrap = document.getElementById('terminal-tab-empty');
       if (!tbody) return;
 
-      const mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
+      let mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
+      if (!mKey) {
+        const sel = document.getElementById('terminal-merchant-select');
+        if (sel && sel.value && sel.value !== 'none') {
+          mKey = sel.value;
+          selectedTerminalMerchantKey = mKey;
+        } else if (typeof allMerchantsCache !== 'undefined' && allMerchantsCache && allMerchantsCache.length > 0) {
+          mKey = allMerchantsCache[0].key;
+          selectedTerminalMerchantKey = mKey;
+        }
+      }
 
       try {
         let url = `/api/terminal-mappings?`;
@@ -5158,17 +5198,24 @@
 
             currentTerminalMappings.forEach((r, idx) => {
               const tr = document.createElement('tr');
+              const partnerRef = r.partner_ref_id ? escapeHtml(r.partner_ref_id) : '';
+              const refBadge = partnerRef
+                ? `<span class="badge" style="background: #eff6ff; color: #1d4ed8; font-family: var(--font-mono); font-size: 0.84rem; border: 1px solid #bfdbfe; font-weight: 700; padding: 2px 8px; border-radius: 6px;">${partnerRef}</span>`
+                : `<span style="color: #94a3b8; font-size: 0.78rem;">--</span>`;
+
+              const mmsTid = r.mms_terminal_id ? escapeHtml(r.mms_terminal_id) : '--';
+              const tid = r.terminal_id ? escapeHtml(r.terminal_id) : '--';
+              const branchName = r.branch_name ? escapeHtml(r.branch_name) : '--';
+              const rawVpa = r.vpa || '';
+              const displayVpa = formatVpaDisplay(rawVpa);
+
               tr.innerHTML = `
                 <td style="color: var(--text-muted); font-size: 0.75rem;">${idx + 1}</td>
-                <td>
-                  <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-family: var(--font-mono); font-size: 0.82rem; border: 1px solid #bfdbfe; font-weight: 700;">
-                    ${r.partner_ref_id || '--'}
-                  </span>
-                </td>
-                <td><strong class="mono" style="color: #1a73e8; font-size: 0.85rem;">${r.mms_terminal_id || '--'}</strong></td>
-                <td><span class="mono" style="color: var(--text-main); font-size: 0.82rem;">${r.terminal_id || '--'}</span></td>
-                <td><span style="font-weight: 600; font-size: 0.82rem; color: #334155;">${r.branch_name || '--'}</span></td>
-                <td><span style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace;">${r.vpa || '--'}</span></td>
+                <td>${refBadge}</td>
+                <td><strong class="mono" style="color: #1a73e8; font-size: 0.85rem;">${mmsTid}</strong></td>
+                <td><span class="mono" style="color: var(--text-main); font-size: 0.82rem;">${tid}</span></td>
+                <td><span style="font-weight: 600; font-size: 0.82rem; color: #334155;">${branchName}</span></td>
+                <td><span style="font-size: 0.8rem; color: var(--text-muted); font-family: monospace; display: inline-block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(rawVpa)}">${escapeHtml(displayVpa)}</span></td>
                 <td style="text-align: center;"><span class="badge badge-pass" style="font-size: 0.68rem;">Active Verified ✅</span></td>
               `;
               tbody.appendChild(tr);
@@ -5197,7 +5244,7 @@
     window.handleTerminalUploadFromTab = async function(file) {
       if (!file) return;
       if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-        alert('Please select an Excel file (.xlsx, .xls) containing the TID_FILE sheet.');
+        alert('Please select an Excel file (.xlsx, .xls) containing the terminal mapping report.');
         return;
       }
       const btn = document.getElementById('btn-terminal-tab-upload');
@@ -5207,7 +5254,17 @@
         btn.innerHTML = '⏳ Loading & Merging...';
       }
 
-      const mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
+      let mKey = (selectedTerminalMerchantKey && selectedTerminalMerchantKey !== 'all' && selectedTerminalMerchantKey !== 'none') ? selectedTerminalMerchantKey : '';
+      if (!mKey) {
+        const sel = document.getElementById('terminal-merchant-select');
+        if (sel && sel.value && sel.value !== 'none') {
+          mKey = sel.value;
+          selectedTerminalMerchantKey = mKey;
+        } else if (typeof allMerchantsCache !== 'undefined' && allMerchantsCache && allMerchantsCache.length > 0) {
+          mKey = allMerchantsCache[0].key;
+          selectedTerminalMerchantKey = mKey;
+        }
+      }
 
       const formData = new FormData();
       formData.append('file', file);
@@ -5222,7 +5279,7 @@
         const data = await resp.json();
         if (resp.ok && data.success) {
           const merchantNotice = mKey ? ` for merchant '${mKey}'` : '';
-          alert(`Successfully loaded ${data.total_mappings} terminal mappings (${data.new_added || 0} newly added)${merchantNotice} from '${file.name}'. All records are now active.`);
+          window.showToast(`✅ Loaded ${data.total_mappings} terminal mappings (${data.new_added || 0} newly added)${merchantNotice}`, 'success');
           await window.loadRegisteredMerchants(mKey || null);
           await window.onTerminalMerchantSelect(selectedTerminalMerchantKey);
         } else {

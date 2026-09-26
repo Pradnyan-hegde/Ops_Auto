@@ -93,7 +93,7 @@ def parse_terminal_report(file_path: str) -> Dict[str, Any]:
         # Check for key columns
         has_mms = any("mms terminal id" in k or "mms terminal" in k or "merchant mms terminal" in k for k in norm_dict)
         has_tid = any(k == "terminal id" or k == "terminalid" for k in norm_dict)
-        has_pref = any("partner ref id" in k or "partner ref" in k or "ref id" in k for k in norm_dict)
+        has_pref = any(p in k for p in ["partner ref id", "partner ref", "ref id", "terminal pin", "terminal_pin", "pin"] for k in norm_dict)
         has_vpa = any("vpa" in k for k in norm_dict)
 
         if has_mms and (has_tid or has_pref or has_vpa):
@@ -104,7 +104,7 @@ def parse_terminal_report(file_path: str) -> Dict[str, Any]:
                     col_map["mms_terminal_id"] = idx
                 elif k == "terminal id" or k == "terminalid":
                     col_map["terminal_id"] = idx
-                elif "partner ref id" in k or "partner ref" in k:
+                elif any(p in k for p in ["partner ref id", "partner ref", "ref id", "terminal pin", "terminal_pin", "pin"]):
                     col_map["partner_ref_id"] = idx
                 elif k == "vpa" or "vpa" in k:
                     col_map["vpa"] = idx

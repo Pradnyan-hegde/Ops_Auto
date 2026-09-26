@@ -1,8 +1,33 @@
 {
+  "ccd_value_express": {
+    "key": "ccd_value_express",
+    "display_name": "CCD value express",
+    "merchant_ids": [
+      "0000000000002045"
+    ],
+    "merchant_keywords": [
+      "CCD VALUE EXPRESS",
+      "CCD_VALUE_EXPRESS"
+    ],
+    "gateways": [
+      "CashFree",
+      "EaseBuzz",
+      "Airtel Bank"
+    ],
+    "has_split_settlement": false,
+    "softpos_label": "CashFree",
+    "input_file_prefix": "XCD Input file as on",
+    "terminal_file_name": "Terminal Report_Of 26_09_2026_11_07_40.xls",
+    "terminal_mappings_count": 921,
+    "upi_fee_rate": 0.0015,
+    "cc_fee_rate": 0.0225,
+    "default_gst_rate": 0.18
+  },
   "__deleted__": [
     "xcd",
     "ccd",
     "ags",
-    "sbb"
+    "sbb",
+    "test_brand_xyz"
   ]
 }

@@ -1785,6 +1785,18 @@ def get_terminal_mappings(
     ref_map = mappings.get("mappings_by_ref_id", {})
     tid_map = mappings.get("mappings_by_terminal_id", {})
 
+    # Build cross-reference from MMS and Terminal ID to Partner Ref ID
+    mms_to_ref = {}
+    for k, v in ref_map.items():
+        pref = v.get("partner_ref_id") or k
+        mms = v.get("mms_terminal_id", "")
+        tid = v.get("terminal_id", "")
+        if pref and str(pref).strip():
+            if mms:
+                mms_to_ref[str(mms).strip()] = str(pref).strip()
+            if tid:
+                mms_to_ref[str(tid).strip()] = str(pref).strip()
+
     seen = set()
     records = []
 
@@ -1810,7 +1822,7 @@ def get_terminal_mappings(
     for k, v in tid_map.items():
         mms = v.get("mms_terminal_id", "")
         tid = v.get("terminal_id") or k
-        pref = v.get("partner_ref_id", "")
+        pref = v.get("partner_ref_id") or mms_to_ref.get(str(tid).strip(), "") or mms_to_ref.get(str(mms).strip(), "")
         br_name = v.get("branch_name", "")
         vpa = v.get("vpa", "")
         m_name = v.get("merchant_name", "")
@@ -1825,6 +1837,9 @@ def get_terminal_mappings(
                 "vpa": str(vpa).strip(),
                 "merchant_name": str(m_name).strip()
             })
+
+    # Sort records: prioritize records with known Partner Ref ID / Middle No., then by branch name
+    records.sort(key=lambda r: (0 if r.get("partner_ref_id") else 1, r.get("branch_name", "").lower(), r.get("mms_terminal_id", "")))
 
     # Optional search query filter
     if q and str(q).strip():
