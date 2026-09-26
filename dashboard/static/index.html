@@ -1664,14 +1664,9 @@
           </div>
           <div style="display: flex; align-items: center; gap: 0.65rem;">
             <select id="merchant-select" style="padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.82rem; background: #ffffff; color: #0f172a; cursor: pointer; outline: none;" onchange="onMerchantSelectChanged()">
-              <option value="auto">✨ Auto-Detect from Reports</option>
-              <option value="xcd">☕ Cafe Value Express / XCD (Daily Single Settlement)</option>
-              <option value="ccd">☕ Cafe Coffee Day / CCD (Daily Single Settlement)</option>
-              <option value="ags">🔧 Advance Genuine Spares / AGS (Daily Single Settlement)</option>
-              <option value="sbb">🏥 SBB Medicare (Intraday Split Settlement: 12AM-12PM &amp; 12PM-12AM)</option>
-              <option value="__add_new__">➕ Add Custom / New Merchant...</option>
+              <option value="none">⚠️ No Merchants Registered (Click "+ Add Merchant")</option>
             </select>
-            <span id="merchant-active-badge" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.74rem; padding: 0.35rem 0.65rem;">Auto-Detect</span>
+            <span id="merchant-active-badge" class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; font-size: 0.74rem; padding: 0.35rem 0.65rem;">No Merchants</span>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openAddMerchantModal()" style="font-weight: 700; gap: 0.35rem; border-color: #cbd5e1;" title="Register a new merchant profile">
               <span>➕</span> Add Merchant
             </button>
@@ -1986,86 +1981,90 @@
           <p>Maps Cashfree Order ID middle numbers (e.g. <code>4873</code> from <code>330595-4873-...</code>) against authoritative <strong>Partner Ref ID</strong> to resolve <strong>MMS Terminal ID</strong>, <strong>Terminal ID</strong>, and <strong>Branch Name</strong> for each merchant.</p>
         </div>
 
-        <!-- Merchant Selection Bar for Terminals -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.95rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <!-- 1. Alert when No Merchants Registered Yet -->
+        <div id="terminal-no-merchants-alert" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 2rem 1.5rem; text-align: center; margin-bottom: 1.25rem;">
+          <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🏢</div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #92400e; margin: 0 0 0.35rem 0;">No Merchants Registered Yet</h3>
+          <p style="font-size: 0.84rem; color: #b45309; max-width: 520px; margin: 0 auto 1.25rem auto;">Please add your first merchant to configure and inspect its terminal mappings.</p>
+          <button type="button" class="btn btn-primary" onclick="openAddMerchantModal()" style="font-weight: 700; gap: 0.4rem;">
+            <span>➕</span> Add First Merchant
+          </button>
+        </div>
+
+        <!-- 2. Merchant Selector Bar -->
+        <div id="terminal-merchant-bar" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
           <div style="display: flex; align-items: center; gap: 0.85rem;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">🏢</div>
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🏢</div>
             <div>
-              <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a;">Select Merchant to View &amp; Manage Terminals</div>
-              <div style="display: flex; align-items: center; gap: 0.65rem; margin-top: 0.25rem;">
-                <select id="terminal-merchant-select" style="padding: 0.45rem 0.95rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.84rem; background: #ffffff; color: #0f172a; outline: none; cursor: pointer;" onchange="onTerminalMerchantSelect(this.value)">
+              <label for="terminal-merchant-select" style="display: block; font-weight: 800; font-size: 0.88rem; color: #0f172a; margin-bottom: 0.25rem;">Select Merchant:</label>
+              <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <select id="terminal-merchant-select" style="min-width: 320px; padding: 0.5rem 0.95rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.86rem; background: #ffffff; color: #0f172a; outline: none; cursor: pointer;" onchange="onTerminalMerchantSelect(this.value)">
                   <!-- Dynamically populated from registered merchants -->
                 </select>
-                <span id="terminal-merchant-badge" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 0.74rem;">All Terminals</span>
+                <span id="terminal-merchant-badge" class="badge" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.74rem;">Active</span>
               </div>
             </div>
           </div>
-          <div id="terminal-merchant-meta" style="display: flex; gap: 1.25rem; align-items: center; font-size: 0.8rem; color: #475569; flex-wrap: wrap;">
-            <div style="background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-              <span style="color: #64748b; font-size: 0.72rem; text-transform: uppercase; font-weight: 600; display: block;">Merchant ID</span>
-              <strong id="meta-merchant-id" style="color: #0f172a; font-family: monospace;">--</strong>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="openAddMerchantModal()" style="font-weight: 700; gap: 0.35rem; border-color: #cbd5e1;">
+            <span>➕</span> Add Another Merchant
+          </button>
+        </div>
+
+        <!-- 3. Selected Merchant Details Card -->
+        <div id="terminal-merchant-details-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; padding-bottom: 0.65rem; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+              <span style="color: #1a73e8;">ℹ️</span> Merchant Details: <strong id="detail-merchant-name" style="color: #1a73e8;">--</strong>
             </div>
-            <div style="background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-              <span style="color: #64748b; font-size: 0.72rem; text-transform: uppercase; font-weight: 600; display: block;">Report File</span>
-              <span id="meta-terminal-file" style="color: #0284c7; font-weight: 600;">--</span>
+            <span id="detail-settlement-cycle" class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.74rem; font-weight: 700; border: 1px solid #bae6fd;">Single Daily Settlement</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem;">
+            <div style="background: #ffffff; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Merchant ID (From Reports)</span>
+              <strong id="detail-merchant-id" style="font-family: monospace; font-size: 0.95rem; color: #0f172a;">--</strong>
             </div>
-            <div style="background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-              <span style="color: #64748b; font-size: 0.72rem; text-transform: uppercase; font-weight: 600; display: block;">Terminals Mapped</span>
-              <strong id="meta-terminal-count" style="color: #059669; font-size: 0.95rem;">0</strong>
+            <div style="background: #ffffff; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Output File Prefix</span>
+              <strong id="detail-merchant-prefix" style="font-family: monospace; font-size: 0.85rem; color: #475569;">--</strong>
+            </div>
+            <div style="background: #ffffff; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Terminal Mapping Report File</span>
+              <span id="detail-terminal-file" style="font-size: 0.82rem; font-weight: 600; color: #0284c7; word-break: break-all;">--</span>
+            </div>
+            <div style="background: #ffffff; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 0.2rem;">Mapped Terminals</span>
+              <strong id="detail-terminal-count" style="font-size: 1.15rem; color: #059669; font-weight: 800;">0</strong>
             </div>
           </div>
         </div>
 
-        <!-- Interactive Terminal ID Resolution & Lookup Card -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <span style="font-size: 1.35rem;">⚡</span>
-              <div>
-                <h3 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 0;">Test Terminal ID Resolution &amp; Decision Payload</h3>
-                <p style="font-size: 0.76rem; color: #64748b; margin: 0;">Paste an Order ID (e.g. <code>330595-4873-...</code>), a Middle No. / Ref ID (<code>4873</code>), or a raw transaction row to verify the mapped MMS Terminal ID instantly.</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="insertSampleTerminalOrderId()" style="font-size: 0.76rem; font-weight: 700; gap: 0.35rem; color: #1a73e8; border-color: #bfdbfe; background: #eff6ff;">
-              🧪 Insert Sample (4873)
-            </button>
-          </div>
-
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
-            <input type="text" id="test-terminal-input" placeholder="Paste Cashfree Order ID (e.g. 330595-4873-AXL...), Middle No. (4873), or full row..." style="flex: 1; min-width: 300px; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.82rem; font-family: monospace; outline: none;" onkeydown="if(event.key === 'Enter') { event.preventDefault(); testResolveTerminalId(); }" />
-            <button type="button" class="btn btn-primary btn-sm" onclick="testResolveTerminalId()" style="font-weight: 700; padding: 0.6rem 1.15rem;">
-              ⚡ Resolve Terminal ID
-            </button>
-          </div>
-
-          <div id="terminal-test-result" style="display: none; margin-top: 0.85rem;"></div>
+        <!-- 4. Option to Re-upload / Update Terminals for Selected Merchant -->
+        <div class="dropzone" id="terminal-tab-dropzone" style="margin-bottom: 1.25rem; padding: 1.35rem 1.25rem; border: 2px dashed #93c5fd; background: #eff6ff; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s ease;" onclick="document.getElementById('terminal-tab-file-input').click()">
+          <div class="dropzone-icon" style="font-size: 2rem; margin-bottom: 0.35rem;">📥</div>
+          <h3 style="font-size: 0.98rem; font-weight: 800; margin-bottom: 0.25rem; color: #1e3a8a;">Re-upload / Update Terminal Mapping Report (.xlsx / .xls)</h3>
+          <p style="font-size: 0.82rem; margin: 0 0 0.65rem 0; color: #475569;">
+            Drop updated Terminal Report here or click to browse. Any newly added terminal IDs will automatically merge into <strong id="reupload-merchant-name-label" style="color: #1e3a8a;">Selected Merchant</strong> without losing existing mappings.
+          </p>
+          <button type="button" class="btn btn-primary btn-sm" style="font-weight: 700; pointer-events: none;">
+            📂 Choose Updated Report File
+          </button>
+          <input type="file" id="terminal-tab-file-input" style="display: none;" accept=".xlsx,.xls" onchange="handleTerminalUploadFromTab(this.files[0])" />
         </div>
 
-        <!-- Terminal Re-upload / Add New Terminals Dropzone -->
-        <div class="dropzone" id="terminal-tab-dropzone" style="margin-bottom: 1.25rem; padding: 1.25rem 1rem; border-color: #93c5fd; background: #f8fafc;" onclick="document.getElementById('terminal-tab-file-input').click()">
-          <div class="dropzone-icon" style="font-size: 1.8rem; margin-bottom: 0.35rem;">📥</div>
-          <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem; color: #1e3a8a;">Re-upload / Add New Terminals (.xlsx / .xls)</h3>
-          <p style="font-size: 0.78rem; margin: 0; color: #475569;">Drop updated Terminal Report here or click to browse. Any newly added terminal IDs will automatically merge into <strong id="reupload-merchant-name-label">the selected merchant</strong> without losing existing mappings.</p>
-        </div>
-
-        <!-- Terminal Top Action Bar -->
-        <div class="terminal-top-bar">
+        <!-- 5. Top Action Bar for Table -->
+        <div class="terminal-top-bar" id="terminal-search-bar-wrap">
           <div class="terminal-search-wrap">
             <input type="text" class="terminal-search-input" id="terminal-tab-search-input" placeholder="🔍 Search by Middle No., MMS Terminal ID, Terminal ID, Branch Name, or VPA..." oninput="onTerminalSearch(this.value)" />
           </div>
           <div class="terminal-stats-group">
             <span id="terminal-stats-pill" class="badge badge-pass" style="font-size: 0.76rem;">0 Mappings Loaded</span>
-            <input type="file" id="terminal-tab-file-input" style="display: none;" accept=".xlsx,.xls" onchange="handleTerminalUploadFromTab(this.files[0])" />
-            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('terminal-tab-file-input').click()" id="btn-terminal-tab-upload">
-              📥 Re-upload / Add Terminals (.xlsx)
-            </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="confirmResetTerminalMappings()" style="color: #dc2626; border-color: #fca5a5;">
-              🗑️ Clear Mappings
+              🗑️ Clear Mappings for Merchant
             </button>
           </div>
         </div>
 
-        <!-- Terminal Mappings Table Wrap -->
+        <!-- 6. Terminal Mappings Table Wrap -->
         <div id="terminal-tab-table-wrap" style="overflow-x: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
           <table>
             <thead>
@@ -2087,8 +2086,8 @@
 
         <div id="terminal-tab-empty" style="display: none; padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 1rem;">
           <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Terminal Mappings Loaded</h4>
-          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Upload your Terminal Report (.xlsx / .xls) containing the <code>TID_FILE</code> sheet with columns <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, <code>Partner Ref ID</code>, and <code>BR NAME</code> to enable automated Cashfree middle number resolution.</p>
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Terminals Mapped for This Merchant Yet</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Upload the Terminal Report (.xlsx / .xls) containing the <code>TID_FILE</code> sheet with columns <code>TERMINAL ID</code>, <code>MMS TERMINAL ID</code>, <code>Partner Ref ID</code>, and <code>BR NAME</code> using the re-upload box above.</p>
         </div>
       </div>
 
@@ -3119,7 +3118,7 @@
     };
 
     let allMerchantsCache = [];
-    let selectedTerminalMerchantKey = 'all';
+    let selectedTerminalMerchantKey = '';
 
     window.loadRegisteredMerchants = async function(selectedKey = null) {
       try {
@@ -3137,8 +3136,9 @@
         if (data.merchants.length === 0) {
           const optNone = document.createElement('option');
           optNone.value = 'none';
-          optNone.textContent = '⚠️ No Merchants Registered (Click + Add Merchant)';
+          optNone.textContent = '⚠️ No Merchants Registered (Click "+ Add Merchant")';
           select.appendChild(optNone);
+          select.value = 'none';
         } else {
           // Auto option
           const optAuto = document.createElement('option');
@@ -3156,22 +3156,22 @@
             opt.textContent = `${icon} ${m.display_name}${midStr}${cycleStr}`;
             select.appendChild(opt);
           });
+
+          // Add custom merchant option
+          const optAdd = document.createElement('option');
+          optAdd.value = '__add_new__';
+          optAdd.textContent = '➕ Add New Merchant...';
+          select.appendChild(optAdd);
+
+          if (selectedKey && select.querySelector(`option[value="${selectedKey}"]`)) {
+            select.value = selectedKey;
+          } else if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+            select.value = currentVal;
+          } else {
+            select.value = 'auto';
+          }
         }
 
-        // Add custom merchant option
-        const optAdd = document.createElement('option');
-        optAdd.value = '__add_new__';
-        optAdd.textContent = '➕ Add Custom / New Merchant...';
-        select.appendChild(optAdd);
-
-        // Restore selected value if valid
-        if (select.querySelector(`option[value="${currentVal}"]`)) {
-          select.value = currentVal;
-        } else if (data.merchants.length > 0) {
-          select.value = 'auto';
-        } else {
-          select.value = 'none';
-        }
         window.onMerchantSelectChanged();
         window.loadTerminalMerchantOptions(selectedKey);
       } catch (err) {
@@ -3181,99 +3181,98 @@
 
     window.loadTerminalMerchantOptions = function(preferredKey = null) {
       const select = document.getElementById('terminal-merchant-select');
-      if (!select) return;
+      const noMerchantsAlert = document.getElementById('terminal-no-merchants-alert');
+      const merchantBar = document.getElementById('terminal-merchant-bar');
+      const detailsCard = document.getElementById('terminal-merchant-details-card');
+      const reuploadCard = document.getElementById('terminal-tab-dropzone');
+      const tableWrap = document.getElementById('terminal-tab-table-wrap');
+      const emptyWrap = document.getElementById('terminal-tab-empty');
+      const searchBar = document.getElementById('terminal-search-bar-wrap');
 
-      const currentVal = preferredKey || select.value || selectedTerminalMerchantKey || 'all';
+      if (!select) return;
       select.innerHTML = '';
 
       if (allMerchantsCache.length === 0) {
-        const optNone = document.createElement('option');
-        optNone.value = 'none';
-        optNone.textContent = '⚠️ No Merchants Registered';
-        select.appendChild(optNone);
+        if (noMerchantsAlert) noMerchantsAlert.style.display = 'block';
+        if (merchantBar) merchantBar.style.display = 'none';
+        if (detailsCard) detailsCard.style.display = 'none';
+        if (reuploadCard) reuploadCard.style.display = 'none';
+        if (tableWrap) tableWrap.style.display = 'none';
+        if (emptyWrap) emptyWrap.style.display = 'none';
+        if (searchBar) searchBar.style.display = 'none';
         selectedTerminalMerchantKey = 'none';
-        window.onTerminalMerchantSelect('none');
         return;
       }
 
-      // Option: All Merchants
-      const optAll = document.createElement('option');
-      optAll.value = 'all';
-      optAll.textContent = '🌐 All Merchants (Global View)';
-      select.appendChild(optAll);
+      if (noMerchantsAlert) noMerchantsAlert.style.display = 'none';
+      if (merchantBar) merchantBar.style.display = 'flex';
+      if (detailsCard) detailsCard.style.display = 'block';
+      if (reuploadCard) reuploadCard.style.display = 'block';
+      if (searchBar) searchBar.style.display = 'flex';
 
       allMerchantsCache.forEach(m => {
         const opt = document.createElement('option');
         opt.value = m.key;
         let midStr = m.primary_merchant_id ? ` [MID: ${m.primary_merchant_id}]` : '';
-        opt.textContent = `🏢 ${m.display_name}${midStr}`;
+        let cycleStr = m.has_split_settlement ? ' (Split)' : ' (Single)';
+        opt.textContent = `🏢 ${m.display_name}${midStr}${cycleStr}`;
         select.appendChild(opt);
       });
 
-      if (select.querySelector(`option[value="${currentVal}"]`)) {
-        select.value = currentVal;
-        selectedTerminalMerchantKey = currentVal;
-      } else {
-        select.value = allMerchantsCache[0].key;
-        selectedTerminalMerchantKey = allMerchantsCache[0].key;
+      let targetKey = preferredKey;
+      if (!targetKey || !allMerchantsCache.some(m => m.key === targetKey)) {
+        targetKey = (selectedTerminalMerchantKey && allMerchantsCache.some(m => m.key === selectedTerminalMerchantKey))
+          ? selectedTerminalMerchantKey
+          : allMerchantsCache[0].key;
       }
-
-      window.onTerminalMerchantSelect(selectedTerminalMerchantKey);
+      select.value = targetKey;
+      selectedTerminalMerchantKey = targetKey;
+      window.onTerminalMerchantSelect(targetKey);
     };
 
     window.onTerminalMerchantSelect = async function(key) {
       selectedTerminalMerchantKey = key;
-      const badge = document.getElementById('terminal-merchant-badge');
-      const metaMid = document.getElementById('meta-merchant-id');
-      const metaFile = document.getElementById('meta-terminal-file');
-      const metaCount = document.getElementById('meta-terminal-count');
+      const match = allMerchantsCache.find(m => m.key === key);
+      const nameEl = document.getElementById('detail-merchant-name');
+      const midEl = document.getElementById('detail-merchant-id');
+      const prefEl = document.getElementById('detail-merchant-prefix');
+      const cycleEl = document.getElementById('detail-settlement-cycle');
+      const fileEl = document.getElementById('detail-terminal-file');
+      const countEl = document.getElementById('detail-terminal-count');
       const reuploadLabel = document.getElementById('reupload-merchant-name-label');
 
-      if (!key || key === 'none') {
-        if (badge) {
-          badge.textContent = 'No Merchant';
-          badge.style.background = '#fef2f2';
-          badge.style.color = '#991b1b';
-        }
-        if (metaMid) metaMid.textContent = '--';
-        if (metaFile) metaFile.textContent = '--';
-        if (metaCount) metaCount.textContent = '0';
-        if (reuploadLabel) reuploadLabel.textContent = 'a registered merchant';
+      if (!match) {
+        if (nameEl) nameEl.textContent = '--';
+        if (midEl) midEl.textContent = '--';
+        if (prefEl) prefEl.textContent = '--';
+        if (cycleEl) cycleEl.textContent = '--';
+        if (fileEl) fileEl.textContent = '--';
+        if (countEl) countEl.textContent = '0';
+        if (reuploadLabel) reuploadLabel.textContent = 'Selected Merchant';
         await window.loadTerminalMappingsTable();
         return;
       }
 
-      if (key === 'all') {
-        if (badge) {
-          badge.textContent = 'All Merchants';
-          badge.style.background = '#e0f2fe';
-          badge.style.color = '#0369a1';
-        }
-        if (metaMid) metaMid.textContent = 'All MIDs';
-        if (metaFile) metaFile.textContent = 'Global Registry';
-        if (reuploadLabel) reuploadLabel.textContent = 'all merchants (global)';
-      } else {
-        const match = allMerchantsCache.find(m => m.key === key);
-        const name = match ? match.display_name : key;
-        const mid = match && match.primary_merchant_id ? match.primary_merchant_id : ((match && match.merchant_ids && match.merchant_ids[0]) || '--');
-        if (badge) {
-          badge.textContent = name;
-          badge.style.background = '#f0fdf4';
-          badge.style.color = '#15803d';
-        }
-        if (metaMid) metaMid.textContent = mid;
-        if (reuploadLabel) reuploadLabel.textContent = name;
+      if (nameEl) nameEl.textContent = match.display_name || match.key;
+      if (midEl) midEl.textContent = match.primary_merchant_id || ((match.merchant_ids && match.merchant_ids[0]) || '--');
+      if (prefEl) prefEl.textContent = match.input_file_prefix || '--';
+      if (cycleEl) {
+        cycleEl.textContent = match.has_split_settlement ? '2-Part Split Settlement (12AM-12PM & 12PM-12AM)' : 'Single Daily Settlement';
+        cycleEl.style.background = match.has_split_settlement ? '#fef3c7' : '#e0f2fe';
+        cycleEl.style.color = match.has_split_settlement ? '#92400e' : '#0369a1';
+        cycleEl.style.borderColor = match.has_split_settlement ? '#fde68a' : '#bae6fd';
       }
+      if (reuploadLabel) reuploadLabel.textContent = match.display_name || match.key;
 
-      // Fetch status for this merchant
+      // Fetch live status for this merchant
       try {
-        const url = key !== 'all' ? `/api/terminal-mappings-status?merchant_key=${key}` : '/api/terminal-mappings-status';
-        const res = await fetch(url);
+        const res = await fetch(`/api/terminal-mappings-status?merchant_key=${encodeURIComponent(key)}`);
         const sdata = await res.json();
-        if (metaFile) metaFile.textContent = sdata.source_filename || 'No report uploaded yet';
-        if (metaCount) metaCount.textContent = sdata.active_count || '0';
+        if (fileEl) fileEl.textContent = sdata.source_filename || match.terminal_file_name || 'No report uploaded yet';
+        if (countEl) countEl.textContent = (sdata.active_count !== undefined ? sdata.active_count : (match.terminal_mappings_count || 0));
       } catch (e) {
-        console.warn('Error fetching terminal status:', e);
+        if (fileEl) fileEl.textContent = match.terminal_file_name || 'No report uploaded yet';
+        if (countEl) countEl.textContent = match.terminal_mappings_count || 0;
       }
 
       await window.loadTerminalMappingsTable();
@@ -3284,7 +3283,7 @@
       const badge = document.getElementById('merchant-active-badge');
       const airtelTag = document.getElementById('slot-label-airtel-tag');
       const delBtn = document.getElementById('btn-delete-merchant');
-      const val = select ? select.value : 'auto';
+      const val = select ? select.value : 'none';
 
       if (delBtn) {
         delBtn.style.display = (val && val !== 'auto' && val !== '__add_new__' && val !== 'none') ? 'inline-flex' : 'none';
@@ -3292,7 +3291,11 @@
 
       if (val === '__add_new__') {
         window.openAddMerchantModal();
-        select.value = 'auto';
+        if (allMerchantsCache.length > 0) {
+          select.value = 'auto';
+        } else {
+          select.value = 'none';
+        }
         return;
       }
 
@@ -3306,49 +3309,27 @@
         return;
       }
 
-      const match = allMerchantsCache.find(m => m.key === val);
-
-      if (val === 'sbb' || (match && match.key === 'sbb')) {
+      if (val === 'auto') {
         if (badge) {
-          badge.textContent = '🏥 SBB Medicare';
-          badge.style.background = '#fef3c7';
-          badge.style.color = '#92400e';
-          badge.style.borderColor = '#fcd34d';
-        }
-        if (airtelTag) airtelTag.textContent = 'Not Used in SBB';
-      } else if (val === 'xcd' || (match && match.key === 'xcd')) {
-        if (badge) {
-          badge.textContent = '☕ Cafe Value Express (XCD)';
-          badge.style.background = '#fef9c3';
-          badge.style.color = '#854d0e';
-          badge.style.borderColor = '#fef08a';
-        }
-        if (airtelTag) airtelTag.textContent = 'Bank Partner (Airtel)';
-      } else if (val === 'ccd' || (match && match.key === 'ccd')) {
-        if (badge) {
-          badge.textContent = '☕ Cafe Coffee Day (CCD)';
-          badge.style.background = '#ecfdf5';
-          badge.style.color = '#065f46';
-          badge.style.borderColor = '#a7f3d0';
-        }
-        if (airtelTag) airtelTag.textContent = 'Bank Partner (Airtel)';
-      } else if (match) {
-        if (badge) {
-          badge.textContent = '🏢 ' + match.display_name;
-          badge.style.background = '#f3e8ff';
-          badge.style.color = '#6b21a8';
-          badge.style.borderColor = '#d8b4fe';
-        }
-        const hasAirtel = match.gateways && match.gateways.some(g => g.toLowerCase().includes('airtel'));
-        if (airtelTag) airtelTag.textContent = hasAirtel ? 'Bank Partner (Airtel)' : 'Optional Gateway';
-      } else {
-        if (badge) {
-          badge.textContent = '✨ Auto-Detect';
+          badge.textContent = 'Auto-Detect';
           badge.style.background = '#e0f2fe';
           badge.style.color = '#0369a1';
           badge.style.borderColor = '#bae6fd';
         }
         if (airtelTag) airtelTag.textContent = 'Bank Partner (Optional)';
+        return;
+      }
+
+      const match = allMerchantsCache.find(m => m.key === val);
+      if (match) {
+        if (badge) {
+          badge.textContent = '🏢 ' + match.display_name;
+          badge.style.background = '#f0fdf4';
+          badge.style.color = '#15803d';
+          badge.style.borderColor = '#bbf7d0';
+        }
+        const hasAirtel = match.gateways && match.gateways.some(g => g.toLowerCase().includes('airtel'));
+        if (airtelTag) airtelTag.textContent = hasAirtel ? 'Bank Partner (Airtel)' : 'Not Used for this Merchant';
       }
     };
 
@@ -5587,10 +5568,9 @@
     };
 
     // Load initial mappings & settings on page start
-    loadTerminalMappingsTable();
+    loadRegisteredMerchants();
     loadApiSettings();
     updateSlotsUI();
-    loadRegisteredMerchants();
   </script>
 
   <!-- Modal: Add New Merchant Profile -->
