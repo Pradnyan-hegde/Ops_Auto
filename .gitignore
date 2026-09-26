@@ -21,6 +21,8 @@ test_scratch/
 data/*
 !data/terminal_mappings.json
 !data/merchants.json
+!data/terminals/
+!data/terminals/**
 scratch/
 *.log
 .system_generated/

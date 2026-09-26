@@ -2681,6 +2681,10 @@
 
     // Mode Switching across all 4 operational tabs
     window.switchUploadMode = function(mode) {
+      try {
+        localStorage.setItem('ops_active_tab', mode);
+      } catch (e) {}
+
       const modeTabs = {
         'daily': { btn: document.getElementById('tab-btn-daily'), panel: document.getElementById('panel-daily') },
         'recon-file': { btn: document.getElementById('tab-btn-recon-file'), panel: document.getElementById('panel-recon-file') },
@@ -2703,7 +2707,10 @@
       errorBox.style.display = 'none';
 
       if (mode === 'terminal') {
-        if (!selectedTerminalMerchantKey || selectedTerminalMerchantKey === 'none') {
+        const savedTerm = localStorage.getItem('ops_terminal_merchant');
+        if (savedTerm && allMerchantsCache && allMerchantsCache.some(m => m.key === savedTerm)) {
+          selectedTerminalMerchantKey = savedTerm;
+        } else if (!selectedTerminalMerchantKey || selectedTerminalMerchantKey === 'none') {
           if (allMerchantsCache && allMerchantsCache.length > 0) {
             selectedTerminalMerchantKey = allMerchantsCache[0].key;
           }
@@ -3124,15 +3131,21 @@
 
     window.loadRegisteredMerchants = async function(selectedKey = null) {
       try {
-        const res = await fetch('/api/merchants');
+        const savedMerchant = selectedKey || localStorage.getItem('ops_selected_merchant') || 'auto';
+        const savedTermMerchant = localStorage.getItem('ops_terminal_merchant') || null;
+
+        const res = await fetch(`/api/merchants?_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (!data || !data.merchants) return;
         allMerchantsCache = data.merchants;
+        try {
+          localStorage.setItem('ops_merchants_cache', JSON.stringify(data.merchants));
+        } catch (e) {}
+
         const select = document.getElementById('merchant-select');
         if (!select) return;
 
-        const currentVal = selectedKey || select.value || 'auto';
         select.innerHTML = '';
 
         if (data.merchants.length === 0) {
@@ -3165,17 +3178,15 @@
           optAdd.textContent = '➕ Add New Merchant...';
           select.appendChild(optAdd);
 
-          if (selectedKey && select.querySelector(`option[value="${selectedKey}"]`)) {
-            select.value = selectedKey;
-          } else if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
-            select.value = currentVal;
+          if (savedMerchant && select.querySelector(`option[value="${savedMerchant}"]`)) {
+            select.value = savedMerchant;
           } else {
             select.value = 'auto';
           }
         }
 
         window.onMerchantSelectChanged();
-        window.loadTerminalMerchantOptions(selectedKey);
+        window.loadTerminalMerchantOptions(savedTermMerchant || selectedKey);
       } catch (err) {
         console.warn('Could not load merchants registry:', err);
       }
@@ -3221,19 +3232,24 @@
         select.appendChild(opt);
       });
 
-      let targetKey = preferredKey;
+      const savedTerm = localStorage.getItem('ops_terminal_merchant');
+      let targetKey = preferredKey || savedTerm || selectedTerminalMerchantKey;
       if (!targetKey || !allMerchantsCache.some(m => m.key === targetKey)) {
-        targetKey = (selectedTerminalMerchantKey && allMerchantsCache.some(m => m.key === selectedTerminalMerchantKey))
-          ? selectedTerminalMerchantKey
-          : allMerchantsCache[0].key;
+        targetKey = allMerchantsCache[0].key;
       }
       select.value = targetKey;
       selectedTerminalMerchantKey = targetKey;
+      try {
+        localStorage.setItem('ops_terminal_merchant', targetKey);
+      } catch (e) {}
       window.onTerminalMerchantSelect(targetKey);
     };
 
     window.onTerminalMerchantSelect = async function(key) {
       selectedTerminalMerchantKey = key;
+      try {
+        localStorage.setItem('ops_terminal_merchant', key);
+      } catch (e) {}
       const match = allMerchantsCache.find(m => m.key === key);
       const nameEl = document.getElementById('detail-merchant-name');
       const midEl = document.getElementById('detail-merchant-id');
@@ -3268,7 +3284,7 @@
 
       // Fetch live status for this merchant
       try {
-        const res = await fetch(`/api/terminal-mappings-status?merchant_key=${encodeURIComponent(key)}`);
+        const res = await fetch(`/api/terminal-mappings-status?merchant_key=${encodeURIComponent(key)}&_t=${Date.now()}`, { cache: 'no-store' });
         const sdata = await res.json();
         if (fileEl) fileEl.textContent = sdata.source_filename || match.terminal_file_name || 'No report uploaded yet';
         if (countEl) countEl.textContent = (sdata.active_count !== undefined ? sdata.active_count : (match.terminal_mappings_count || 0));
@@ -3286,6 +3302,12 @@
       const airtelTag = document.getElementById('slot-label-airtel-tag');
       const delBtn = document.getElementById('btn-delete-merchant');
       const val = select ? select.value : 'none';
+
+      if (val && val !== '__add_new__') {
+        try {
+          localStorage.setItem('ops_selected_merchant', val);
+        } catch (e) {}
+      }
 
       if (delBtn) {
         delBtn.style.display = (val && val !== 'auto' && val !== '__add_new__' && val !== 'none') ? 'inline-flex' : 'none';
@@ -3486,6 +3508,10 @@
         }
         
         window.closeAddMerchantModal();
+        try {
+          localStorage.setItem('ops_selected_merchant', result.merchant.key);
+          localStorage.setItem('ops_terminal_merchant', result.merchant.key);
+        } catch (e) {}
         await window.loadRegisteredMerchants(result.merchant.key);
 
         if (result.terminal_mappings_loaded) {
@@ -5178,11 +5204,11 @@
       }
 
       try {
-        let url = `/api/terminal-mappings?`;
+        let url = `/api/terminal-mappings?_t=${Date.now()}&`;
         if (mKey) url += `merchant_key=${encodeURIComponent(mKey)}&`;
         if (searchQuery && searchQuery.trim()) url += `q=${encodeURIComponent(searchQuery.trim())}&`;
 
-        const resp = await fetch(url);
+        const resp = await fetch(url, { cache: 'no-store' });
         const data = await resp.json();
 
         if (data.success && data.records) {
@@ -5625,6 +5651,8 @@
     };
 
     // Load initial mappings & settings on page start
+    const savedInitialTab = localStorage.getItem('ops_active_tab') || 'daily';
+    switchUploadMode(savedInitialTab);
     loadRegisteredMerchants();
     loadApiSettings();
     updateSlotsUI();

@@ -568,7 +568,10 @@ def execute_recon_for_files(
 @app.get("/api/merchants")
 def get_all_merchants():
     """Returns list of all available and dynamically registered merchants."""
-    return {"merchants": list_all_merchants()}
+    return JSONResponse(
+        content={"merchants": list_all_merchants()},
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
+    )
 
 
 @app.post("/api/merchants")
@@ -1680,15 +1683,18 @@ def get_terminal_mappings_status(merchant_key: Optional[str] = None):
     ref_map = mappings.get("mappings_by_ref_id", {})
     tid_map = mappings.get("mappings_by_terminal_id", {})
     count = len(ref_map)
-    return {
-        "success": True,
-        "merchant_key": merchant_key,
-        "has_mappings": count > 0,
-        "active_count": count,
-        "terminal_count": len(tid_map),
-        "source_filename": mappings.get("source_filename"),
-        "updated_at": mappings.get("updated_at")
-    }
+    return JSONResponse(
+        content={
+            "success": True,
+            "merchant_key": merchant_key,
+            "has_mappings": count > 0,
+            "active_count": count,
+            "terminal_count": len(tid_map),
+            "source_filename": mappings.get("source_filename"),
+            "updated_at": mappings.get("updated_at")
+        },
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
+    )
 
 
 @app.get("/api/resolve-terminal")
@@ -1857,14 +1863,17 @@ def get_terminal_mappings(
     total_count = len(records)
     paginated = records[offset : offset + limit]
 
-    return {
-        "success": True,
-        "total": total_count,
-        "merchant_key": merchant_key,
-        "source_filename": mappings.get("source_filename"),
-        "updated_at": mappings.get("updated_at"),
-        "records": paginated
-    }
+    return JSONResponse(
+        content={
+            "success": True,
+            "total": total_count,
+            "merchant_key": merchant_key,
+            "source_filename": mappings.get("source_filename"),
+            "updated_at": mappings.get("updated_at"),
+            "records": paginated
+        },
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
+    )
 
 
 @app.delete("/api/terminal-mappings")

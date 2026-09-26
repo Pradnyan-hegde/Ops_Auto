@@ -106,6 +106,7 @@ def load_all_merchant_profiles() -> Dict[str, MerchantProfile]:
     """Loads default merchant profiles plus any custom merchants stored in data/merchants.json."""
     profiles = dict(DEFAULT_MERCHANT_PROFILES)
     deleted_keys = []
+    saved_custom_keys = set()
     if os.path.exists(MERCHANTS_FILE):
         try:
             with open(MERCHANTS_FILE, "r", encoding="utf-8") as f:
@@ -115,11 +116,12 @@ def load_all_merchant_profiles() -> Dict[str, MerchantProfile]:
                     for k, v in saved.items():
                         if k != "__deleted__" and isinstance(v, dict):
                             profiles[k.lower()] = MerchantProfile.from_dict(v)
+                            saved_custom_keys.add(k.lower())
         except Exception as e:
             print(f"[MerchantRegistry] Warning loading {MERCHANTS_FILE}: {e}")
 
     for dk in deleted_keys:
-        if dk in profiles:
+        if dk in profiles and dk not in saved_custom_keys:
             del profiles[dk]
 
     return profiles

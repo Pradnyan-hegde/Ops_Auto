@@ -23,6 +23,30 @@
     "cc_fee_rate": 0.0225,
     "default_gst_rate": 0.18
   },
+  "cafe_coffee_day": {
+    "key": "cafe_coffee_day",
+    "display_name": "Cafe Coffee Day",
+    "merchant_ids": [
+      "0000000000001222"
+    ],
+    "merchant_keywords": [
+      "CAFE COFFEE DAY",
+      "CAFE_COFFEE_DAY"
+    ],
+    "gateways": [
+      "CashFree",
+      "EaseBuzz",
+      "Airtel Bank"
+    ],
+    "has_split_settlement": false,
+    "softpos_label": "CashFree",
+    "input_file_prefix": "CCD Input file as on",
+    "terminal_file_name": "Terminal Report_Of 26_09_2026_12_35_43.xls",
+    "terminal_mappings_count": 1335,
+    "upi_fee_rate": 0.0015,
+    "cc_fee_rate": 0.0225,
+    "default_gst_rate": 0.18
+  },
   "__deleted__": [
     "xcd",
     "ccd",
