@@ -2084,6 +2084,27 @@
         <a id="btn-download" href="#" class="btn btn-success">📥 Download Reconciled Workbook (.xlsx)</a>
       </div>
 
+      <!-- Missing PG Discrepancy Card (shown when transactions are in CMS but missing in PG report or report not uploaded) -->
+      <div id="missing-pg-card" style="display: none; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 14px; padding: 1.5rem 2rem; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.08);">
+        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+          <div style="font-size: 2.2rem; line-height: 1;">⚠️</div>
+          <div style="flex: 1;">
+            <h3 style="color: #9f1239; font-size: 1.15rem; font-weight: 800; margin: 0 0 0.35rem 0;">
+              ⚠️ Gateway Discrepancy: Active in CMS, Missing in Gateway Report (<span id="missing-pg-total-count">0</span> Transactions)
+            </h3>
+            <p style="font-size: 0.86rem; color: #881337; margin: 0 0 0.65rem 0; line-height: 1.5;">
+              Active transactions exist in <strong>CMS/SMMS</strong>, but corresponding records are missing in the payment gateway report (Present in CMS, not in PG):
+            </p>
+            <ul id="missing-pg-list" style="margin: 0 0 0.75rem 1.25rem; font-size: 0.85rem; color: #9f1239; line-height: 1.6; font-weight: 600;">
+              <!-- Filled dynamically by renderMissingPgCard -->
+            </ul>
+            <div style="font-size: 0.8rem; color: #9f1239; background: rgba(255, 255, 255, 0.75); border: 1px dashed #f43f5e; border-radius: 8px; padding: 0.5rem 0.85rem; line-height: 1.4;">
+              ℹ️ <strong>Resolution:</strong> Reconciliation was completed successfully without blocking. These records are cataloged in the <strong>CMS Exceptions</strong> sheet with status <code>Present in CMS, Not in Gateway</code> and ready to pull via the <strong>1-Click Pull Payloads</strong> section below.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- SMMS Sync Action Card (shown only when cms_not_in_smms > 0) -->
       <div id="smms-sync-card" style="display: none; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fcd34d; border-radius: 14px; padding: 1.5rem 2rem; margin-bottom: 2rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);">
         <div class="smms-sync-text">
@@ -2582,7 +2603,12 @@
     const networkCount = document.getElementById('network-count');
     const btnDownloadNetwork = document.getElementById('btn-download-network');
 
-    // Missing PG Elements
+    // Missing PG Discrepancy Card Elements
+    const missingPgCard = document.getElementById('missing-pg-card');
+    const missingPgTotalCount = document.getElementById('missing-pg-total-count');
+    const missingPgList = document.getElementById('missing-pg-list');
+
+    // Missing PG Elements (1-Click Pull)
     const missingPgBadge = document.getElementById('missing-pg-badge');
     const missingPgTableWrap = document.getElementById('missing-pg-table-wrap');
     const missingPgTbody = document.getElementById('missing-pg-tbody');
@@ -3042,6 +3068,9 @@
         if (res.required_slots) {
           latestRequiredSlots = res.required_slots;
         }
+        latestActivePgSlots = res.active_pg_slots || [];
+        latestMissingPgSlots = res.missing_pg_slots || [];
+        latestGatewayTxnCounts = res.gateway_txn_counts || {};
         if (res.detected_merchant && res.detected_merchant.key) {
           const mSelect = document.getElementById('merchant-select');
           if (mSelect && (mSelect.value === 'auto' || !mSelect.dataset.userLocked)) {
@@ -3468,6 +3497,9 @@
         if (res.required_slots) {
           latestRequiredSlots = res.required_slots;
         }
+        latestActivePgSlots = res.active_pg_slots || [];
+        latestMissingPgSlots = res.missing_pg_slots || [];
+        latestGatewayTxnCounts = res.gateway_txn_counts || {};
         if (res.detected_merchant && res.detected_merchant.key) {
           const mSelect = document.getElementById('merchant-select');
           if (mSelect && (mSelect.value === 'auto' || !mSelect.dataset.userLocked)) {
@@ -3494,6 +3526,9 @@
     }
 
     let latestRequiredSlots = ['CMS', 'SMMS'];
+    let latestActivePgSlots = [];
+    let latestMissingPgSlots = [];
+    let latestGatewayTxnCounts = {};
 
     function updateSlotsUI() {
       let filledCount = 0;
@@ -3541,13 +3576,17 @@
           return;
         }
 
-        const isMandatory = latestRequiredSlots.includes(slot);
+        const isMandatory = (slot === 'CMS' || slot === 'SMMS');
+        const isActiveInCms = latestActivePgSlots.includes(slot);
         const file = fileVal;
         if (file) {
           filledCount++;
           card.className = 'slot-card filled';
           badge.className = 'slot-status-badge badge-detected';
           badge.textContent = '✅ Detected';
+          badge.style.background = '';
+          badge.style.color = '';
+          badge.style.borderColor = '';
           fileEl.textContent = file.name;
           const sizeKb = (file.size / 1024).toFixed(1);
           const countStr = meta.record_count !== undefined ? `${formatNumber(meta.record_count)} rows • ` : '';
@@ -3556,10 +3595,32 @@
         } else {
           missingSlots.push(slotDisplayNames[slot]);
           card.className = 'slot-card missing';
-          badge.className = 'slot-status-badge badge-missing';
-          badge.textContent = isMandatory ? '⚠️ Required' : '⚪ Optional';
-          fileEl.textContent = 'No file uploaded';
-          metaEl.textContent = isMandatory ? `${slotDisplayNames[slot]} (Mandatory)` : 'Optional (reconciles if active)';
+          if (isMandatory) {
+            badge.className = 'slot-status-badge badge-missing';
+            badge.textContent = '⚠️ Required';
+            badge.style.background = '';
+            badge.style.color = '';
+            badge.style.borderColor = '';
+            fileEl.textContent = 'No file uploaded';
+            metaEl.textContent = `${slotDisplayNames[slot]} (Mandatory)`;
+          } else if (isActiveInCms) {
+            const txnCount = latestGatewayTxnCounts[slot] || 0;
+            badge.className = 'slot-status-badge badge-warning';
+            badge.textContent = '⚠️ In CMS (Missing)';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#92400e';
+            badge.style.borderColor = '#fcd34d';
+            fileEl.textContent = 'No report uploaded';
+            metaEl.textContent = `${txnCount} active txn${txnCount !== 1 ? 's' : ''} in CMS (will reconcile as discrepancy)`;
+          } else {
+            badge.className = 'slot-status-badge badge-missing';
+            badge.textContent = '⚪ Optional';
+            badge.style.background = '';
+            badge.style.color = '';
+            badge.style.borderColor = '';
+            fileEl.textContent = 'No file uploaded';
+            metaEl.textContent = 'Optional (reconciles if active)';
+          }
           if (removeBtn) removeBtn.style.display = 'none';
         }
       });
@@ -3631,9 +3692,13 @@
       });
       auxiliaryFiles = [];
       fileInput.value = '';
+      latestActivePgSlots = [];
+      latestMissingPgSlots = [];
+      latestGatewayTxnCounts = {};
       updateSlotsUI();
       errorBox.style.display = 'none';
       resultsSection.style.display = 'none';
+      if (missingPgCard) missingPgCard.style.display = 'none';
     });
 
     // Reconcile action
@@ -3644,17 +3709,6 @@
         errorBox.style.display = 'block';
         errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
         showToast('Both CMS and SMMS reports are mandatory', 'error');
-        return;
-      }
-
-      // 2. Gateway check: if Cashfree/Easebuzz/Airtel transactions exist in CMS/SMMS, the PG report must be uploaded
-      const missingMandatory = (latestRequiredSlots || []).filter(s => !slotFiles[s]);
-      if (missingMandatory.length > 0) {
-        const missingNames = missingMandatory.map(s => slotDisplayNames[s] || s).join(', ');
-        errorBox.innerHTML = `<strong>⚠️ Reconciliation Blocked:</strong> Missing mandatory report(s): <strong>${missingNames}</strong>.<br>Active transactions for these gateways are present in CMS/SMMS. All reports with active transactions must be uploaded to perform reconciliation.`;
-        errorBox.style.display = 'block';
-        errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast(`Missing mandatory report: ${missingNames}`, 'error');
         return;
       }
 
@@ -3752,6 +3806,9 @@
       document.getElementById('banner-title').textContent = `Reconciliation Completed: ${data.output_filename}`;
       btnDownload.href = data.download_url;
       btnDownload.download = data.output_filename;
+
+      // 1.4. Missing PG Discrepancies Card Handling
+      renderMissingPgCard(data);
 
       // 1.5. SMMS Sync File Handling
       if (data.sync_file && data.sync_file.count > 0) {
@@ -4062,6 +4119,46 @@
         alert('Copied Airtel Settlement & Invoice details to clipboard!');
       });
     };
+
+    function renderMissingPgCard(data) {
+      if (!missingPgCard || !missingPgTotalCount || !missingPgList) return;
+
+      const items = [];
+      let totalCount = 0;
+
+      // 1. Missing reports explicitly recorded by server
+      if (data.missing_pg_discrepancies && data.missing_pg_discrepancies.length > 0) {
+        data.missing_pg_discrepancies.forEach(d => {
+          totalCount += (d.count || 0);
+          items.push(`<li><strong>${d.gateway}:</strong> ${formatNumber(d.count)} active transaction(s) present in CMS/SMMS, but ${d.gateway} report was not uploaded (Present in CMS, not in ${d.gateway}).</li>`);
+        });
+      }
+
+      // 2. Unmatched CMS transactions where report was uploaded but transactions missing in PG
+      const discrepancies = data.discrepancies || {};
+      const handledGateways = new Set((data.missing_pg_discrepancies || []).map(d => (d.gateway || '').toLowerCase()));
+
+      if (!handledGateways.has('cashfree') && discrepancies.cms_not_in_cf > 0) {
+        totalCount += discrepancies.cms_not_in_cf;
+        items.push(`<li><strong>Cashfree:</strong> ${formatNumber(discrepancies.cms_not_in_cf)} active transaction(s) present in CMS/SMMS, but missing in Cashfree report.</li>`);
+      }
+      if (!handledGateways.has('easebuzz') && discrepancies.cms_not_in_eb > 0) {
+        totalCount += discrepancies.cms_not_in_eb;
+        items.push(`<li><strong>Easebuzz:</strong> ${formatNumber(discrepancies.cms_not_in_eb)} active transaction(s) present in CMS/SMMS, but missing in Easebuzz report.</li>`);
+      }
+      if (!handledGateways.has('airtel') && !handledGateways.has('airtel bank') && discrepancies.cms_not_in_airtel > 0) {
+        totalCount += discrepancies.cms_not_in_airtel;
+        items.push(`<li><strong>Airtel Bank:</strong> ${formatNumber(discrepancies.cms_not_in_airtel)} active transaction(s) present in CMS/SMMS, but missing in Airtel report.</li>`);
+      }
+
+      if (totalCount > 0 && items.length > 0) {
+        missingPgTotalCount.textContent = formatNumber(totalCount);
+        missingPgList.innerHTML = items.join('');
+        missingPgCard.style.display = 'block';
+      } else {
+        missingPgCard.style.display = 'none';
+      }
+    }
 
     function renderMissingPgSection(payloads) {
       currentMissingPayloads = payloads || [];

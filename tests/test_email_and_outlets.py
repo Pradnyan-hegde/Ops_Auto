@@ -51,14 +51,15 @@ class TestEmailAndOutlets(unittest.TestCase):
         upload_smms = UploadFile(filename="daily_smms.csvtarget.csv", file=BytesIO(smms_csv))
         upload_cf = UploadFile(filename="daily_cf.csvtarget.csv", file=BytesIO(cf_csv))
 
-        # CMS + SMMS with Cashfree transactions, but Cashfree missing -> is_ready is False and CASHFREE in missing
+        # CMS + SMMS with Cashfree transactions, but Cashfree missing -> CASHFREE in missing_pg_slots, is_ready is True
         resp = detect_uploaded_files([upload_cms, upload_smms])
         data = json.loads(resp.body.decode("utf-8"))
 
         self.assertIn("CMS", data["detected"])
         self.assertIn("SMMS", data["detected"])
-        self.assertIn("CASHFREE", data["missing"])
-        self.assertFalse(data["is_ready"])
+        self.assertIn("CASHFREE", data["missing_pg_slots"])
+        self.assertEqual(data["missing"], [])
+        self.assertTrue(data["is_ready"])
 
         # When Cashfree is also uploaded -> is_ready is True
         upload_cms_2 = UploadFile(filename="daily_cms.csvtarget.csv", file=BytesIO(cms_csv))

@@ -279,8 +279,8 @@ class TestOptionalPGReconciliation(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 400)
         self.assertIn("SMMS Report must be uploaded", ctx.exception.detail)
 
-    def test_mandatory_pg_report_when_transactions_present_in_cms(self):
-        """Verify that if CMS has Cashfree transactions, omitting Cashfree report raises HTTPException 400."""
+    def test_missing_pg_report_allowed_with_discrepancies(self):
+        """Verify that if CMS has Cashfree transactions, omitting Cashfree report allows reconciliation to complete with discrepancy records."""
         from dashboard.server import execute_recon_for_files
         cms_path = os.path.join(self.temp_dir, "cms_cf_present.csv")
         with open(cms_path, "w", encoding="utf-8") as f:
@@ -296,11 +296,13 @@ class TestOptionalPGReconciliation(unittest.TestCase):
         os.makedirs(sess_dir, exist_ok=True)
 
         # Uploaded only CMS and SMMS, but transactions are routed to Cashfree
-        with self.assertRaises(HTTPException) as ctx:
-            execute_recon_for_files([cms_path, smms_path], sess_dir)
-        self.assertEqual(ctx.exception.status_code, 400)
-        self.assertIn("Missing Mandatory Partner Report(s)", ctx.exception.detail)
-        self.assertIn("Cashfree", ctx.exception.detail)
+        # Must NOT raise HTTPException; must succeed and populate missing_pg_discrepancies
+        result = execute_recon_for_files([cms_path, smms_path], sess_dir)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["discrepancies"]["cms_not_in_cf"], 1)
+        self.assertTrue(len(result["missing_pg_discrepancies"]) > 0)
+        self.assertEqual(result["missing_pg_discrepancies"][0]["gateway"], "CashFree")
+        self.assertIn("Cashfree", result["missing_pg_discrepancies"][0]["message"])
 
     def test_airtel_invoice_summary_single_settlement_for_xcd(self):
         """Verify that XCD generates Single Daily Settlement text, not 2-batch timing."""

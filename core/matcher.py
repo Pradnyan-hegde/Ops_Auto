@@ -115,6 +115,10 @@ class ReconciliationEngine:
         self.cms_not_in_smms: List[Dict[str, Any]] = []
         self.smms_not_in_cms: List[Dict[str, Any]] = []
 
+        self.cms_not_in_cf: List[Dict[str, Any]] = []
+        self.cms_not_in_eb: List[Dict[str, Any]] = []
+        self.cms_not_in_airtel: List[Dict[str, Any]] = []
+
         self.unmatched_cf: List[Dict[str, Any]] = []
         self.unmatched_eb: List[Dict[str, Any]] = []
         self.unmatched_airtel: List[Dict[str, Any]] = []
@@ -447,11 +451,12 @@ class ReconciliationEngine:
                         "Amount Difference": None,
                         "CMS Status": cms_status,
                         "Partner Status": "Report Not Uploaded",
-                        "Reconciliation Status": "Missing Partner Report",
-                        "Exception Reason": f"Mandatory Cashfree report missing: CMS transaction {smms_sp_id} routed to Cashfree cannot be verified.",
+                        "Reconciliation Status": "Present in CMS, Not in Cashfree (Report Not Uploaded)",
+                        "Exception Reason": f"Present in CMS for Cashfree, but Cashfree report was not uploaded (SwinkPay Txn ID: {smms_sp_id}).",
                         "Cashfree Payment Mode": cms_r.get("Payment Mode") or "",
                         **settle_details
                     })
+                    self.cms_not_in_cf.append(entry)
                     self.exceptions.append(entry)
                 else:
                     cf_r = _find_record(cf_by_ref, smms_rrn)
@@ -507,10 +512,11 @@ class ReconciliationEngine:
                             "Amount Difference": None,
                             "CMS Status": cms_status,
                             "Partner Status": "",
-                            "Reconciliation Status": "Missing in Partner Report",
-                            "Exception Reason": f"Successful CMS transaction missing in Cashfree report (RRN: {smms_rrn})",
+                            "Reconciliation Status": "Present in CMS, Not in Cashfree",
+                            "Exception Reason": f"Present in CMS for Cashfree, but missing in Cashfree report (RRN: {smms_rrn})",
                             **settle_details
                         })
+                        self.cms_not_in_cf.append(entry)
                         self.exceptions.append(entry)
 
             elif partner == "EaseBuzz":
@@ -526,10 +532,11 @@ class ReconciliationEngine:
                         "Amount Difference": None,
                         "CMS Status": cms_status,
                         "Partner Status": "Report Not Uploaded",
-                        "Reconciliation Status": "Missing Partner Report",
-                        "Exception Reason": f"Mandatory Easebuzz report missing: CMS transaction {smms_sp_id} routed to Easebuzz cannot be verified.",
+                        "Reconciliation Status": "Present in CMS, Not in Easebuzz (Report Not Uploaded)",
+                        "Exception Reason": f"Present in CMS for Easebuzz, but Easebuzz report was not uploaded (SwinkPay Txn ID: {smms_sp_id}).",
                         **settle_details
                     })
+                    self.cms_not_in_eb.append(entry)
                     self.exceptions.append(entry)
                 else:
                     eb_r = _find_record(eb_by_utr, smms_rrn)
@@ -584,10 +591,11 @@ class ReconciliationEngine:
                             "Amount Difference": None,
                             "CMS Status": cms_status,
                             "Partner Status": "",
-                            "Reconciliation Status": "Missing in Partner Report",
-                            "Exception Reason": f"Successful CMS transaction missing in Easebuzz report (RRN: {smms_rrn})",
+                            "Reconciliation Status": "Present in CMS, Not in Easebuzz",
+                            "Exception Reason": f"Present in CMS for Easebuzz, but missing in Easebuzz report (RRN: {smms_rrn})",
                             **settle_details
                         })
+                        self.cms_not_in_eb.append(entry)
                         self.exceptions.append(entry)
 
             elif partner == "Airtel Bank":
@@ -613,10 +621,11 @@ class ReconciliationEngine:
                         "Amount Difference": None,
                         "CMS Status": cms_status,
                         "Partner Status": "Report Not Uploaded",
-                        "Reconciliation Status": "Missing Partner Report",
-                        "Exception Reason": f"Mandatory Airtel Bank report missing: CMS transaction {smms_sp_id} routed to Airtel Bank cannot be verified.",
+                        "Reconciliation Status": "Present in CMS, Not in Airtel (Report Not Uploaded)",
+                        "Exception Reason": f"Present in CMS for Airtel Bank, but Airtel report was not uploaded (SwinkPay Txn ID: {smms_sp_id}).",
                         **settle_details
                     })
+                    self.cms_not_in_airtel.append(entry)
                     self.exceptions.append(entry)
                 else:
                     air_r = _find_record(air_by_pid, smms_rrn)
@@ -674,10 +683,11 @@ class ReconciliationEngine:
                             "Amount Difference": None,
                             "CMS Status": cms_status,
                             "Partner Status": "",
-                            "Reconciliation Status": "Missing in Partner Report",
-                            "Exception Reason": f"Successful CMS transaction missing in Airtel report (RRN: {smms_rrn})",
+                            "Reconciliation Status": "Present in CMS, Not in Airtel",
+                            "Exception Reason": f"Present in CMS for Airtel, but missing in Airtel report (RRN: {smms_rrn})",
                             **settle_details
                         })
+                        self.cms_not_in_airtel.append(entry)
                         self.exceptions.append(entry)
             else:
                 # Any other partner / unknown: pass through directly from CMS & SMMS

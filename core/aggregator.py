@@ -314,3 +314,29 @@ class Aggregator:
                 "difference": len(self.engine.cms_air_matched) + len(self.engine.unmatched_airtel) - air_stats["count"],
                 "status": "PASS" if len(self.engine.cms_air_matched) + len(self.engine.unmatched_airtel) == air_stats["count"] else "FAIL"
             })
+
+        # Discrepancy checks when CMS transactions exist for an un-uploaded PG report
+        if not self.engine.cf_report and len(getattr(self.engine, "cms_not_in_cf", [])) > 0:
+            self.control_checks.append({
+                "check_name": "Cashfree Discrepancy (Present in CMS, Report Missing)",
+                "expected": 0,
+                "actual": len(self.engine.cms_not_in_cf),
+                "difference": len(self.engine.cms_not_in_cf),
+                "status": "FAIL"
+            })
+        if not self.engine.eb_report and len(getattr(self.engine, "cms_not_in_eb", [])) > 0:
+            self.control_checks.append({
+                "check_name": "Easebuzz Discrepancy (Present in CMS, Report Missing)",
+                "expected": 0,
+                "actual": len(self.engine.cms_not_in_eb),
+                "difference": len(self.engine.cms_not_in_eb),
+                "status": "FAIL"
+            })
+        if not self.engine.airtel_report and len(getattr(self.engine, "cms_not_in_airtel", [])) > 0:
+            self.control_checks.append({
+                "check_name": "Airtel Discrepancy (Present in CMS, Report Missing)",
+                "expected": 0,
+                "actual": len(self.engine.cms_not_in_airtel),
+                "difference": len(self.engine.cms_not_in_airtel),
+                "status": "FAIL"
+            })

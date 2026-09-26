@@ -213,25 +213,31 @@ def execute_recon_for_files(
     air_rep = detected_reports.get(ReportType.AIRTEL)
     settle_rep = detected_reports.get(ReportType.AIRTEL_SETTLEMENT)
 
-    # Validate mandatory Gateway reports based on transactions present in CMS and SMMS
+    # Evaluate missing PG reports based on transactions present in CMS and SMMS
     all_source_txns = cms_rep.records + smms_raw_records
     cf_txns = sum(1 for r in all_source_txns if detect_gateway_routed(r) == "CashFree")
     eb_txns = sum(1 for r in all_source_txns if detect_gateway_routed(r) == "EaseBuzz")
     air_txns = sum(1 for r in all_source_txns if detect_gateway_routed(r) == "Airtel Bank")
 
-    missing_pgs = []
+    missing_pg_discrepancies = []
     if cf_txns > 0 and not cf_rep:
-        missing_pgs.append(f"Cashfree ({cf_txns} active transaction(s) found in CMS/SMMS)")
+        missing_pg_discrepancies.append({
+            "gateway": "CashFree",
+            "count": cf_txns,
+            "message": f"Cashfree: {cf_txns} active transaction(s) present in CMS/SMMS, but Cashfree report was not uploaded (Present in CMS, not in Cashfree)."
+        })
     if eb_txns > 0 and not eb_rep:
-        missing_pgs.append(f"Easebuzz ({eb_txns} active transaction(s) found in CMS/SMMS)")
+        missing_pg_discrepancies.append({
+            "gateway": "EaseBuzz",
+            "count": eb_txns,
+            "message": f"Easebuzz: {eb_txns} active transaction(s) present in CMS/SMMS, but Easebuzz report was not uploaded (Present in CMS, not in Easebuzz)."
+        })
     if air_txns > 0 and not air_rep:
-        missing_pgs.append(f"Airtel Bank ({air_txns} active transaction(s) found in CMS/SMMS)")
-
-    if missing_pgs:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Missing Mandatory Partner Report(s): Transactions are present in CMS/SMMS for: {', '.join(missing_pgs)}, but the corresponding PG report was not uploaded. All reports with active transactions must be uploaded to perform reconciliation."
-        )
+        missing_pg_discrepancies.append({
+            "gateway": "Airtel Bank",
+            "count": air_txns,
+            "message": f"Airtel Bank: {air_txns} active transaction(s) present in CMS/SMMS, but Airtel report was not uploaded (Present in CMS, not in Airtel)."
+        })
 
     # Execute reconciliation
     engine = ReconciliationEngine(tolerance=0.01)
@@ -501,7 +507,8 @@ def execute_recon_for_files(
             "missing_pg_payloads": missing_pg_payloads,
             "merchant": xcd_status["merchant"],
             "adjustments": adjustments_summary,
-            "airtel_invoice_summary": airtel_invoice_summary
+            "airtel_invoice_summary": airtel_invoice_summary,
+            "missing_pg_discrepancies": missing_pg_discrepancies
         }, f, indent=2)
 
     # Format result payload
@@ -531,6 +538,9 @@ def execute_recon_for_files(
             "adjustments": len(all_adjs),
             "cms_not_in_smms": len(engine.cms_not_in_smms),
             "smms_not_in_cms": len(engine.smms_not_in_cms),
+            "cms_not_in_cf": len(getattr(engine, "cms_not_in_cf", [])),
+            "cms_not_in_eb": len(getattr(engine, "cms_not_in_eb", [])),
+            "cms_not_in_airtel": len(getattr(engine, "cms_not_in_airtel", [])),
             "unmatched_cf": len(engine.unmatched_cf),
             "unmatched_eb": len(engine.unmatched_eb),
             "unmatched_airtel": len(engine.unmatched_airtel),
@@ -547,6 +557,7 @@ def execute_recon_for_files(
         "network_file": network_file_info,
         "network_changes": network_changes,
         "missing_pg_payloads": missing_pg_payloads,
+        "missing_pg_discrepancies": missing_pg_discrepancies,
         "airtel_invoice_summary": airtel_invoice_summary
     }
 
@@ -811,6 +822,10 @@ def upload_recon_file(
 
     settle_display = format_settlement_date_display(settlement_date)
 
+    # Detect merchant for uploaded workbook
+    m_key = detect_merchant(filenames=[recon_file.filename])
+    prof = get_merchant_profile(m_key)
+
     # Initial XCD files
     cf_filename = f"XCD Input file as on {date_str} (Cf).xlsx"
     eb_filename = f"XCD Input file as on {date_str} (EB).xlsx"
@@ -834,6 +849,14 @@ def upload_recon_file(
         "settlement_date": settle_display,
         "dates": parsed["dates"],
         "outlet_count": outlet_count,
+        "recon_name": f"{prof.key.upper()} Recon",
+        "merchant": {
+            "key": prof.key,
+            "display_name": prof.display_name,
+            "has_split_settlement": prof.has_split_settlement,
+            "gateways": prof.gateways,
+            "input_file_prefix": prof.input_file_prefix
+        },
         "files": {
             "cashfree": {
                 "partner": "CashFree",
@@ -1318,34 +1341,43 @@ def detect_uploaded_files(files: List[UploadFile] = File(...)):
     detected_prof = get_merchant_profile(detected_m_key)
 
     # CMS and SMMS are strictly mandatory
-    required_slots = ["CMS", "SMMS"]
+    mandatory_slots = ["CMS", "SMMS"]
+    missing_mandatory = [s for s in mandatory_slots if s not in detected_slots]
 
-    # Gateway reports are mandatory if transactions exist for that gateway
+    # PG slots that have active transactions in source
     all_recs = cms_records + smms_records
     cf_txns = sum(1 for r in all_recs if detect_gateway_routed(r) == "CashFree")
     eb_txns = sum(1 for r in all_recs if detect_gateway_routed(r) == "EaseBuzz")
     air_txns = sum(1 for r in all_recs if detect_gateway_routed(r) == "Airtel Bank")
 
+    active_pg_slots = []
     if cf_txns > 0:
-        required_slots.append("CASHFREE")
+        active_pg_slots.append("CASHFREE")
     if eb_txns > 0:
-        required_slots.append("EASEBUZZ")
+        active_pg_slots.append("EASEBUZZ")
     if air_txns > 0:
-        required_slots.append("AIRTEL")
+        active_pg_slots.append("AIRTEL")
 
-    missing = [s for s in required_slots if s not in detected_slots]
+    missing_pg_slots = [s for s in active_pg_slots if s not in detected_slots]
 
     return JSONResponse(content={
         "detected": detected_slots,
-        "missing": missing,
-        "required_slots": required_slots,
+        "missing": missing_mandatory,
+        "required_slots": mandatory_slots,
+        "active_pg_slots": active_pg_slots,
+        "missing_pg_slots": missing_pg_slots,
+        "gateway_txn_counts": {
+            "CASHFREE": cf_txns,
+            "EASEBUZZ": eb_txns,
+            "AIRTEL": air_txns
+        },
         "detected_merchant": {
             "key": detected_prof.key,
             "display_name": detected_prof.display_name,
             "input_file_prefix": detected_prof.input_file_prefix
         },
         "unrecognized": unrecognized,
-        "is_ready": len(missing) == 0
+        "is_ready": len(missing_mandatory) == 0
     })
 
 

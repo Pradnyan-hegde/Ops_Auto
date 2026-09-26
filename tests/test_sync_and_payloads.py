@@ -95,7 +95,7 @@ class TestSyncAndPayloads(unittest.TestCase):
             }
         ]
         engine = DummyEngine(cms_report=cms_report, unmatched_cf=unmatched_cf)
-        payloads = build_missing_pg_payloads(engine)
+        payloads = build_missing_pg_payloads(engine, terminal_mappings={})
         self.assertEqual(len(payloads), 1)
 
         p = payloads[0]
