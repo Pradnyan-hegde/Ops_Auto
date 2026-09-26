@@ -556,7 +556,8 @@ def generate_partner_xcd_files(
     - Intraday two-batch split settlement for SBB (12 AM-12 PM settles Same Day T; 12 PM-12 AM settles Next Day T+1)
     """
     cms_recs = engine.cms_report.records if engine.cms_report else []
-    merchant = get_merchant_profile(merchant_key, records=cms_recs)
+    smms_recs = engine.smms_report.records if engine.smms_report else []
+    merchant = get_merchant_profile(merchant_key, records=cms_recs, smms_records=smms_recs)
 
     # Route adjustments into refunds (Status 3) and chargebacks/adjustments (Status 4, 5, 6)
     all_adjs = getattr(engine, "adjustments", [])
@@ -705,19 +706,24 @@ def generate_partner_xcd_files(
         }
     else:
         # Standard Single Settlement
-        prefix = (merchant.input_file_prefix or f"{merchant.key.upper()}_INPUTFILE").strip()
-        if merchant.key == "xcd" or ("XCD" in prefix and merchant.key != "ccd"):
-            cf_filename = f"XCD Input file as on {recon_date_str} (Cf).xlsx"
-            eb_filename = f"XCD Input file as on {recon_date_str} (EB).xlsx"
-            air_filename = f"XCD Input file as on {recon_date_str} (Airtel).xlsx"
-        elif merchant.key == "ccd" or "CCD" in prefix:
-            cf_filename = f"CCD Input file as on {recon_date_str} (Cf).xlsx"
-            eb_filename = f"CCD Input file as on {recon_date_str} (EB).xlsx"
-            air_filename = f"CCD Input file as on {recon_date_str} (Airtel).xlsx"
-        else:
+        prefix = (merchant.input_file_prefix or "").strip()
+        code = merchant.key.upper()
+        if not prefix:
+            prefix = f"{code} Input file as on"
+
+        if "Input file as on" in prefix:
+            clean_p = prefix.rstrip()
+            cf_filename = f"{clean_p} {recon_date_str} (Cf).xlsx"
+            eb_filename = f"{clean_p} {recon_date_str} (EB).xlsx"
+            air_filename = f"{clean_p} {recon_date_str} (Airtel).xlsx"
+        elif "INPUTFILE" in prefix:
             cf_filename = f"{prefix}(CASHFREE)_{recon_date_str}.xlsx"
             eb_filename = f"{prefix}(EASEBUZZ)_{recon_date_str}.xlsx"
             air_filename = f"{prefix}(AIRTEL)_{recon_date_str}.xlsx"
+        else:
+            cf_filename = f"{prefix} {recon_date_str} (Cf).xlsx"
+            eb_filename = f"{prefix} {recon_date_str} (EB).xlsx"
+            air_filename = f"{prefix} {recon_date_str} (Airtel).xlsx"
 
         cf_path = os.path.join(output_dir, cf_filename)
         eb_path = os.path.join(output_dir, eb_filename)

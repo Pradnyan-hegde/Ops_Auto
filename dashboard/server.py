@@ -115,6 +115,35 @@ async def serve_logo():
     raise HTTPException(status_code=404, detail="Logo not found")
 
 
+def detect_gateway_routed(row: Dict[str, Any]) -> str:
+    """Classifies transaction routing to CashFree, EaseBuzz, or Airtel Bank."""
+    pg = str(row.get("PG/Bank") or row.get("Payment Gateway") or row.get("Partner") or "").strip().lower()
+    if "cashfree" in pg or "cf" in pg:
+        return "CashFree"
+    elif "easebuzz" in pg or "eb" in pg:
+        return "EaseBuzz"
+    elif "airtel" in pg or "air" in pg:
+        return "Airtel Bank"
+
+    mode = str(row.get("Mode") or row.get("Payment Mode") or "").strip().lower()
+    if "cashfree" in mode:
+        return "CashFree"
+    elif "easebuzz" in mode:
+        return "EaseBuzz"
+    elif "airtel" in mode:
+        return "Airtel Bank"
+
+    netw = str(row.get("Network") or "").strip().upper()
+    if netw in ("CREDIT", "CURRENT", "NRO", "SAVINGS", "PPIWALLET"):
+        return "Airtel Bank"
+    elif "offline_static" in netw.lower():
+        return "CashFree"
+    elif "easebuzz" in netw.lower():
+        return "EaseBuzz"
+
+    return ""
+
+
 def execute_recon_for_files(
     file_paths: List[str],
     session_dir: str,
@@ -154,27 +183,47 @@ def execute_recon_for_files(
             detail="Missing mandatory report: CMS Report must be uploaded."
         )
 
-    # Resolve Merchant Profile (Auto-detect from CMS if merchant_key is None or 'auto')
-    merchant_profile = get_merchant_profile(merchant_key, records=cms_rep.records)
-
     smms_rep = detected_reports.get(ReportType.SMMS)
     if not smms_rep:
-        # Synthesize SMMS from CMS if not uploaded (making SMMS optional for flexible flow)
-        synth_records = [dict(r) for r in cms_rep.records]
-        smms_rep = RawReport(
-            file_path="synthetic_smms",
-            report_type=ReportType.SMMS,
-            headers=list(cms_rep.headers),
-            header_row_idx=0,
-            records=synth_records,
-            raw_matrix=[]
+        raise HTTPException(
+            status_code=400,
+            detail="Missing mandatory report: SMMS Report must be uploaded."
         )
-        detected_reports[ReportType.SMMS] = smms_rep
+
+    # Resolve Merchant Profile (Auto-detect from filenames, SMMS, or CMS)
+    raw_filenames = [os.path.basename(fp) for fp in file_paths]
+    smms_raw_records = smms_rep.records if smms_rep else []
+    merchant_profile = get_merchant_profile(
+        merchant_key,
+        records=cms_rep.records,
+        filenames=raw_filenames,
+        smms_records=smms_raw_records
+    )
 
     cf_rep = detected_reports.get(ReportType.CASHFREE)
     eb_rep = detected_reports.get(ReportType.EASEBUZZ)
     air_rep = detected_reports.get(ReportType.AIRTEL)
     settle_rep = detected_reports.get(ReportType.AIRTEL_SETTLEMENT)
+
+    # Validate mandatory Gateway reports based on transactions present in CMS and SMMS
+    all_source_txns = cms_rep.records + smms_raw_records
+    cf_txns = sum(1 for r in all_source_txns if detect_gateway_routed(r) == "CashFree")
+    eb_txns = sum(1 for r in all_source_txns if detect_gateway_routed(r) == "EaseBuzz")
+    air_txns = sum(1 for r in all_source_txns if detect_gateway_routed(r) == "Airtel Bank")
+
+    missing_pgs = []
+    if cf_txns > 0 and not cf_rep:
+        missing_pgs.append(f"Cashfree ({cf_txns} active transaction(s) found in CMS/SMMS)")
+    if eb_txns > 0 and not eb_rep:
+        missing_pgs.append(f"Easebuzz ({eb_txns} active transaction(s) found in CMS/SMMS)")
+    if air_txns > 0 and not air_rep:
+        missing_pgs.append(f"Airtel Bank ({air_txns} active transaction(s) found in CMS/SMMS)")
+
+    if missing_pgs:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing Mandatory Partner Report(s): Transactions are present in CMS/SMMS for: {', '.join(missing_pgs)}, but the corresponding PG report was not uploaded. All reports with active transactions must be uploaded to perform reconciliation."
+        )
 
     # Execute reconciliation
     engine = ReconciliationEngine(tolerance=0.01)
@@ -199,7 +248,8 @@ def execute_recon_for_files(
         if d:
             sample_dates.append(d)
     date_str = max(set(sample_dates), key=sample_dates.count) if sample_dates else datetime.now().strftime("%Y-%m-%d")
-    output_filename = f"Reconciliation_{date_str}.xlsx"
+    merchant_code = merchant_profile.key.upper()
+    output_filename = f"{merchant_code}_Reconciliation_{date_str}.xlsx"
     output_path = os.path.join(session_dir, output_filename)
 
     builder = ExcelReportBuilder(engine, aggregator)
@@ -218,11 +268,14 @@ def execute_recon_for_files(
         "details": val_res.details,
         "settlement_date": format_settlement_date_display(settlement_date),
         "files": {},
+        "output_filename": output_filename,
+        "recon_name": f"{merchant_code} Recon",
         "merchant": {
             "key": merchant_profile.key,
             "display_name": merchant_profile.display_name,
             "has_split_settlement": merchant_profile.has_split_settlement,
-            "gateways": merchant_profile.gateways
+            "gateways": merchant_profile.gateways,
+            "input_file_prefix": merchant_profile.input_file_prefix
         }
     }
 
@@ -1156,6 +1209,7 @@ def detect_uploaded_files(files: List[UploadFile] = File(...)):
         ReportType.AIRTEL_SETTLEMENT: "AIRTEL_SETTLEMENT"
     }
 
+    all_raw_reps = []
     try:
         for file in files:
             file_path = os.path.join(temp_dir, file.filename)
@@ -1166,6 +1220,7 @@ def detect_uploaded_files(files: List[UploadFile] = File(...)):
                 reps = read_all_reports_from_file(file_path)
                 recognized_any = False
                 for raw_rep in reps:
+                    all_raw_reps.append(raw_rep)
                     if raw_rep.report_type in slot_key_map:
                         recognized_any = True
                         slot_name = slot_key_map[raw_rep.report_type]
@@ -1196,13 +1251,50 @@ def detect_uploaded_files(files: List[UploadFile] = File(...)):
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-    # Only CMS is strictly mandatory. SMMS, Cashfree, Easebuzz, Airtel are optional
-    mandatory_slots = ["CMS"]
-    missing = [s for s in mandatory_slots if s not in detected_slots]
+    # Collect CMS and SMMS records for merchant detection and required slot evaluation
+    cms_records = []
+    smms_records = []
+    for rep in all_raw_reps:
+        if rep.report_type == ReportType.CMS:
+            cms_records.extend(rep.records)
+        elif rep.report_type == ReportType.SMMS:
+            smms_records.extend(rep.records)
+
+    # Detect merchant from uploaded filenames, SMMS, and CMS
+    detected_m_key = detect_merchant(
+        records=cms_records,
+        filenames=[f.filename for f in files],
+        smms_records=smms_records
+    )
+    detected_prof = get_merchant_profile(detected_m_key)
+
+    # CMS and SMMS are strictly mandatory
+    required_slots = ["CMS", "SMMS"]
+
+    # Gateway reports are mandatory if transactions exist for that gateway
+    all_recs = cms_records + smms_records
+    cf_txns = sum(1 for r in all_recs if detect_gateway_routed(r) == "CashFree")
+    eb_txns = sum(1 for r in all_recs if detect_gateway_routed(r) == "EaseBuzz")
+    air_txns = sum(1 for r in all_recs if detect_gateway_routed(r) == "Airtel Bank")
+
+    if cf_txns > 0:
+        required_slots.append("CASHFREE")
+    if eb_txns > 0:
+        required_slots.append("EASEBUZZ")
+    if air_txns > 0:
+        required_slots.append("AIRTEL")
+
+    missing = [s for s in required_slots if s not in detected_slots]
 
     return JSONResponse(content={
         "detected": detected_slots,
         "missing": missing,
+        "required_slots": required_slots,
+        "detected_merchant": {
+            "key": detected_prof.key,
+            "display_name": detected_prof.display_name,
+            "input_file_prefix": detected_prof.input_file_prefix
+        },
         "unrecognized": unrecognized,
         "is_ready": len(missing) == 0
     })

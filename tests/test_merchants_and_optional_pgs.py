@@ -209,21 +209,126 @@ class TestOptionalPGReconciliation(unittest.TestCase):
         files_ccd = generate_partner_xcd_files(engine, self.temp_dir, "2026-09-20", "2026-09-21", merchant_key="ccd")
         self.assertTrue(files_ccd["cashfree"]["filename"].startswith("CCD Input file as on"))
 
+    def test_ags_profile_and_filename_detection(self):
+        """Verify AGS profile detection from standard export filenames and output file prefixing."""
+        from core.merchant import detect_merchant
+        ags = get_merchant_profile("ags")
+        self.assertEqual(ags.key, "ags")
+        self.assertEqual(ags.display_name, "Advance Genuine Spares (AGS)")
+        self.assertEqual(ags.input_file_prefix, "AGS Input file as on")
+
+        # Filename auto-detection
+        ags_fn = "ADVANCE GENUINE SPARES_000000000002095_TransactionsReport_2026-09-26T01_16_58_472Z.xlsx"
+        detected = detect_merchant(filenames=[ags_fn])
+        self.assertEqual(detected, "ags")
+
+        # Engine file generation
+        cms_records = [{
+            "RRN/UTR": "1001",
+            "SwinkPay Txn ID": "SP001",
+            "Transaction Amount": "100.00",
+            "Transaction Status": "SUCCESS",
+            "Network": "UPI",
+            "Transaction Date & Time": "2026-09-25 10:00:00",
+            "Merchant MMS Terminal ID": "TID01",
+            "Payment Gateway": "Cashfree"
+        }]
+        cms_rep = RawReport("cms.csv", ReportType.CMS, list(cms_records[0].keys()), 0, cms_records, [])
+        smms_records = [{
+            "RRN/UTR": "1001",
+            "SwinkPay Txn ID": "SP001",
+            "Transaction Amount": "100.00",
+            "Transaction Status": "SUCCESS",
+            "Network": "UPI",
+            "Transaction Date & Time": "2026-09-25 10:00:00",
+            "Merchant MMS Terminal ID": "TID01",
+            "PG/Bank": "Cashfree",
+            "Net Amount": "98.50"
+        }]
+        smms_rep = RawReport("smms.csv", ReportType.SMMS, list(smms_records[0].keys()), 0, smms_records, [])
+        cf_records = [{
+            "Bank Reference No.": "1001",
+            "Reference Id": "SP001",
+            "Amount": "100.00",
+            "Transaction Status": "SUCCESS",
+            "Payment Mode": "UPI",
+            "Payment Time": "2026-09-25 10:00:00"
+        }]
+        cf_rep = RawReport("cf.csv", ReportType.CASHFREE, list(cf_records[0].keys()), 0, cf_records, [])
+
+        engine = ReconciliationEngine()
+        engine.set_reports(cms=cms_rep, smms=smms_rep, cf=cf_rep)
+        engine.run()
+
+        files_ags = generate_partner_xcd_files(engine, self.temp_dir, "2026-09-25", "2026-09-26", merchant_key="ags")
+        self.assertTrue(files_ags["cashfree"]["filename"].startswith("AGS Input file as on"))
+
+    def test_mandatory_smms_check(self):
+        """Verify that omitting SMMS raises HTTPException 400."""
+        from dashboard.server import execute_recon_for_files
+        cms_path = os.path.join(self.temp_dir, "cms_only.csv")
+        with open(cms_path, "w", encoding="utf-8") as f:
+            f.write("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,Payment Gateway\n"
+                    "1001,SP001,100.00,SUCCESS,UPI,2026-09-20 10:00:00,TID01,Cashfree\n")
+
+        sess_dir = os.path.join(self.temp_dir, "sess_missing_smms")
+        os.makedirs(sess_dir, exist_ok=True)
+
+        with self.assertRaises(HTTPException) as ctx:
+            execute_recon_for_files([cms_path], sess_dir)
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("SMMS Report must be uploaded", ctx.exception.detail)
+
+    def test_mandatory_pg_report_when_transactions_present_in_cms(self):
+        """Verify that if CMS has Cashfree transactions, omitting Cashfree report raises HTTPException 400."""
+        from dashboard.server import execute_recon_for_files
+        cms_path = os.path.join(self.temp_dir, "cms_cf_present.csv")
+        with open(cms_path, "w", encoding="utf-8") as f:
+            f.write("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,Payment Gateway\n"
+                    "1001,SP001,100.00,SUCCESS,UPI,2026-09-20 10:00:00,TID01,Cashfree\n")
+
+        smms_path = os.path.join(self.temp_dir, "smms_cf_present.csv")
+        with open(smms_path, "w", encoding="utf-8") as f:
+            f.write("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,PG/Bank,Net Amount\n"
+                    "1001,SP001,100.00,SUCCESS,UPI,2026-09-20 10:00:00,TID01,Cashfree,98.50\n")
+
+        sess_dir = os.path.join(self.temp_dir, "sess_missing_pg")
+        os.makedirs(sess_dir, exist_ok=True)
+
+        # Uploaded only CMS and SMMS, but transactions are routed to Cashfree
+        with self.assertRaises(HTTPException) as ctx:
+            execute_recon_for_files([cms_path, smms_path], sess_dir)
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("Missing Mandatory Partner Report(s)", ctx.exception.detail)
+        self.assertIn("Cashfree", ctx.exception.detail)
+
     def test_airtel_invoice_summary_single_settlement_for_xcd(self):
         """Verify that XCD generates Single Daily Settlement text, not 2-batch timing."""
         from dashboard.server import execute_recon_for_files
 
-        # Create sample CMS file
+        # Create sample CMS, SMMS, and Cashfree files
         cms_path = os.path.join(self.temp_dir, "cms.csv")
         with open(cms_path, "w", encoding="utf-8") as f:
             f.write("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,Payment Gateway\n"
                     "1001,SP001,100.00,SUCCESS,UPI,2026-09-20 10:00:00,TID01,Cashfree\n")
 
+        smms_path = os.path.join(self.temp_dir, "smms.csv")
+        with open(smms_path, "w", encoding="utf-8") as f:
+            f.write("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,PG/Bank,Net Amount\n"
+                    "1001,SP001,100.00,SUCCESS,UPI,2026-09-20 10:00:00,TID01,Cashfree,98.50\n")
+
+        cf_path = os.path.join(self.temp_dir, "cf.csv")
+        with open(cf_path, "w", encoding="utf-8") as f:
+            f.write("Bank Reference No.,Reference Id,Amount,Settlement Amount,Transaction Status,Payment Mode,Transaction Time\n"
+                    "1001,SP001,100.00,98.50,SUCCESS,UPI,2026-09-20 10:00:00\n")
+
         sess_dir = os.path.join(self.temp_dir, "session_test")
         os.makedirs(sess_dir, exist_ok=True)
 
+        files = [cms_path, smms_path, cf_path]
+
         # 1. Run for XCD
-        res_xcd = execute_recon_for_files([cms_path], sess_dir, merchant_key="xcd")
+        res_xcd = execute_recon_for_files(files, sess_dir, merchant_key="xcd")
         sum_xcd = res_xcd["airtel_invoice_summary"]
         self.assertFalse(sum_xcd["has_split_settlement"])
         self.assertEqual(sum_xcd["schedule_badge"], "Daily Schedule: Single Daily Settlement")
@@ -232,7 +337,7 @@ class TestOptionalPGReconciliation(unittest.TestCase):
         self.assertNotIn("two intraday batches", sum_xcd["timing_explanation"].lower())
 
         # 2. Run for SBB (split settlement)
-        res_sbb = execute_recon_for_files([cms_path], sess_dir, merchant_key="sbb")
+        res_sbb = execute_recon_for_files(files, sess_dir, merchant_key="sbb")
         sum_sbb = res_sbb["airtel_invoice_summary"]
         self.assertTrue(sum_sbb["has_split_settlement"])
         self.assertEqual(sum_sbb["schedule_badge"], "Daily Schedule: Batch 1 & Batch 2 (2 Settlements)")
@@ -242,4 +347,5 @@ class TestOptionalPGReconciliation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
 

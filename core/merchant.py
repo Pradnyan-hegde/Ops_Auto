@@ -70,6 +70,19 @@ DEFAULT_MERCHANT_PROFILES: Dict[str, MerchantProfile] = {
         cc_fee_rate=0.0275,   # 2.75%
         default_gst_rate=0.18
     ),
+    "ags": MerchantProfile(
+        key="ags",
+        display_name="Advance Genuine Spares (AGS)",
+        merchant_ids=["000000000002095", "2095"],
+        merchant_keywords=["ADVANCE GENUINE SPARES", "GENUINE SPARES", "ADVANCE SPARES", "AGS"],
+        gateways=["CashFree", "EaseBuzz", "Airtel Bank"],
+        has_split_settlement=False,  # Single Daily Settlement
+        softpos_label="CashFree",
+        input_file_prefix="AGS Input file as on",
+        upi_fee_rate=0.0015,  # 0.15%
+        cc_fee_rate=0.0225,   # 2.25%
+        default_gst_rate=0.18
+    ),
     "sbb": MerchantProfile(
         key="sbb",
         display_name="SBB Medicare",
@@ -246,8 +259,8 @@ def list_all_merchants() -> List[Dict[str, Any]]:
     """Returns a list of all available merchants formatted for UI dropdowns and API responses."""
     profiles = load_all_merchant_profiles()
     results = []
-    # XCD first, CCD second, SBB third, then others alphabetically
-    order = ["xcd", "ccd", "sbb"]
+    # XCD first, CCD second, AGS third, SBB fourth, then others alphabetically
+    order = ["xcd", "ccd", "ags", "sbb"]
     sorted_keys = [k for k in order if k in profiles] + sorted([k for k in profiles.keys() if k not in order])
 
     for k in sorted_keys:
@@ -267,21 +280,75 @@ def list_all_merchants() -> List[Dict[str, Any]]:
     return results
 
 
-def detect_merchant(records: List[Dict[str, Any]]) -> str:
+def detect_merchant(
+    records: Optional[List[Dict[str, Any]]] = None,
+    filenames: Optional[List[str]] = None,
+    smms_records: Optional[List[Dict[str, Any]]] = None
+) -> str:
     """
-    Auto-detects merchant key from CMS or SMMS records
-    by checking 'Merchant Name' and 'Merchant ID' against all registered profiles.
+    Auto-detects merchant key from uploaded filenames, SMMS records, or CMS records
+    by checking 'Merchant Name', 'Merchant ID', and filename patterns against all registered profiles.
+    If an unknown merchant is discovered from standard report naming, auto-registers it dynamically.
     """
-    if not records:
-        return "xcd"
-
     profiles = load_all_merchant_profiles()
 
-    for r in records[:60]:
+    # 1. Inspect filenames first (fastest and most reliable for SwinkPay exports)
+    if filenames:
+        for fn in filenames:
+            fn_upper = os.path.basename(str(fn)).upper()
+
+            # Priority exact checks
+            if "ADVANCE GENUINE SPARES" in fn_upper or "GENUINE SPARES" in fn_upper or "000000000002095" in fn_upper:
+                if "ags" in profiles:
+                    return "ags"
+            if "VALUE EXPRESS" in fn_upper or "XCD" in fn_upper:
+                if "xcd" in profiles:
+                    return "xcd"
+            if "COFFEE DAY" in fn_upper or "CCD" in fn_upper:
+                if "ccd" in profiles:
+                    return "ccd"
+            if "SBB" in fn_upper or "MEDICARE" in fn_upper:
+                if "sbb" in profiles:
+                    return "sbb"
+
+            # Check all registered profile keywords and merchant IDs
+            for key, prof in profiles.items():
+                for kw in prof.merchant_keywords:
+                    if kw and kw in fn_upper:
+                        return prof.key
+                for mid in prof.merchant_ids:
+                    if mid and mid in fn_upper:
+                        return prof.key
+
+            # Pattern check: {MERCHANT_NAME}_{MERCHANT_ID}_TransactionsReport_...
+            match = re.match(r"^([A-Z0-9\s]+)_([0-9]+)_TransactionsReport", fn_upper)
+            if match:
+                m_name = match.group(1).strip()
+                m_id = match.group(2).strip()
+                # Dynamically register custom profile if not recognized
+                new_key = re.sub(r"[^a-zA-Z0-9]+", "_", m_name).strip("_").lower()
+                short_code = "".join([w[0] for w in m_name.split() if w]) or new_key.upper()
+                new_prof = save_merchant_profile({
+                    "name": m_name.title(),
+                    "key": new_key,
+                    "merchant_ids": [m_id],
+                    "merchant_keywords": [m_name, short_code],
+                    "input_file_prefix": f"{short_code} Input file as on"
+                })
+                return new_prof.key
+
+    # 2. Inspect SMMS records and CMS records (SMMS contains 'Merchant Name' and 'Merchant ID')
+    source_recs = (smms_records or []) + (records or [])
+    for r in source_recs[:100]:
         m_name = str(r.get("Merchant Name") or "").upper().strip()
         m_id = str(r.get("Merchant ID") or "").strip()
 
-        # Check explicit priority keywords
+        if not m_name and not m_id:
+            continue
+
+        if "ADVANCE GENUINE SPARES" in m_name or "GENUINE SPARES" in m_name or m_id.endswith("2095"):
+            if "ags" in profiles:
+                return "ags"
         if "VALUE EXPRESS" in m_name or "XCD" in m_name:
             if "xcd" in profiles:
                 return "xcd"
@@ -292,22 +359,38 @@ def detect_merchant(records: List[Dict[str, Any]]) -> str:
             if "sbb" in profiles:
                 return "sbb"
 
-        # Check all profiles
         for key, prof in profiles.items():
             for kw in prof.merchant_keywords:
                 if kw and kw in m_name:
                     return prof.key
-
             for mid in prof.merchant_ids:
                 if mid and m_id.endswith(mid):
                     return prof.key
 
+        # If a non-empty merchant name is found but unmatched, register it dynamically
+        if m_name and len(m_name) > 2:
+            new_key = re.sub(r"[^a-zA-Z0-9]+", "_", m_name).strip("_").lower()
+            short_code = "".join([w[0] for w in m_name.split() if w]) or new_key.upper()
+            new_prof = save_merchant_profile({
+                "name": m_name.title(),
+                "key": new_key,
+                "merchant_ids": [m_id] if m_id else [],
+                "merchant_keywords": [m_name, short_code],
+                "input_file_prefix": f"{short_code} Input file as on"
+            })
+            return new_prof.key
+
     return "xcd" if "xcd" in profiles else "ccd"
 
 
-def get_merchant_profile(key: Optional[str] = None, records: Optional[List[Dict[str, Any]]] = None) -> MerchantProfile:
+def get_merchant_profile(
+    key: Optional[str] = None,
+    records: Optional[List[Dict[str, Any]]] = None,
+    filenames: Optional[List[str]] = None,
+    smms_records: Optional[List[Dict[str, Any]]] = None
+) -> MerchantProfile:
     """
-    Gets MerchantProfile by key or auto-detects from records.
+    Gets MerchantProfile by key or auto-detects from filenames, SMMS, or CMS records.
     If a key is provided that does not exist, automatically creates a dynamic profile for it.
     """
     profiles = load_all_merchant_profiles()
@@ -320,9 +403,8 @@ def get_merchant_profile(key: Optional[str] = None, records: Optional[List[Dict[
         profile = save_merchant_profile({"name": key, "key": key.lower()})
         return profile
 
-    if records:
-        detected_key = detect_merchant(records)
-        if detected_key in profiles:
-            return profiles[detected_key]
+    detected_key = detect_merchant(records=records, filenames=filenames, smms_records=smms_records)
+    if detected_key in profiles:
+        return profiles[detected_key]
 
     return profiles.get("xcd", profiles.get("ccd", DEFAULT_MERCHANT_PROFILES["xcd"]))

@@ -42,7 +42,8 @@ class Aggregator:
     def __init__(self, engine, merchant_key: Optional[str] = None):
         self.engine = engine
         cms_records = engine.cms_report.records if engine.cms_report else []
-        self.merchant: MerchantProfile = get_merchant_profile(merchant_key, records=cms_records)
+        smms_records = engine.smms_report.records if engine.smms_report else []
+        self.merchant: MerchantProfile = get_merchant_profile(merchant_key, records=cms_records, smms_records=smms_records)
         self.summary_rows: List[Dict[str, Any]] = []
         self.partner_subtotals: Dict[str, Dict[str, Any]] = {}
         self.grand_total: Dict[str, Any] = {}

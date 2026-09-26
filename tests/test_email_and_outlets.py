@@ -45,17 +45,28 @@ class TestEmailAndOutlets(unittest.TestCase):
     def test_detect_uploaded_files_endpoint(self):
         cms_csv = ("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,Merchant MMS Terminal ID,SMMS Sync Status\n" "129761680150,SP001,20.00,SUCCESS,UPI,2026-09-17 15:59:29,X7VJND,true\n").encode("utf-8")
         smms_csv = ("RRN/UTR,SwinkPay Txn ID,Transaction Amount,Transaction Status,Network,Transaction Date & Time,PG/Bank,Net Amount\n" "129761680150,SP001,20.00,SUCCESS,UPI,2026-09-17 15:59:29,Cashfree,19.65\n").encode("utf-8")
+        cf_csv = ("Bank Reference No.,Reference Id,Amount,Settlement Amount,Transaction Status,Payment Mode,Transaction Time\n" "129761680150,SP001,20.00,19.65,SUCCESS,UPI,2026-09-17 15:59:29\n").encode("utf-8")
 
         upload_cms = UploadFile(filename="daily_cms.csvtarget.csv", file=BytesIO(cms_csv))
         upload_smms = UploadFile(filename="daily_smms.csvtarget.csv", file=BytesIO(smms_csv))
+        upload_cf = UploadFile(filename="daily_cf.csvtarget.csv", file=BytesIO(cf_csv))
 
-        # CMS + SMMS uploaded: CMS is present and all PGs are optional -> is_ready is True
+        # CMS + SMMS with Cashfree transactions, but Cashfree missing -> is_ready is False and CASHFREE in missing
         resp = detect_uploaded_files([upload_cms, upload_smms])
         data = json.loads(resp.body.decode("utf-8"))
 
         self.assertIn("CMS", data["detected"])
         self.assertIn("SMMS", data["detected"])
-        self.assertTrue(data["is_ready"])
+        self.assertIn("CASHFREE", data["missing"])
+        self.assertFalse(data["is_ready"])
+
+        # When Cashfree is also uploaded -> is_ready is True
+        upload_cms_2 = UploadFile(filename="daily_cms.csvtarget.csv", file=BytesIO(cms_csv))
+        upload_smms_2 = UploadFile(filename="daily_smms.csvtarget.csv", file=BytesIO(smms_csv))
+        upload_cf_2 = UploadFile(filename="daily_cf.csvtarget.csv", file=BytesIO(cf_csv))
+        resp_all = detect_uploaded_files([upload_cms_2, upload_smms_2, upload_cf_2])
+        data_all = json.loads(resp_all.body.decode("utf-8"))
+        self.assertTrue(data_all["is_ready"])
 
         # When CMS is missing -> is_ready is False and CMS in missing
         upload_smms_only = UploadFile(filename="daily_smms.csvtarget.csv", file=BytesIO(smms_csv))

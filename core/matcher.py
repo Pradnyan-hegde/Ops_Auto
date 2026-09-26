@@ -436,24 +436,23 @@ class ReconciliationEngine:
 
             if partner == "CashFree":
                 if not self.cf_report:
-                    # Cashfree report was not uploaded (optional). Reconcile CMS/SMMS directly.
-                    partner_matched = True
+                    # Cashfree report was not uploaded but transaction is routed to CashFree -> Exception
                     entry = dict(cms_r)
                     entry.update({
-                        "Source System": "Cashfree (Report Not Uploaded)",
+                        "Source System": "Cashfree",
                         "Match Key": smms_rrn or smms_sp_id,
                         "Matched Transaction ID": smms_sp_id,
                         "CMS Amount": cms_amt,
-                        "Partner Amount": cms_amt,
-                        "Amount Difference": 0.0,
+                        "Partner Amount": None,
+                        "Amount Difference": None,
                         "CMS Status": cms_status,
-                        "Partner Status": cms_status,
-                        "Reconciliation Status": "Matched",
-                        "Exception Reason": "",
+                        "Partner Status": "Report Not Uploaded",
+                        "Reconciliation Status": "Missing Partner Report",
+                        "Exception Reason": f"Mandatory Cashfree report missing: CMS transaction {smms_sp_id} routed to Cashfree cannot be verified.",
                         "Cashfree Payment Mode": cms_r.get("Payment Mode") or "",
                         **settle_details
                     })
-                    self.cms_cf_matched.append(entry)
+                    self.exceptions.append(entry)
                 else:
                     cf_r = _find_record(cf_by_ref, smms_rrn)
                     if cf_r:
@@ -516,23 +515,22 @@ class ReconciliationEngine:
 
             elif partner == "EaseBuzz":
                 if not self.eb_report:
-                    # Easebuzz report was not uploaded (optional). Reconcile CMS/SMMS directly.
-                    partner_matched = True
+                    # Easebuzz report was not uploaded but transaction is routed to Easebuzz -> Exception
                     entry = dict(cms_r)
                     entry.update({
-                        "Source System": "Easebuzz (Report Not Uploaded)",
+                        "Source System": "Easebuzz",
                         "Match Key": smms_rrn or smms_sp_id,
                         "Matched Transaction ID": smms_sp_id,
                         "CMS Amount": cms_amt,
-                        "Partner Amount": cms_amt,
-                        "Amount Difference": 0.0,
+                        "Partner Amount": None,
+                        "Amount Difference": None,
                         "CMS Status": cms_status,
-                        "Partner Status": cms_status,
-                        "Reconciliation Status": "Matched",
-                        "Exception Reason": "",
+                        "Partner Status": "Report Not Uploaded",
+                        "Reconciliation Status": "Missing Partner Report",
+                        "Exception Reason": f"Mandatory Easebuzz report missing: CMS transaction {smms_sp_id} routed to Easebuzz cannot be verified.",
                         **settle_details
                     })
-                    self.cms_eb_matched.append(entry)
+                    self.exceptions.append(entry)
                 else:
                     eb_r = _find_record(eb_by_utr, smms_rrn)
                     if eb_r:
@@ -604,23 +602,22 @@ class ReconciliationEngine:
                     }
 
                 if not self.airtel_report:
-                    # Airtel report was not uploaded (optional). Reconcile CMS/SMMS directly.
-                    partner_matched = True
+                    # Airtel report was not uploaded but transaction is routed to Airtel -> Exception
                     entry = dict(cms_r)
                     entry.update({
-                        "Source System": "Airtel (Report Not Uploaded)",
+                        "Source System": "Airtel",
                         "Match Key": smms_rrn or smms_sp_id,
                         "Matched Transaction ID": smms_sp_id,
                         "CMS Amount": cms_amt,
-                        "Partner Amount": cms_amt,
-                        "Amount Difference": 0.0,
+                        "Partner Amount": None,
+                        "Amount Difference": None,
                         "CMS Status": cms_status,
-                        "Partner Status": cms_status,
-                        "Reconciliation Status": "Matched",
-                        "Exception Reason": "",
+                        "Partner Status": "Report Not Uploaded",
+                        "Reconciliation Status": "Missing Partner Report",
+                        "Exception Reason": f"Mandatory Airtel Bank report missing: CMS transaction {smms_sp_id} routed to Airtel Bank cannot be verified.",
                         **settle_details
                     })
-                    self.cms_air_matched.append(entry)
+                    self.exceptions.append(entry)
                 else:
                     air_r = _find_record(air_by_pid, smms_rrn)
                     if not air_r and smms_sp_id:

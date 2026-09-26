@@ -1653,21 +1653,13 @@
           <p>Drop all 5 daily reports into the master dropzone below, or drop them directly onto each slot. The engine detects file types by column headers in milliseconds.</p>
         </div>
 
-        <!-- Master Batch Dropzone -->
-        <div class="dropzone" id="dropzone">
-          <div class="dropzone-icon">📁</div>
-          <h3>Drop all 5 daily reports here, or click to browse</h3>
-          <p>Files auto-classify instantly into CMS, SMMS, Cashfree, Easebuzz, &amp; Airtel Bank slots</p>
-          <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
-        </div>
-
-        <!-- Merchant Reconciliation Profile Selector -->
-        <div class="merchant-selector-bar" style="margin-top: 1.25rem; margin-bottom: 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <!-- Merchant Reconciliation Profile Selector (Placed at Top) -->
+        <div class="merchant-selector-bar" style="margin-top: 0.5rem; margin-bottom: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
           <div style="display: flex; align-items: center; gap: 0.75rem;">
             <div style="width: 38px; height: 38px; border-radius: 8px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🏢</div>
             <div>
               <div style="font-weight: 800; font-size: 0.9rem; color: #0f172a;">Merchant Reconciliation Profile</div>
-              <div style="font-size: 0.76rem; color: #64748b;">Select merchant profile or let Ops_Auto auto-detect from CMS records</div>
+              <div style="font-size: 0.76rem; color: #64748b;">Select merchant profile or let Ops_Auto auto-detect from uploaded files / reports</div>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 0.65rem;">
@@ -1675,6 +1667,7 @@
               <option value="auto">✨ Auto-Detect from Reports</option>
               <option value="xcd">☕ Cafe Value Express / XCD (Daily Single Settlement)</option>
               <option value="ccd">☕ Cafe Coffee Day / CCD (Daily Single Settlement)</option>
+              <option value="ags">🔧 Advance Genuine Spares / AGS (Daily Single Settlement)</option>
               <option value="sbb">🏥 SBB Medicare (Intraday Split Settlement: 12AM-12PM &amp; 12PM-12AM)</option>
               <option value="__add_new__">➕ Add Custom / New Merchant...</option>
             </select>
@@ -1688,12 +1681,20 @@
           </div>
         </div>
 
+        <!-- Master Batch Dropzone -->
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">📁</div>
+          <h3>Drop all daily reports here, or click to browse</h3>
+          <p>Files auto-classify instantly into CMS, SMMS, Cashfree, Easebuzz, &amp; Airtel Bank slots</p>
+          <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
+        </div>
+
         <!-- 5-Slot Verification Grid -->
         <div class="slots-header-wrap">
           <div class="slots-header-title">
             <span>🎯</span> Daily Report Upload Slots
           </div>
-          <div id="slot-overall-pill" class="slot-status-badge badge-missing">0 Loaded (CMS Required)</div>
+          <div id="slot-overall-pill" class="slot-status-badge badge-missing">0 Loaded (CMS &amp; SMMS Required)</div>
         </div>
 
         <div class="slots-grid" id="slots-grid">
@@ -1717,12 +1718,12 @@
             <input type="file" id="slot-input-SMMS" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleSingleSlotFile('SMMS', this.files[0])" />
             <div>
               <div class="slot-top">
-                <span class="slot-label slot-label-smms">Settlement Master (Optional)</span>
-                <span class="slot-status-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;" id="slot-badge-SMMS">⚪ Optional</span>
+                <span class="slot-label slot-label-smms">Settlement Master (Mandatory)</span>
+                <span class="slot-status-badge badge-missing" id="slot-badge-SMMS">⚠️ Required</span>
               </div>
               <div class="slot-title">SMMS Settlement Report</div>
               <div class="slot-filename" id="slot-file-SMMS">No file uploaded</div>
-              <div class="slot-meta" id="slot-meta-SMMS">Drop file here (auto-synthesized if absent)</div>
+              <div class="slot-meta" id="slot-meta-SMMS">Drop SMMS settlement report here</div>
             </div>
             <button type="button" class="slot-remove-btn" id="slot-remove-SMMS" style="display: none;" onclick="removeSlotFile('SMMS', event)" title="Remove file">×</button>
           </div>
@@ -2398,7 +2399,7 @@
             <strong>To:</strong> swinkpay-operations &nbsp;|&nbsp; <strong>Attachment:</strong> <span id="email-preview-attach-name">XCD Recon.xlsx</span>
           </div>
           <p style="margin: 0 0 0.75rem 0;">Dear Team,</p>
-          <p style="margin: 0 0 1rem 0;">Please find the attached <span style="background-color: #fef08a; font-weight: 700; padding: 1px 4px; border-radius: 2px;">XCD Recon</span>.</p>
+          <p style="margin: 0 0 1rem 0;">Please find the attached <span id="email-preview-recon-label" style="background-color: #fef08a; font-weight: 700; padding: 1px 4px; border-radius: 2px;">XCD Recon</span>.</p>
           <p style="margin: 0 0 0.5rem 0;">
             <strong>Exception:</strong><br>
             Transactions happened in <strong id="email-outlet-val" contenteditable="true" style="color: #1a73e8; border-bottom: 1px dashed #1a73e8; cursor: text;" title="Click to edit if needed">0</strong> outlets.
@@ -3336,6 +3337,18 @@
           });
         }
 
+        if (res.required_slots) {
+          latestRequiredSlots = res.required_slots;
+        }
+        if (res.detected_merchant && res.detected_merchant.key) {
+          const mSelect = document.getElementById('merchant-select');
+          if (mSelect && (mSelect.value === 'auto' || !mSelect.dataset.userLocked)) {
+            mSelect.value = res.detected_merchant.key;
+            onMerchantSelectChanged();
+            showToast(`Auto-detected Merchant: ${res.detected_merchant.display_name}`, 'info');
+          }
+        }
+
         if (res.unrecognized && res.unrecognized.length > 0) {
           res.unrecognized.forEach(un => {
             const matchedFile = filesArray.find(f => f.name === un.filename);
@@ -3357,6 +3370,8 @@
 
       updateSlotsUI();
     }
+
+    let latestRequiredSlots = ['CMS', 'SMMS'];
 
     function updateSlotsUI() {
       let filledCount = 0;
@@ -3404,6 +3419,7 @@
           return;
         }
 
+        const isMandatory = latestRequiredSlots.includes(slot);
         const file = fileVal;
         if (file) {
           filledCount++;
@@ -3419,22 +3435,23 @@
           missingSlots.push(slotDisplayNames[slot]);
           card.className = 'slot-card missing';
           badge.className = 'slot-status-badge badge-missing';
-          badge.textContent = (slot === 'CMS') ? '⚠️ Required' : '⚪ Optional';
+          badge.textContent = isMandatory ? '⚠️ Required' : '⚪ Optional';
           fileEl.textContent = 'No file uploaded';
-          metaEl.textContent = (slot === 'CMS') ? 'Internal CMS (Mandatory)' : 'Optional (reconciles if uploaded)';
+          metaEl.textContent = isMandatory ? `${slotDisplayNames[slot]} (Mandatory)` : 'Optional (reconciles if active)';
           if (removeBtn) removeBtn.style.display = 'none';
         }
       });
 
       // Update Pill
       const overallPill = document.getElementById('slot-overall-pill');
+      const hasCmsAndSmms = !!(slotFiles['CMS'] && slotFiles['SMMS']);
       if (overallPill) {
-        if (slotFiles['CMS']) {
+        if (hasCmsAndSmms) {
           overallPill.className = 'slot-status-badge badge-detected';
-          overallPill.textContent = `${filledCount} Loaded (CMS Ready)`;
+          overallPill.textContent = `${filledCount} Loaded (Ready)`;
         } else {
           overallPill.className = 'slot-status-badge badge-missing';
-          overallPill.textContent = `${filledCount} Loaded (CMS Required)`;
+          overallPill.textContent = `${filledCount} Loaded (CMS & SMMS Required)`;
         }
       }
 
@@ -3444,13 +3461,13 @@
       const auxContainer = document.getElementById('slot-auxiliary-container');
 
       if (statusBar && statusText) {
-        if (slotFiles['CMS']) {
+        if (hasCmsAndSmms) {
           statusBar.className = 'slot-summary-bar slot-bar-ready';
           const totalFiles = filledCount + auxiliaryFiles.length + (Array.isArray(slotFiles['AIRTEL_SETTLEMENT']) ? slotFiles['AIRTEL_SETTLEMENT'].length : (slotFiles['AIRTEL_SETTLEMENT'] ? 1 : 0));
-          statusText.innerHTML = `<strong>✅ Ready to Reconcile:</strong> CMS Report loaded (${totalFiles} file${totalFiles > 1 ? 's' : ''} active). Click <strong>🚀 Start Reconciliation</strong> below to proceed.`;
+          statusText.innerHTML = `<strong>✅ Ready to Reconcile:</strong> CMS and SMMS reports loaded (${totalFiles} file${totalFiles > 1 ? 's' : ''} active). Click <strong>🚀 Start Reconciliation</strong> below to proceed.`;
         } else {
           statusBar.className = 'slot-summary-bar slot-bar-warning';
-          statusText.innerHTML = `<strong>⚠️ CMS Report Required:</strong> Upload your CMS Report to enable automated reconciliation. Other gateway files are optional.`;
+          statusText.innerHTML = `<strong>⚠️ Mandatory Reports Required:</strong> Both <strong>CMS Report</strong> and <strong>SMMS Settlement Report</strong> are mandatory.`;
         }
       }
 
@@ -4224,12 +4241,18 @@
       const cfPulledCount = (data.network_changes && data.network_changes.length) || 
                             (data.missing_pg_payloads && data.missing_pg_payloads.filter(p => p.gateway === 'Cashfree').length) || 1;
 
+      const mKey = (data.merchant && data.merchant.key ? data.merchant.key.toUpperCase() : 'XCD');
+      const reconLabel = data.recon_name || `${mKey} Recon`;
+      const reconAttachName = data.output_filename || `${mKey} Recon.xlsx`;
+
       const elOutlet = document.getElementById('email-outlet-val');
       const elCf = document.getElementById('email-cf-pulled-val');
       const elAttach = document.getElementById('email-preview-attach-name');
+      const elReconLabel = document.getElementById('email-preview-recon-label');
       if (elOutlet) elOutlet.textContent = outletCount;
       if (elCf) elCf.textContent = cfPulledCount;
-      if (elAttach) elAttach.textContent = data.output_filename || 'XCD Recon.xlsx';
+      if (elAttach) elAttach.textContent = reconAttachName;
+      if (elReconLabel) elReconLabel.textContent = reconLabel;
 
       const tbody = document.getElementById('email-table-tbody');
       tbody.innerHTML = '';
@@ -4265,6 +4288,8 @@
     window.copyEmailRichHtml = async function(btn) {
       if (!currentEmailData) return;
       const outletVal = document.getElementById('email-outlet-val').textContent.trim();
+      const mKey = (currentEmailData.merchant && currentEmailData.merchant.key ? currentEmailData.merchant.key.toUpperCase() : 'XCD');
+      const reconLabel = currentEmailData.recon_name || `${mKey} Recon`;
 
       let rowsHtml = '';
       (currentEmailData.summary_rows || []).forEach(r => {
@@ -4292,7 +4317,7 @@
       const richHtml = `
         <div style="font-family: Calibri, sans-serif; font-size: 11pt; color: #000000; line-height: 1.5;">
           <p>Dear Team,</p>
-          <p>Please find the attached <span style="background-color: #fef08a; font-weight: bold; padding: 1px 4px;">XCD Recon</span>.</p>
+          <p>Please find the attached <span style="background-color: #fef08a; font-weight: bold; padding: 1px 4px;">${reconLabel}</span>.</p>
           <p><strong>Exception:</strong><br>
           Transactions happened in ${outletVal} outlets.</p>
           <table style="border-collapse: collapse; border: 1px solid #94a3b8; font-family: Calibri, sans-serif; font-size: 11pt; width: 100%; max-width: 820px; margin-top: 12px; margin-bottom: 12px;">
@@ -4313,7 +4338,7 @@
           </table>
         </div>`;
 
-      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
+      const plainText = `Dear Team,\n\nPlease find the attached ${reconLabel}.\n\nException:\nTransactions happened in ${outletVal} outlets.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
         (currentEmailData.summary_rows || []).map(r => `${r.PARTNER}\t${r.Mode}\t${r.Network}\t${r['SUCCESS COUNT']}\t${r['SUM OF TXN AMOUNT']}\t${r['Sum of net amount']}`).join('\n') +
         `\nTOTAL\t\t\t${currentEmailData.summary.success_count}\t${currentEmailData.summary.gross_amount}\t${currentEmailData.summary.net_amount}\n`;
 
@@ -4344,8 +4369,10 @@
     window.copyEmailPlainText = function(btn) {
       if (!currentEmailData) return;
       const outletVal = document.getElementById('email-outlet-val').textContent.trim();
+      const mKey = (currentEmailData.merchant && currentEmailData.merchant.key ? currentEmailData.merchant.key.toUpperCase() : 'XCD');
+      const reconLabel = currentEmailData.recon_name || `${mKey} Recon`;
 
-      const plainText = `Dear Team,\n\nPlease find the attached XCD Recon.\n\nException:\nTransactions happened in ${outletVal} outlets.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
+      const plainText = `Dear Team,\n\nPlease find the attached ${reconLabel}.\n\nException:\nTransactions happened in ${outletVal} outlets.\n\nPARTNER\tMode\tNetwork\tSUCCESS COUNT\tSUM OF TXN AMOUNT\tSum of net amount\n` +
         (currentEmailData.summary_rows || []).map(r => `${r.PARTNER}\t${r.Mode}\t${r.Network}\t${r['SUCCESS COUNT']}\t${r['SUM OF TXN AMOUNT']}\t${r['Sum of net amount']}`).join('\n') +
         `\nTOTAL\t\t\t${currentEmailData.summary.success_count}\t${currentEmailData.summary.gross_amount}\t${currentEmailData.summary.net_amount}\n`;
 
