@@ -300,3 +300,154 @@ def build_missing_pg_payloads(
             })
 
     return results
+
+
+def parse_pg_report_records_for_pull(
+    raw_report: Any,
+    merchant_key: Optional[str] = None,
+    terminal_mappings: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
+    """
+    Parses any uploaded Payment Gateway report (Cashfree, Easebuzz, Airtel, or generic CSV/Excel)
+    and constructs SwinkPay Decision API payloads for all transactions in one shot:
+    {
+      "amount": "20.00",
+      "terminalID": "X7VJND",
+      "utr": "129761680150",
+      "dateAndTime": "2026-09-17 15:59:29"
+    }
+    """
+    if terminal_mappings is None:
+        terminal_mappings = load_merchant_terminal_mappings(merchant_key)
+
+    records = getattr(raw_report, "records", []) or []
+    rep_type = getattr(raw_report, "report_type", None)
+    from .detector import ReportType
+
+    results: List[Dict[str, Any]] = []
+
+    for idx, r in enumerate(records):
+        gateway = "Payment Gateway"
+        order_id = ""
+        utr_str = ""
+        amount_str = "0.00"
+        dt_str = ""
+        term_id = ""
+        branch_name = ""
+        status_val = ""
+        middle_number = ""
+
+        # 1. CASHFREE
+        if rep_type == ReportType.CASHFREE:
+            gateway = "Cashfree"
+            order_id = str(r.get("Order Id") or r.get("Reference Id") or "").strip()
+            amount_str = format_payload_amount(r.get("Amount"))
+            utr_str = str(r.get("Bank Reference No.") or r.get("UTR No.") or r.get("Reference Id") or "").strip()
+            dt_str = format_payload_datetime(r.get("Transaction Time") or r.get("Transaction Date"))
+            status_val = str(r.get("Transaction Status") or r.get("Status") or "SUCCESS").strip()
+
+            middle_number = extract_cf_middle_number(order_id)
+            term_details = resolve_terminal_details(order_id, merchant_key=merchant_key, mappings=terminal_mappings)
+            if not term_details and middle_number:
+                term_details = resolve_terminal_details(middle_number, merchant_key=merchant_key, mappings=terminal_mappings)
+            if term_details:
+                term_id = term_details.get("mms_terminal_id") or term_details.get("terminal_id") or ""
+                branch_name = term_details.get("branch_name") or ""
+            if not term_id and middle_number:
+                term_id = middle_number
+
+        # 2. EASEBUZZ
+        elif rep_type == ReportType.EASEBUZZ:
+            gateway = "Easebuzz"
+            order_id = str(r.get("ID") or r.get("UPI tid") or "").strip()
+            amount_str = format_payload_amount(r.get("Amount"))
+            utr_str = str(r.get("UTR") or r.get("UPI tid") or "").strip()
+            dt_str = format_payload_datetime(r.get("Transaction Date") or r.get("Date"))
+            status_val = str(r.get("Status") or "Payment Received").strip()
+
+            label_term = str(r.get("Virtual Account Label") or "").strip()
+            term_details = resolve_terminal_details(label_term, merchant_key=merchant_key, mappings=terminal_mappings) if label_term else None
+            if not term_details and order_id:
+                term_details = resolve_terminal_details(order_id, merchant_key=merchant_key, mappings=terminal_mappings)
+            if term_details:
+                term_id = term_details.get("mms_terminal_id") or term_details.get("terminal_id") or ""
+                branch_name = term_details.get("branch_name") or ""
+            elif label_term:
+                resolved_tid = resolve_mms_terminal_id(label_term, terminal_mappings)
+                term_id = resolved_tid or label_term
+            middle_number = term_id
+
+        # 3. AIRTEL
+        elif rep_type in (ReportType.AIRTEL, ReportType.AIRTEL_SETTLEMENT):
+            gateway = "Airtel"
+            order_id = str(r.get("Transaction Id") or "").strip()
+            amount_str = format_payload_amount(r.get("Original Input Amt") or r.get("Amount") or r.get("Net Amount Payable(CR)"))
+            utr_str = str(r.get("PARTNER_TXN_ID") or r.get("REF_TXN_NO_ORG") or r.get("UTR Num") or order_id).strip()
+            dt_str = format_payload_datetime(r.get("Date and Time") or r.get("Transaction Date") or r.get("TXN_DATE"))
+            status_val = str(r.get("Status") or "SUCCESS").strip()
+
+            txn_to = str(r.get("Transaction To") or "").strip()
+            cand_tid = ""
+            if txn_to:
+                clean_to = txn_to.split("@")[0].strip()
+                term_parts = clean_to.split("-")
+                cand_tid = term_parts[-1].strip().upper()
+            term_details = resolve_terminal_details(cand_tid, merchant_key=merchant_key, mappings=terminal_mappings) if cand_tid else None
+            if term_details:
+                term_id = term_details.get("mms_terminal_id") or term_details.get("terminal_id") or ""
+                branch_name = term_details.get("branch_name") or ""
+            else:
+                resolved_tid = resolve_mms_terminal_id(cand_tid, terminal_mappings) if cand_tid else ""
+                term_id = resolved_tid or cand_tid
+            middle_number = term_id
+
+        # 4. GENERIC / FALLBACK
+        else:
+            for k, v in r.items():
+                k_low = str(k).lower().strip()
+                v_str = str(v or "").strip()
+                if not v_str:
+                    continue
+                if k_low in ("amount", "transaction amount", "amt", "net amount") and amount_str == "0.00":
+                    amount_str = format_payload_amount(v)
+                elif k_low in ("utr", "rrn", "bank reference no.", "bank ref", "reference id", "txn id", "rrn/utr") and not utr_str:
+                    utr_str = v_str
+                elif k_low in ("order id", "order_id", "id", "transaction id") and not order_id:
+                    order_id = v_str
+                elif k_low in ("terminal id", "terminalid", "mms terminal id", "merchant mms terminal id", "tid") and not term_id:
+                    term_id = v_str
+                elif k_low in ("date", "transaction date", "transaction time", "date and time", "date & time", "transaction date & time") and not dt_str:
+                    dt_str = format_payload_datetime(v_str)
+                elif k_low in ("status", "transaction status") and not status_val:
+                    status_val = v_str
+
+            if term_id:
+                term_details = resolve_terminal_details(term_id, merchant_key=merchant_key, mappings=terminal_mappings)
+                if term_details:
+                    branch_name = term_details.get("branch_name") or ""
+                    term_id = term_details.get("mms_terminal_id") or term_id
+            middle_number = term_id
+
+        payload_dict = {
+            "amount": amount_str,
+            "terminalID": term_id,
+            "utr": utr_str,
+            "dateAndTime": dt_str
+        }
+
+        results.append({
+            "index": idx,
+            "gateway": gateway,
+            "order_id": order_id,
+            "middle_number": middle_number,
+            "terminal_id": term_id,
+            "branch_name": branch_name,
+            "utr": utr_str,
+            "amount": amount_str,
+            "date_and_time": dt_str,
+            "status": status_val or "SUCCESS",
+            "payload": payload_dict,
+            "payload_json": json.dumps(payload_dict, indent=2)
+        })
+
+    return results

@@ -39,7 +39,7 @@ from core.xcd_builder import (
 )
 from core.xcd_validator import validate_all_clear, validate_xcd_workbook_file
 from core.sync_builder import build_smms_sync_workbook
-from core.pg_payload_builder import build_missing_pg_payloads
+from core.pg_payload_builder import build_missing_pg_payloads, parse_pg_report_records_for_pull
 from core.network_builder import detect_network_changes, build_change_network_workbook
 from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
 from core.terminal_mapper import (
@@ -82,25 +82,34 @@ def find_session_recon_workbook(session_dir: str, meta: Optional[Dict[str, Any]]
     """
     Finds the main reconciliation workbook in the session directory.
     Checks:
-    1. meta['source_recon_file'] if specified in metadata
-    2. Any file starting with 'Reconciliation_' and ending with '.xlsx'
-    3. Any .xlsx file that is not a generated output file (XCD, Sync, Change_Network, filtered_)
+    1. meta['recon_filepath'] if exists
+    2. meta['output_filename'] or meta['source_recon_file'] if specified in metadata
+    3. Any file containing 'reconciliation' and ending with '.xlsx'
+    4. Any .xlsx file that is not a generated output file (XCD, Sync, Change_Network, filtered_) and not an uploaded input report
     """
-    if meta and meta.get("source_recon_file"):
-        src = os.path.join(session_dir, meta["source_recon_file"])
-        if os.path.exists(src):
-            return src
+    if meta:
+        if meta.get("recon_filepath") and os.path.exists(meta["recon_filepath"]):
+            return meta["recon_filepath"]
+        for k in ("output_filename", "source_recon_file"):
+            fn = meta.get(k)
+            if fn:
+                src = os.path.join(session_dir, fn)
+                if os.path.exists(src):
+                    return src
 
-    # Check files starting with Reconciliation_
+    # Check files containing 'reconciliation' (e.g. CCD_Reconciliation_..., Reconciliation_...)
     for f in os.listdir(session_dir):
-        if f.startswith("Reconciliation_") and f.endswith(".xlsx"):
+        if "reconciliation" in f.lower() and f.endswith(".xlsx"):
             return os.path.join(session_dir, f)
 
-    # Fallback: any .xlsx file not starting with output prefixes
-    ignored_prefixes = ("xcd input file", "filtered_", "change_network", "sync_transactions_", "temp_")
+    # Fallback: any .xlsx file not starting with output prefixes and not an input file
+    ignored_substrings = (
+        "xcd input file", "filtered_", "change_network", "sync_transactions_",
+        "temp_", "upload_", "transaction", "report", "insta collect"
+    )
     for f in os.listdir(session_dir):
         fl = f.lower()
-        if fl.endswith(".xlsx") and not any(fl.startswith(p) for p in ignored_prefixes):
+        if fl.endswith(".xlsx") and not any(sub in fl for sub in ignored_substrings):
             return os.path.join(session_dir, f)
 
     return None
@@ -286,6 +295,8 @@ def execute_recon_for_files(
         "settlement_date": format_settlement_date_display(settlement_date),
         "files": {},
         "output_filename": output_filename,
+        "source_recon_file": output_filename,
+        "recon_filepath": output_path,
         "recon_name": f"{merchant_code} Recon",
         "merchant": {
             "key": merchant_profile.key,
@@ -674,8 +685,10 @@ def reconcile_files(
     os.makedirs(session_dir, exist_ok=True)
 
     saved_paths = []
+    uploads_dir = os.path.join(session_dir, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
     for file in files:
-        file_path = os.path.join(session_dir, file.filename)
+        file_path = os.path.join(uploads_dir, file.filename)
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         saved_paths.append(file_path)
@@ -706,10 +719,12 @@ def run_sample_reconcile(settlement_date: Optional[str] = None):
     session_dir = os.path.join(SESSIONS_DIR, session_id)
     os.makedirs(session_dir, exist_ok=True)
 
-    # Copy sample files into session
+    # Copy sample files into session uploads
+    uploads_dir = os.path.join(session_dir, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
     session_files = []
     for sf in sample_files:
-        dest = os.path.join(session_dir, os.path.basename(sf))
+        dest = os.path.join(uploads_dir, os.path.basename(sf))
         shutil.copyfile(sf, dest)
         session_files.append(dest)
 
@@ -1571,6 +1586,119 @@ async def push_missing_pg_transaction(
         return JSONResponse(content=res)
 
     raise HTTPException(status_code=400, detail="Must provide 'index', 'payload', or 'pull_all': true.")
+
+
+@app.post("/api/direct-pull/upload")
+def upload_pg_report_for_pull(
+    file: UploadFile = File(...),
+    merchant_key: Optional[str] = Form(None)
+):
+    """
+    Parses any uploaded Payment Gateway report (Cashfree, Easebuzz, Airtel, or generic CSV/XLSX)
+    and returns Postman/Decision API payloads for all transactions in one shot.
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided.")
+
+    temp_dir = os.path.join(SESSIONS_DIR, f"direct_pull_{uuid.uuid4().hex[:8]}")
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, file.filename)
+
+    with open(temp_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        raw_report = read_report(temp_path)
+    except Exception as e:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail=f"Failed to read report: {str(e)}")
+
+    # Resolve merchant profile
+    m_profile = get_merchant_profile(merchant_key, filenames=[file.filename])
+
+    # Extract all transactions into Postman/Pull-ready payloads
+    parsed_records = parse_pg_report_records_for_pull(
+        raw_report,
+        merchant_key=m_profile.key
+    )
+
+    resolved_terminals = sum(1 for r in parsed_records if r.get("terminal_id"))
+    unresolved_terminals = len(parsed_records) - resolved_terminals
+
+    gateway_label = raw_report.report_type.name.capitalize()
+    if raw_report.report_type == ReportType.CASHFREE:
+        gateway_label = "Cashfree"
+    elif raw_report.report_type == ReportType.EASEBUZZ:
+        gateway_label = "Easebuzz"
+    elif raw_report.report_type in (ReportType.AIRTEL, ReportType.AIRTEL_SETTLEMENT):
+        gateway_label = "Airtel"
+
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+    return {
+        "status": "success",
+        "filename": file.filename,
+        "gateway": gateway_label,
+        "report_type": raw_report.report_type.name,
+        "merchant": {
+            "key": m_profile.key,
+            "display_name": m_profile.display_name
+        },
+        "total_records": len(parsed_records),
+        "resolved_terminals": resolved_terminals,
+        "unresolved_terminals": unresolved_terminals,
+        "records": parsed_records
+    }
+
+
+@app.post("/api/direct-pull/push")
+async def push_direct_payloads(
+    request: Request
+):
+    """
+    Pushes one or more payloads directly to the SwinkPay Decision Updated API:
+    POST https://merchants.swinkpay-fintech.com/api/v2/decision/updated
+    Supports 1-shot bulk pull or single payload execution.
+    """
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+
+    req_headers = getattr(request, "headers", {}) or {}
+    auth_token = body.get("auth_token") or body.get("auth_key") or req_headers.get("x-auth-token")
+    channel = body.get("channel") or req_headers.get("x-channel")
+
+    payloads = body.get("payloads") or []
+    if not payloads and "payload" in body:
+        payloads = [body["payload"]]
+
+    if not payloads:
+        raise HTTPException(status_code=400, detail="No payloads provided to pull.")
+
+    results = []
+    for idx, item in enumerate(payloads):
+        p = item.get("payload") if isinstance(item, dict) and "payload" in item else item
+        res = _push_payload_to_swinkpay(p, auth_token=auth_token, channel=channel)
+        res["index"] = item.get("index", idx) if isinstance(item, dict) else idx
+        res["order_id"] = item.get("order_id", "") if isinstance(item, dict) else ""
+        res["gateway"] = item.get("gateway", "") if isinstance(item, dict) else ""
+        res["utr"] = item.get("utr", "") if isinstance(item, dict) else ""
+        res["amount"] = item.get("amount", "") if isinstance(item, dict) else ""
+        results.append(res)
+
+    successful_count = sum(1 for r in results if r.get("success"))
+    failed_count = len(results) - successful_count
+    all_success = (failed_count == 0)
+
+    return JSONResponse(content={
+        "success": all_success,
+        "total": len(results),
+        "successful_count": successful_count,
+        "failed_count": failed_count,
+        "results": results
+    })
 
 
 @app.get("/api/settings")

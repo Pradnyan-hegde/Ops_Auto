@@ -1876,43 +1876,142 @@
           </div>
         </div>
 
-        <!-- Pull Actions Bar -->
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-          <div style="display: flex; align-items: center; gap: 0.6rem;">
-            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0;">Missing PG Transactions Queue</h3>
-            <span id="pull-tab-missing-badge" class="badge badge-fail">0 Missing</span>
+        <!-- Mode Switcher Tabs for Pull Missing Section -->
+        <div style="display: flex; gap: 0.65rem; margin-bottom: 1.35rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.75rem; flex-wrap: wrap;">
+          <button type="button" id="tab-btn-direct-pull" class="btn" style="background: linear-gradient(135deg, #1e3a8a, #1a73e8); color: #ffffff; font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; display: flex; align-items: center; gap: 0.5rem;" onclick="switchPullTab('direct')">
+            <span>⚡</span> Direct PG Report Upload &amp; One-Shot Pull
+          </button>
+          <button type="button" id="tab-btn-queue-pull" class="btn btn-secondary" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; display: flex; align-items: center; gap: 0.5rem;" onclick="switchPullTab('queue')">
+            <span>🔄</span> Queue From Reconciliation
+            <span id="pull-tab-missing-btn-badge" class="badge badge-fail" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">0 Missing</span>
+          </button>
+        </div>
+
+        <!-- Mode A: Direct PG Report Upload & Pull (One-Shot) -->
+        <div id="subpanel-direct-pull">
+          <!-- Merchant Context Selector -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.9rem 1.15rem; margin-bottom: 1.15rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 38px; height: 38px; border-radius: 8px; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🏢</div>
+              <div>
+                <label for="direct-pull-merchant-select" style="display: block; font-weight: 700; font-size: 0.82rem; color: #0f172a; margin-bottom: 0.2rem;">Select Merchant (Terminal Mapping Context):</label>
+                <select id="direct-pull-merchant-select" style="min-width: 280px; padding: 0.45rem 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.84rem; background: #ffffff; color: #0f172a; outline: none; cursor: pointer;">
+                  <option value="">Auto-Detect Merchant</option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); max-width: 440px; line-height: 1.4;">
+              Resolves terminal IDs, store names, and middle numbers from the selected merchant's terminal directory before pulling.
+            </div>
           </div>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-pull-tab-all" onclick="pullAllMissingPgToApi(this)" style="display: none; background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; font-weight: 700; padding: 0.5rem 1.15rem;">⚡ Pull All Missing Transactions</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-pull-tab-copy-all" onclick="copyAllPayloadsJson(this)" style="display: none;">📋 Copy All JSONs</button>
+
+          <!-- Direct File Dropzone -->
+          <div class="dropzone" id="direct-pull-dropzone" style="margin-bottom: 1.25rem; padding: 1.75rem 1.5rem; border: 2px dashed #3b82f6; background: #eff6ff; border-radius: 14px; cursor: pointer; text-align: center; transition: all 0.2s ease;" onclick="document.getElementById('direct-pull-file-input').click()">
+            <div class="dropzone-icon" style="font-size: 2.25rem; margin-bottom: 0.35rem;">📥</div>
+            <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 0.25rem; color: #1e3a8a;">Drop Any Full PG Report Here (Easebuzz, Cashfree, Airtel, or CSV)</h3>
+            <p style="font-size: 0.82rem; margin: 0 0 0.75rem 0; color: #475569;">
+              Upload any full gateway transaction report to parse all rows and pull them straight to the SwinkPay Decision API in one shot.
+            </p>
+            <button type="button" class="btn btn-primary btn-sm" style="font-weight: 700; pointer-events: none; padding: 0.45rem 1.15rem;">
+              📂 Choose Full PG Report (.xlsx, .xls, .csv)
+            </button>
+            <input type="file" id="direct-pull-file-input" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleDirectPullUpload(this.files[0])" />
+          </div>
+
+          <!-- Summary & One-Shot Pull Bar (hidden until file parsed) -->
+          <div id="direct-pull-summary-bar" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.15rem 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.85rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span id="direct-pull-gateway-badge" class="badge" style="background: #1e3a8a; color: #ffffff; font-size: 0.8rem; padding: 0.4rem 0.75rem; font-weight: 800;">Easebuzz</span>
+                <div>
+                  <h4 id="direct-pull-file-name" style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #0f172a;">report.xlsx</h4>
+                  <span id="direct-pull-counts-label" style="font-size: 0.78rem; color: #64748b;">0 Transactions Ready</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('direct-pull-file-input').click()">🔄 Upload Another</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="copyDirectPullJson()">📋 Copy All JSONs</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-direct-pull-all" onclick="pullAllDirectTransactions(this)" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; font-weight: 800; padding: 0.5rem 1.25rem; font-size: 0.86rem;">
+                  ⚡ Pull All in One Shot (<span id="direct-pull-btn-count">0</span>)
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Progress Bar -->
+            <div id="direct-pull-progress-wrap" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-top: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; margin-bottom: 0.35rem;">
+                <span id="direct-pull-progress-status" style="color: #1a73e8;">Pulling 0 of 0...</span>
+                <span id="direct-pull-progress-percent" style="color: #0f172a;">0%</span>
+              </div>
+              <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                <div id="direct-pull-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #1a73e8, #059669); transition: width 0.15s ease;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Direct Pull Table -->
+          <div id="direct-pull-table-wrap" style="overflow-x: auto; display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Gateway</th>
+                  <th>Order / Partner Ref ID</th>
+                  <th>Middle No.</th>
+                  <th>MMS Terminal ID</th>
+                  <th>UTR / Bank Ref</th>
+                  <th class="text-right">Amount (₹)</th>
+                  <th>Date &amp; Time</th>
+                  <th style="text-align: center;">Payload</th>
+                  <th style="text-align: center;">Action</th>
+                  <th style="text-align: center;">API Status</th>
+                </tr>
+              </thead>
+              <tbody id="direct-pull-tbody"></tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Missing PG Table -->
-        <div id="pull-tab-table-wrap" style="overflow-x: auto; display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem;">
-          <table>
-            <thead>
-              <tr>
-                <th>Gateway</th>
-                <th>Order / Partner Ref ID</th>
-                <th>Middle No. (Ref ID)</th>
-                <th>MMS Terminal ID</th>
-                <th>UTR / Bank Ref</th>
-                <th class="text-right">Amount</th>
-                <th>Date & Time</th>
-                <th style="text-align: center;">Payload</th>
-                <th style="text-align: center;">Action</th>
-                <th style="text-align: center;">API Status</th>
-              </tr>
-            </thead>
-            <tbody id="pull-tab-tbody"></tbody>
-          </table>
-        </div>
+        <!-- Mode B: Queue From Reconciliation (Existing Feature) -->
+        <div id="subpanel-queue-pull" style="display: none;">
+          <!-- Pull Actions Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0;">Missing PG Transactions Queue</h3>
+              <span id="pull-tab-missing-badge" class="badge badge-fail">0 Missing</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-pull-tab-all" onclick="pullAllMissingPgToApi(this)" style="display: none; background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; font-weight: 700; padding: 0.5rem 1.15rem;">⚡ Pull All Missing Transactions</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-pull-tab-copy-all" onclick="copyAllPayloadsJson(this)" style="display: none;">📋 Copy All JSONs</button>
+            </div>
+          </div>
 
-        <div id="pull-tab-empty" style="padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-bottom: 1.5rem;">
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Pending Missing Transactions</h4>
-          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Run reconciliation in the "Reconcile Daily Reports" tab or upload a completed reconciliation workbook. Any transactions found in PG reports but missing in CMS will automatically appear here for 1-click pulling.</p>
+          <!-- Missing PG Table -->
+          <div id="pull-tab-table-wrap" style="overflow-x: auto; display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Gateway</th>
+                  <th>Order / Partner Ref ID</th>
+                  <th>Middle No. (Ref ID)</th>
+                  <th>MMS Terminal ID</th>
+                  <th>UTR / Bank Ref</th>
+                  <th class="text-right">Amount</th>
+                  <th>Date & Time</th>
+                  <th style="text-align: center;">Payload</th>
+                  <th style="text-align: center;">Action</th>
+                  <th style="text-align: center;">API Status</th>
+                </tr>
+              </thead>
+              <tbody id="pull-tab-tbody"></tbody>
+            </table>
+          </div>
+
+          <div id="pull-tab-empty" style="padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-bottom: 1.5rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Pending Missing Transactions in Queue</h4>
+            <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Run reconciliation in the "Reconcile Daily Reports" tab or upload a completed reconciliation workbook. Any transactions found in PG reports but missing in CMS will automatically appear here for 1-click pulling.</p>
+          </div>
         </div>
 
         <!-- Postman Live Telemetry Inspector (renders live output matching Postman screenshot) -->
@@ -3229,6 +3328,9 @@
 
         window.onMerchantSelectChanged();
         window.loadTerminalMerchantOptions(savedTermMerchant || selectedKey);
+        if (typeof window.loadDirectPullMerchantOptions === 'function') {
+          window.loadDirectPullMerchantOptions();
+        }
       } catch (err) {
         console.warn('Could not load merchants registry:', err);
       }
@@ -4460,6 +4562,11 @@
         pullTabBadge.className = count > 0 ? 'badge badge-fail' : 'badge badge-pass';
         pullTabBadge.textContent = `${count} Missing`;
       }
+      const pullTabBtnBadge = document.getElementById('pull-tab-missing-btn-badge');
+      if (pullTabBtnBadge) {
+        pullTabBtnBadge.className = count > 0 ? 'badge badge-fail' : 'badge badge-pass';
+        pullTabBtnBadge.textContent = `${count} Missing`;
+      }
       if (tabPullBadge) {
         tabPullBadge.textContent = count;
         tabPullBadge.style.display = count > 0 ? 'inline-flex' : 'none';
@@ -4692,6 +4799,336 @@
         const orig = btn.innerHTML;
         btn.innerHTML = '✅ Copied All Payloads!';
         setTimeout(() => { btn.innerHTML = orig; }, 2500);
+      });
+    };
+
+    // ==========================================
+    // Mode Switcher: Direct PG Upload vs Recon Queue
+    // ==========================================
+    window.switchPullTab = function(mode) {
+      const btnDirect = document.getElementById('tab-btn-direct-pull');
+      const btnQueue = document.getElementById('tab-btn-queue-pull');
+      const subDirect = document.getElementById('subpanel-direct-pull');
+      const subQueue = document.getElementById('subpanel-queue-pull');
+
+      if (mode === 'direct') {
+        if (btnDirect) {
+          btnDirect.className = 'btn';
+          btnDirect.style.background = 'linear-gradient(135deg, #1e3a8a, #1a73e8)';
+          btnDirect.style.color = '#ffffff';
+        }
+        if (btnQueue) {
+          btnQueue.className = 'btn btn-secondary';
+          btnQueue.style.background = '';
+          btnQueue.style.color = '';
+        }
+        if (subDirect) subDirect.style.display = 'block';
+        if (subQueue) subQueue.style.display = 'none';
+      } else {
+        if (btnQueue) {
+          btnQueue.className = 'btn';
+          btnQueue.style.background = 'linear-gradient(135deg, #1e3a8a, #1a73e8)';
+          btnQueue.style.color = '#ffffff';
+        }
+        if (btnDirect) {
+          btnDirect.className = 'btn btn-secondary';
+          btnDirect.style.background = '';
+          btnDirect.style.color = '';
+        }
+        if (subDirect) subDirect.style.display = 'none';
+        if (subQueue) subQueue.style.display = 'block';
+      }
+    };
+
+    window.loadDirectPullMerchantOptions = function() {
+      const sel = document.getElementById('direct-pull-merchant-select');
+      if (!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Auto-Detect Merchant</option>';
+      if (typeof allMerchantsCache !== 'undefined' && Array.isArray(allMerchantsCache)) {
+        allMerchantsCache.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.key;
+          opt.textContent = `${m.display_name} (${m.key.toUpperCase()})`;
+          if (m.key === cur) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+    };
+
+    // ==========================================
+    // Direct PG Report Upload & One-Shot Pull
+    // ==========================================
+    let currentDirectPullRecords = [];
+
+    window.handleDirectPullUpload = async function(file) {
+      if (!file) return;
+
+      const dropzone = document.getElementById('direct-pull-dropzone');
+      const origHtml = dropzone.innerHTML;
+      dropzone.innerHTML = `<div style="font-size:1.8rem; margin-bottom:0.5rem;">⏳</div><h4 style="font-weight:700; color:#1e3a8a;">Parsing ${file.name}...</h4><p style="font-size:0.82rem; color:#64748b;">Extracting transactions, resolving MMS Terminal IDs and building API payloads...</p>`;
+
+      const mSelect = document.getElementById('direct-pull-merchant-select');
+      const merchantKey = mSelect ? mSelect.value : '';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      if (merchantKey) {
+        formData.append('merchant_key', merchantKey);
+      }
+
+      try {
+        const res = await fetch('/api/direct-pull/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Failed to parse report file.');
+        }
+
+        renderDirectPullResults(data);
+      } catch (err) {
+        alert('Upload Error: ' + err.message);
+      } finally {
+        dropzone.innerHTML = origHtml;
+      }
+    };
+
+    window.renderDirectPullResults = function(data) {
+      currentDirectPullRecords = data.records || [];
+
+      const summaryBar = document.getElementById('direct-pull-summary-bar');
+      const tableWrap = document.getElementById('direct-pull-table-wrap');
+      const tbody = document.getElementById('direct-pull-tbody');
+      const gwBadge = document.getElementById('direct-pull-gateway-badge');
+      const fileNameEl = document.getElementById('direct-pull-file-name');
+      const countsLabel = document.getElementById('direct-pull-counts-label');
+      const btnCount = document.getElementById('direct-pull-btn-count');
+
+      if (!summaryBar || !tbody) return;
+
+      if (currentDirectPullRecords.length === 0) {
+        alert('No transactions could be parsed from this file.');
+        return;
+      }
+
+      // Update summary bar
+      summaryBar.style.display = 'block';
+      if (gwBadge) {
+        gwBadge.textContent = data.gateway || 'PG Report';
+        if (data.gateway === 'Cashfree') {
+          gwBadge.style.background = '#0284c7';
+        } else if (data.gateway === 'Easebuzz') {
+          gwBadge.style.background = '#7c3aed';
+        } else if (data.gateway === 'Airtel') {
+          gwBadge.style.background = '#e11d48';
+        } else {
+          gwBadge.style.background = '#1e3a8a';
+        }
+      }
+      if (fileNameEl) fileNameEl.textContent = data.filename || 'report';
+      if (countsLabel) {
+        countsLabel.innerHTML = `<strong>${data.total_records}</strong> transactions ready | <strong style="color:#059669;">${data.resolved_terminals}</strong> terminals resolved${data.unresolved_terminals > 0 ? ` | <span style="color:#dc2626; font-weight:700;">${data.unresolved_terminals} missing terminal ID</span>` : ''}`;
+      }
+      if (btnCount) btnCount.textContent = data.total_records;
+
+      // Populate table
+      tbody.innerHTML = '';
+      currentDirectPullRecords.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.id = `direct-pull-row-${idx}`;
+
+        const gw = item.gateway || 'PG';
+        const tagClass = (gw.toLowerCase().includes('cashfree') || gw.toLowerCase().includes('cf')) ? 'tag-cf' :
+                         ((gw.toLowerCase().includes('easebuzz') || gw.toLowerCase().includes('eb')) ? 'tag-eb' : 'tag-air');
+
+        const termDisplay = item.terminal_id ?
+          `<span class="badge badge-pass" style="font-family:monospace; font-size:0.75rem;">${item.terminal_id}</span>${item.branch_name ? `<br><small style="color:#64748b; font-size:0.72rem;">${item.branch_name}</small>` : ''}` :
+          `<span class="badge badge-fail" style="font-size:0.72rem;">Missing Terminal</span>`;
+
+        tr.innerHTML = `
+          <td style="color:#64748b; font-size:0.78rem;">${idx + 1}</td>
+          <td><span class="tag ${tagClass}">${gw}</span></td>
+          <td class="mono" style="font-size:0.8rem; font-weight:600; color:#0f172a;">${item.order_id || '--'}</td>
+          <td class="mono" style="font-size:0.8rem; color:#475569;">${item.middle_number || '--'}</td>
+          <td>${termDisplay}</td>
+          <td class="mono" style="font-size:0.8rem; color:#0f172a;">${item.utr || '--'}</td>
+          <td class="text-right mono" style="font-weight:700; color:#047857;">₹${item.amount}</td>
+          <td class="mono" style="font-size:0.78rem; color:#64748b;">${item.date_and_time || '--'}</td>
+          <td style="text-align:center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="viewDirectPayloadJson(${idx})" style="padding:0.25rem 0.5rem; font-size:0.74rem;">👁️ View</button>
+          </td>
+          <td style="text-align:center;">
+            <button type="button" class="btn btn-primary btn-sm btn-direct-row" id="btn-direct-row-${idx}" onclick="pullSingleDirectItem(${idx}, this)" style="padding:0.25rem 0.65rem; font-size:0.75rem; font-weight:700;">⚡ Pull</button>
+          </td>
+          <td style="text-align:center;" id="direct-status-cell-${idx}">
+            <span class="badge badge-neutral" style="font-size:0.72rem;">Pending</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (tableWrap) tableWrap.style.display = 'block';
+      tableWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    window.viewDirectPayloadJson = function(idx) {
+      if (!currentDirectPullRecords[idx]) return;
+      alert(`Decision API Payload (Row #${idx + 1}):\n\n` + JSON.stringify(currentDirectPullRecords[idx].payload, null, 2));
+    };
+
+    window.pullSingleDirectItem = async function(idx, btn) {
+      if (!currentDirectPullRecords[idx]) return;
+      const item = currentDirectPullRecords[idx];
+
+      const tokEl = document.getElementById('pull-settings-token');
+      const chanEl = document.getElementById('pull-settings-channel');
+      const authToken = tokEl ? tokEl.value.trim() : '';
+      const channel = chanEl ? chanEl.value.trim() : '';
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Pulling...';
+      btn.style.opacity = '0.75';
+
+      const statusCell = document.getElementById(`direct-status-cell-${idx}`);
+
+      try {
+        const res = await fetch('/api/direct-pull/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payloads: [item],
+            auth_token: authToken,
+            channel: channel
+          })
+        });
+        const data = await res.json();
+        const singleRes = (data.results && data.results[0]) || {};
+
+        renderPostmanInspector(singleRes);
+
+        if (singleRes.success) {
+          btn.innerHTML = '✅ Pulled (200 OK)';
+          btn.style.background = '#059669';
+          btn.style.color = '#fff';
+          if (statusCell) statusCell.innerHTML = `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>`;
+        } else {
+          btn.innerHTML = `⚠️ ${singleRes.status_code || 'Fail'}`;
+          btn.style.background = '#dc2626';
+          btn.style.color = '#fff';
+          if (statusCell) statusCell.innerHTML = `<span class="badge badge-fail" style="font-size:0.72rem;">${singleRes.status_code || 'Failed'}</span>`;
+        }
+      } catch (err) {
+        btn.innerHTML = '⚠️ Error';
+        btn.style.background = '#dc2626';
+        alert('API Pull Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    };
+
+    window.pullAllDirectTransactions = async function(btn) {
+      if (!currentDirectPullRecords || currentDirectPullRecords.length === 0) return;
+      if (!confirm(`Are you sure you want to pull all ${currentDirectPullRecords.length} transaction(s) directly to the SwinkPay Decision API in one shot?`)) return;
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `⏳ Pulling All in One Shot...`;
+      btn.style.opacity = '0.75';
+
+      const progressWrap = document.getElementById('direct-pull-progress-wrap');
+      const progressBar = document.getElementById('direct-pull-progress-bar');
+      const progressStatus = document.getElementById('direct-pull-progress-status');
+      const progressPercent = document.getElementById('direct-pull-progress-percent');
+
+      if (progressWrap) progressWrap.style.display = 'block';
+
+      const tokEl = document.getElementById('pull-settings-token');
+      const chanEl = document.getElementById('pull-settings-channel');
+      const authToken = tokEl ? tokEl.value.trim() : '';
+      const channel = chanEl ? chanEl.value.trim() : '';
+
+      const total = currentDirectPullRecords.length;
+      let successCount = 0;
+      let failCount = 0;
+
+      const batchSize = 5;
+      for (let i = 0; i < total; i += batchSize) {
+        const batch = currentDirectPullRecords.slice(i, i + batchSize);
+        if (progressStatus) progressStatus.textContent = `Pulling ${i + 1} to ${Math.min(i + batchSize, total)} of ${total}... (${successCount} Succeeded, ${failCount} Failed)`;
+        const pct = Math.round((i / total) * 100);
+        if (progressBar) progressBar.style.width = `${pct}%`;
+        if (progressPercent) progressPercent.textContent = `${pct}%`;
+
+        try {
+          const res = await fetch('/api/direct-pull/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              payloads: batch,
+              auth_token: authToken,
+              channel: channel
+            })
+          });
+          const data = await res.json();
+          if (data.results) {
+            data.results.forEach(r => {
+              const rowIdx = r.index;
+              const rowBtn = document.getElementById(`btn-direct-row-${rowIdx}`);
+              const statusCell = document.getElementById(`direct-status-cell-${rowIdx}`);
+              if (r.success) {
+                successCount++;
+                if (rowBtn) {
+                  rowBtn.innerHTML = '✅ Pulled (200 OK)';
+                  rowBtn.style.background = '#059669';
+                  rowBtn.style.color = '#fff';
+                }
+                if (statusCell) statusCell.innerHTML = `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>`;
+              } else {
+                failCount++;
+                if (rowBtn) {
+                  rowBtn.innerHTML = `⚠️ ${r.status_code || 'Fail'}`;
+                  rowBtn.style.background = '#dc2626';
+                  rowBtn.style.color = '#fff';
+                }
+                if (statusCell) statusCell.innerHTML = `<span class="badge badge-fail" style="font-size:0.72rem;">${r.status_code || 'Failed'}</span>`;
+              }
+            });
+            if (data.results.length > 0) {
+              renderPostmanInspector(data.results[data.results.length - 1]);
+            }
+          }
+        } catch (err) {
+          console.error('Batch error:', err);
+          failCount += batch.length;
+        }
+      }
+
+      if (progressBar) progressBar.style.width = '100%';
+      if (progressPercent) progressPercent.textContent = '100%';
+      if (progressStatus) progressStatus.textContent = `Completed! ${successCount} Succeeded, ${failCount} Failed`;
+
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      if (failCount === 0) {
+        btn.innerHTML = `✅ All ${successCount} Pulled (200 OK)!`;
+        btn.style.background = '#059669';
+        alert(`One-Shot Pull Succeeded! All ${successCount} transactions successfully pulled to SwinkPay Decision API.`);
+      } else {
+        btn.innerHTML = `⚠️ ${successCount}/${total} Pulled`;
+        btn.style.background = '#d97706';
+        alert(`One-Shot Pull Finished:\n- Succeeded (200 OK): ${successCount}\n- Failed: ${failCount}\n\nReview the table for any status errors.`);
+      }
+    };
+
+    window.copyDirectPullJson = function() {
+      if (!currentDirectPullRecords || currentDirectPullRecords.length === 0) return;
+      const allArray = currentDirectPullRecords.map(p => p.payload);
+      navigator.clipboard.writeText(JSON.stringify(allArray, null, 2)).then(() => {
+        alert(`Copied ${allArray.length} transaction payload JSONs to clipboard!`);
       });
     };
 
