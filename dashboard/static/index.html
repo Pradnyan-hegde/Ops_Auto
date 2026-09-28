@@ -1638,7 +1638,6 @@
         </button>
         <button type="button" class="upload-tab" id="tab-btn-pull" onclick="switchUploadMode('pull')">
           <span>⚡</span> Pull Missing Transactions
-          <span id="tab-pull-badge" class="tab-badge tab-badge-active" style="display: none;">0</span>
         </button>
         <button type="button" class="upload-tab" id="tab-btn-terminal" onclick="switchUploadMode('terminal')">
           <span>📋</span> Terminal Mappings (TID_FILE)
@@ -1850,8 +1849,8 @@
       <!-- Panel 3: Pull Missing PG Transactions (Dedicated Tab) -->
       <div id="panel-pull" style="display: none;">
         <div class="upload-header">
-          <h2>⚡ Pull Missing PG Transactions (Eliminate Postman)</h2>
-          <p>Directly pull or push transactions that exist in Payment Gateway reports (Cashfree, Easebuzz, Airtel) but are missing from CMS to the SwinkPay Decision API (<code>https://merchants.swinkpay-fintech.com/api/v2/decision/updated</code>) with real-time response telemetry.</p>
+          <h2>⚡ Pull Missing Transactions (Direct PG Report Upload)</h2>
+          <p>Upload any full gateway transaction report (Easebuzz, Cashfree, Airtel, or CSV) to automatically map terminal details, resolve middle numbers, and pull transactions straight to the SwinkPay Decision API (<code>https://merchants.swinkpay-fintech.com/api/v2/decision/updated</code>) in one shot without Postman.</p>
         </div>
 
         <!-- API Connection & Credentials Drawer -->
@@ -1876,18 +1875,7 @@
           </div>
         </div>
 
-        <!-- Mode Switcher Tabs for Pull Missing Section -->
-        <div style="display: flex; gap: 0.65rem; margin-bottom: 1.35rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.75rem; flex-wrap: wrap;">
-          <button type="button" id="tab-btn-direct-pull" class="btn" style="background: linear-gradient(135deg, #1e3a8a, #1a73e8); color: #ffffff; font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; display: flex; align-items: center; gap: 0.5rem;" onclick="switchPullTab('direct')">
-            <span>⚡</span> Direct PG Report Upload &amp; One-Shot Pull
-          </button>
-          <button type="button" id="tab-btn-queue-pull" class="btn btn-secondary" style="font-weight: 700; border-radius: 8px; padding: 0.55rem 1.15rem; display: flex; align-items: center; gap: 0.5rem;" onclick="switchPullTab('queue')">
-            <span>🔄</span> Queue From Reconciliation
-            <span id="pull-tab-missing-btn-badge" class="badge badge-fail" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;">0 Missing</span>
-          </button>
-        </div>
-
-        <!-- Mode A: Direct PG Report Upload & Pull (One-Shot) -->
+        <!-- Direct PG Report Upload & Pull (One-Shot) -->
         <div id="subpanel-direct-pull">
           <!-- Merchant Context Selector -->
           <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.9rem 1.15rem; margin-bottom: 1.15rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
@@ -1969,48 +1957,6 @@
               </thead>
               <tbody id="direct-pull-tbody"></tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- Mode B: Queue From Reconciliation (Existing Feature) -->
-        <div id="subpanel-queue-pull" style="display: none;">
-          <!-- Pull Actions Bar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin: 0;">Missing PG Transactions Queue</h3>
-              <span id="pull-tab-missing-badge" class="badge badge-fail">0 Missing</span>
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <button type="button" class="btn btn-primary btn-sm" id="btn-pull-tab-all" onclick="pullAllMissingPgToApi(this)" style="display: none; background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; font-weight: 700; padding: 0.5rem 1.15rem;">⚡ Pull All Missing Transactions</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-pull-tab-copy-all" onclick="copyAllPayloadsJson(this)" style="display: none;">📋 Copy All JSONs</button>
-            </div>
-          </div>
-
-          <!-- Missing PG Table -->
-          <div id="pull-tab-table-wrap" style="overflow-x: auto; display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1.5rem;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Gateway</th>
-                  <th>Order / Partner Ref ID</th>
-                  <th>Middle No. (Ref ID)</th>
-                  <th>MMS Terminal ID</th>
-                  <th>UTR / Bank Ref</th>
-                  <th class="text-right">Amount</th>
-                  <th>Date & Time</th>
-                  <th style="text-align: center;">Payload</th>
-                  <th style="text-align: center;">Action</th>
-                  <th style="text-align: center;">API Status</th>
-                </tr>
-              </thead>
-              <tbody id="pull-tab-tbody"></tbody>
-            </table>
-          </div>
-
-          <div id="pull-tab-empty" style="padding: 2.5rem 1.5rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-bottom: 1.5rem;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No Pending Missing Transactions in Queue</h4>
-            <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 520px; margin: 0 auto;">Run reconciliation in the "Reconcile Daily Reports" tab or upload a completed reconciliation workbook. Any transactions found in PG reports but missing in CMS will automatically appear here for 1-click pulling.</p>
           </div>
         </div>
 
@@ -2897,7 +2843,7 @@
         window.loadTerminalMerchantOptions(selectedTerminalMerchantKey);
       } else if (mode === 'pull') {
         loadApiSettings();
-        syncPullTabQueue();
+        window.loadDirectPullMerchantOptions();
       }
     };
 
@@ -4605,82 +4551,9 @@
       syncPullTabQueue();
     }
 
-    // Synchronizes currentMissingPayloads into the dedicated Pull Tab (Panel 3)
+    // Stub for backward compatibility: reconciliation missing transactions are rendered exclusively on the main dashboard
     function syncPullTabQueue() {
-      const pullTabTbody = document.getElementById('pull-tab-tbody');
-      const pullTabBadge = document.getElementById('pull-tab-missing-badge');
-      const tabPullBadge = document.getElementById('tab-pull-badge');
-      const pullTableWrap = document.getElementById('pull-tab-table-wrap');
-      const pullEmptyWrap = document.getElementById('pull-tab-empty');
-      const btnPullAllMaster = document.getElementById('btn-pull-tab-all');
-      const btnCopyAllMaster = document.getElementById('btn-pull-tab-copy-all');
-
-      if (!pullTabTbody) return;
-
-      pullTabTbody.innerHTML = '';
-      const count = currentMissingPayloads ? currentMissingPayloads.length : 0;
-
-      if (pullTabBadge) {
-        pullTabBadge.className = count > 0 ? 'badge badge-fail' : 'badge badge-pass';
-        pullTabBadge.textContent = `${count} Missing`;
-      }
-      const pullTabBtnBadge = document.getElementById('pull-tab-missing-btn-badge');
-      if (pullTabBtnBadge) {
-        pullTabBtnBadge.className = count > 0 ? 'badge badge-fail' : 'badge badge-pass';
-        pullTabBtnBadge.textContent = `${count} Missing`;
-      }
-      if (tabPullBadge) {
-        tabPullBadge.textContent = count;
-        tabPullBadge.style.display = count > 0 ? 'inline-flex' : 'none';
-      }
-
-      if (count > 0) {
-        if (pullTableWrap) pullTableWrap.style.display = 'block';
-        if (pullEmptyWrap) pullEmptyWrap.style.display = 'none';
-        if (btnPullAllMaster) {
-          btnPullAllMaster.style.display = 'inline-flex';
-          btnPullAllMaster.innerHTML = `⚡ Pull All (${count})`;
-        }
-        if (btnCopyAllMaster) btnCopyAllMaster.style.display = 'inline-flex';
-
-        currentMissingPayloads.forEach((item, idx) => {
-          const tr = document.createElement('tr');
-          const tagClass = item.gateway === 'Cashfree' ? 'tag-cf' : (item.gateway === 'Easebuzz' ? 'tag-eb' : 'tag-air');
-          const termDisplay = item.terminal_id ? `<strong class="mono" style="color:#1a73e8;">${item.terminal_id}</strong>` : `<span style="color:#dc2626; font-weight:700;">Unresolved</span>`;
-          const midDisplay = item.middle_number ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-family:'JetBrains Mono',monospace; font-size:0.75rem; border:1px solid #fde68a;">${item.middle_number}</span>` : `<span style="color:#94a3b8; font-size:0.75rem;">--</span>`;
-
-          tr.innerHTML = `
-            <td><span class="xcd-partner-tag ${tagClass}">${item.gateway}</span></td>
-            <td><span style="font-size:0.75rem; font-family:'JetBrains Mono',monospace;" title="${item.order_id}">${item.order_id.length > 25 ? item.order_id.substring(0, 25) + '...' : item.order_id}</span></td>
-            <td>${midDisplay}</td>
-            <td>${termDisplay}</td>
-            <td><code class="mono">${item.utr || '--'}</code></td>
-            <td class="text-right mono">${formatCurrency(item.amount)}</td>
-            <td class="mono" style="font-size:0.75rem;">${item.date_and_time || '--'}</td>
-            <td style="text-align: center;">
-              <details style="cursor: pointer; text-align: left;">
-                <summary style="font-size:0.75rem; color:#94a3b8;">View JSON</summary>
-                <pre style="background:#0f172a; padding:0.5rem; border-radius:6px; font-size:0.72rem; color:#38bdf8; max-height:120px; overflow-y:auto; margin-top:0.25rem;">${item.payload_json}</pre>
-              </details>
-            </td>
-            <td style="text-align: center;">
-              <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
-                <button type="button" class="btn btn-primary btn-sm btn-pull-row" id="btn-pull-tab-row-${idx}" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border: none; padding: 0.35rem 0.85rem; font-size: 0.78rem; font-weight: 700;" onclick="pullMissingPgToApi(${idx}, this)">📥 Pull</button>
-                <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="copyPayloadToClipboard(${idx}, this)">📋 Copy</button>
-              </div>
-            </td>
-            <td style="text-align: center;" id="pull-status-tab-cell-${idx}">
-              <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.72rem;">Ready</span>
-            </td>
-          `;
-          pullTabTbody.appendChild(tr);
-        });
-      } else {
-        if (pullTableWrap) pullTableWrap.style.display = 'none';
-        if (pullEmptyWrap) pullEmptyWrap.style.display = 'block';
-        if (btnPullAllMaster) btnPullAllMaster.style.display = 'none';
-        if (btnCopyAllMaster) btnCopyAllMaster.style.display = 'none';
-      }
+      // Intentionally empty - Pull Missing Transactions tab is now 100% dedicated to direct PG report upload & one-shot pull
     }
 
     // Direct 1-Click Pull Handlers with Postman Live Telemetry Feedback
@@ -4712,19 +4585,6 @@
           btn.innerHTML = '✅ Pulled (200 OK)';
           btn.style.background = '#059669';
           btn.style.color = '#fff';
-
-          // Sync other table row if present
-          const otherBtnId = btn.id.includes('tab') ? `btn-pull-row-${idx}` : `btn-pull-tab-row-${idx}`;
-          const otherBtn = document.getElementById(otherBtnId);
-          if (otherBtn) {
-            otherBtn.innerHTML = '✅ Pulled (200 OK)';
-            otherBtn.style.background = '#059669';
-            otherBtn.style.color = '#fff';
-          }
-          const tabCell = document.getElementById(`pull-status-tab-cell-${idx}`);
-          if (tabCell) {
-            tabCell.innerHTML = `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>`;
-          }
         } else {
           // Check for API Auth Key requirement
           const respText = data.response || data.error || data.detail || '';
@@ -4822,22 +4682,15 @@
           if (data.results) {
             data.results.forEach(r => {
               const rowBtn = document.getElementById('btn-pull-row-' + r.index);
-              const tabBtn = document.getElementById('btn-pull-tab-row-' + r.index);
-              const tabCell = document.getElementById(`pull-status-tab-cell-${r.index}`);
-              [rowBtn, tabBtn].forEach(b => {
-                if (b) {
-                  if (r.success) {
-                    b.innerHTML = '✅ Pulled (200 OK)';
-                    b.style.background = '#059669';
-                    b.style.color = '#fff';
-                  } else {
-                    b.innerHTML = `⚠️ ${r.status_code || 'Fail'}`;
-                    b.style.background = '#dc2626';
-                  }
+              if (rowBtn) {
+                if (r.success) {
+                  rowBtn.innerHTML = '✅ Pulled (200 OK)';
+                  rowBtn.style.background = '#059669';
+                  rowBtn.style.color = '#fff';
+                } else {
+                  rowBtn.innerHTML = `⚠️ ${r.status_code || 'Fail'}`;
+                  rowBtn.style.background = '#dc2626';
                 }
-              });
-              if (tabCell) {
-                tabCell.innerHTML = r.success ? `<span class="badge badge-pass" style="font-size:0.72rem;">200 OK</span>` : `<span class="badge badge-fail" style="font-size:0.72rem;">${r.status_code || 'Fail'}</span>`;
               }
             });
           }
@@ -4865,41 +4718,10 @@
     };
 
     // ==========================================
-    // Mode Switcher: Direct PG Upload vs Recon Queue
+    // Pull Section: Direct PG Upload & One-Shot Pull
     // ==========================================
     window.switchPullTab = function(mode) {
-      const btnDirect = document.getElementById('tab-btn-direct-pull');
-      const btnQueue = document.getElementById('tab-btn-queue-pull');
-      const subDirect = document.getElementById('subpanel-direct-pull');
-      const subQueue = document.getElementById('subpanel-queue-pull');
-
-      if (mode === 'direct') {
-        if (btnDirect) {
-          btnDirect.className = 'btn';
-          btnDirect.style.background = 'linear-gradient(135deg, #1e3a8a, #1a73e8)';
-          btnDirect.style.color = '#ffffff';
-        }
-        if (btnQueue) {
-          btnQueue.className = 'btn btn-secondary';
-          btnQueue.style.background = '';
-          btnQueue.style.color = '';
-        }
-        if (subDirect) subDirect.style.display = 'block';
-        if (subQueue) subQueue.style.display = 'none';
-      } else {
-        if (btnQueue) {
-          btnQueue.className = 'btn';
-          btnQueue.style.background = 'linear-gradient(135deg, #1e3a8a, #1a73e8)';
-          btnQueue.style.color = '#ffffff';
-        }
-        if (btnDirect) {
-          btnDirect.className = 'btn btn-secondary';
-          btnDirect.style.background = '';
-          btnDirect.style.color = '';
-        }
-        if (subDirect) subDirect.style.display = 'none';
-        if (subQueue) subQueue.style.display = 'block';
-      }
+      // Compatibility stub - Pull Missing Transactions tab is now 100% dedicated to direct PG report upload & one-shot pull
     };
 
     window.loadDirectPullMerchantOptions = function() {
