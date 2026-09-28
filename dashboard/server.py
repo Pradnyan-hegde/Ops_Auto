@@ -39,7 +39,11 @@ from core.xcd_builder import (
 )
 from core.xcd_validator import validate_all_clear, validate_xcd_workbook_file
 from core.sync_builder import build_smms_sync_workbook
-from core.pg_payload_builder import build_missing_pg_payloads, parse_pg_report_records_for_pull
+from core.pg_payload_builder import (
+    build_missing_pg_payloads,
+    parse_pg_report_records_for_pull,
+    format_payload_utr,
+)
 from core.network_builder import detect_network_changes, build_change_network_workbook
 from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
 from core.terminal_mapper import (
@@ -1423,6 +1427,10 @@ def _push_payload_to_swinkpay(
     auth_token: Optional[str] = None,
     channel: Optional[str] = None
 ) -> dict:
+    # Ensure UTR is normalized and 12 digits with leading zeros if numeric
+    if isinstance(payload, dict) and "utr" in payload and payload["utr"]:
+        payload["utr"] = format_payload_utr(payload["utr"])
+
     url = "https://merchants.swinkpay-fintech.com/api/v2/decision/updated"
     
     # Resolve auth_token and channel
@@ -1856,9 +1864,9 @@ def resolve_terminal_endpoint(query: str, merchant_key: Optional[str] = None):
         extracted_amt = ""
         extracted_date = ""
 
-        m_utr = re.search(r'\b(CB\d{8,15}|\d{12})\b', q)
+        m_utr = re.search(r'\b(CB\d{8,15}|\d{8,14})\b', q) or re.search(r'(?:utr|rrn)[-:\s_]*([0-9a-zA-Z]+)', q, re.IGNORECASE)
         if m_utr:
-            extracted_utr = m_utr.group(1).strip()
+            extracted_utr = format_payload_utr(m_utr.group(1).strip())
         m_amt = re.search(r'\bINR\s*([\d\.]+)', q) or re.search(r'\t([\d\.]+)\t', q)
         if m_amt:
             extracted_amt = m_amt.group(1).strip()

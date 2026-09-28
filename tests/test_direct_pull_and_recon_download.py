@@ -16,13 +16,15 @@ from core.reader import RawReport
 from core.pg_payload_builder import (
     parse_pg_report_records_for_pull,
     format_payload_amount,
-    format_payload_datetime
+    format_payload_datetime,
+    format_payload_utr,
 )
 from dashboard.server import (
     find_session_recon_workbook,
     upload_pg_report_for_pull,
     push_direct_payloads,
-    SESSIONS_DIR
+    _push_payload_to_swinkpay,
+    SESSIONS_DIR,
 )
 
 
@@ -212,6 +214,74 @@ class TestDirectPullAndReconDownload(unittest.TestCase):
         self.assertEqual(data["total"], 1)
         self.assertEqual(data["successful_count"], 1)
         self.assertEqual(data["results"][0]["status_code"], 200)
+
+    def test_format_payload_utr_padding(self):
+        """
+        Verify that UTRs with fewer than 12 digits (numeric) are padded with leading zeros,
+        prefixes like 'utr-' or 'rrn-' are stripped, and 12-digit UTRs are preserved.
+        """
+        # 10 digits -> padded with two leading zeros
+        self.assertEqual(format_payload_utr("6789876543"), "006789876543")
+        # Prefix stripped and padded
+        self.assertEqual(format_payload_utr("utr-6789876543"), "006789876543")
+        self.assertEqual(format_payload_utr("UTR: 6789876543"), "006789876543")
+        self.assertEqual(format_payload_utr("rrn-6789876543"), "006789876543")
+        self.assertEqual(format_payload_utr("RRN:6789876543"), "006789876543")
+        # Numeric with float notation
+        self.assertEqual(format_payload_utr("6789876543.0"), "006789876543")
+        self.assertEqual(format_payload_utr(6789876543), "006789876543")
+        # Spaces/hyphens inside numeric string
+        self.assertEqual(format_payload_utr("6789-876543"), "006789876543")
+        self.assertEqual(format_payload_utr("6789 8765 43"), "006789876543")
+        # Already 12 digits
+        self.assertEqual(format_payload_utr("129761680150"), "129761680150")
+        self.assertEqual(format_payload_utr("001297616801"), "001297616801")
+        self.assertEqual(format_payload_utr("utr-001297616801"), "001297616801")
+        # Blank / None
+        self.assertEqual(format_payload_utr(None), "")
+        self.assertEqual(format_payload_utr(""), "")
+        self.assertEqual(format_payload_utr("--"), "")
+        self.assertEqual(format_payload_utr("null"), "")
+
+    def test_parse_pg_report_records_for_pull_pads_utr(self):
+        """
+        Verify that parse_pg_report_records_for_pull pads short numeric UTRs to 12 digits.
+        """
+        records = [
+            {
+                "Order Id": "330595-4860-ORD99",
+                "Bank Reference No.": "utr-6789876543",
+                "Amount": "50.00",
+                "Transaction Time": "2026-09-28 12:00:00",
+                "Transaction Status": "SUCCESS"
+            }
+        ]
+        raw = make_raw_report(ReportType.CASHFREE, records)
+        parsed = parse_pg_report_records_for_pull(raw)
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0]["utr"], "006789876543")
+        self.assertEqual(parsed[0]["payload"]["utr"], "006789876543")
+
+    def test_push_payload_to_swinkpay_pads_utr(self):
+        """
+        Verify that _push_payload_to_swinkpay normalizes payload['utr'] before sending request.
+        """
+        payload = {
+            "amount": "100.00",
+            "terminalID": "TEST01",
+            "utr": "utr-6789876543",
+            "dateAndTime": "2026-09-28 10:00:00"
+        }
+
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_resp = MagicMock()
+            mock_resp.status = 200
+            mock_resp.read.return_value = b'{"data":{"referenceNo":"006789876543"},"message":"Success"}'
+            mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+            res = _push_payload_to_swinkpay(payload)
+            self.assertTrue(res["success"])
+            self.assertEqual(payload["utr"], "006789876543")
 
 
 if __name__ == "__main__":

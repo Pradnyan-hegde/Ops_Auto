@@ -67,6 +67,38 @@ def format_payload_amount(amt_val: Any) -> str:
     return f"{float(amt):.2f}"
 
 
+def format_payload_utr(utr_val: Any) -> str:
+    """
+    Normalizes UTR / RRN for SwinkPay Decision API payload.
+    If the UTR is not of 12 digits, adds leading zeros to make it 12 digits.
+    Example:
+      '6789876543' -> '006789876543'
+      'utr-6789876543' -> '006789876543'
+      '129761680150' -> '129761680150'
+    """
+    if utr_val is None:
+        return ""
+    s = clean_key(utr_val)
+    if not s or s == "--" or s.lower() in ("null", "none", "nan"):
+        return ""
+
+    # Remove common prefixes like 'utr-', 'utr:', 'utr ', 'rrn-', 'rrn:', 'rrn '
+    s_clean = re.sub(r'^(utr|rrn)[-:\s_]*', '', s, flags=re.IGNORECASE).strip()
+    if s_clean:
+        s = s_clean
+
+    # Remove any internal spaces or hyphens if numeric
+    s_compact = re.sub(r'[\s\-]', '', s)
+    if s_compact.isdigit():
+        s = s_compact
+
+    # If numeric and length < 12, pad with leading zeros to make it exactly 12 digits
+    if s.isdigit() and len(s) < 12:
+        s = s.zfill(12)
+
+    return s
+
+
 def build_cms_prefix_terminal_map(cms_report) -> Dict[str, str]:
     """
     Builds a lookup index from Cashfree Order ID prefix (e.g. '330595-4873')
@@ -166,11 +198,12 @@ def build_missing_pg_payloads(
         for cf_r in unmatched_cf:
             order_id = str(cf_r.get("Order Id") or cf_r.get("Matched Transaction ID") or "").strip()
             amount_str = format_payload_amount(cf_r.get("Amount"))
-            utr_str = str(cf_r.get("Bank Reference No.") or cf_r.get("UTR No.") or cf_r.get("Reference Id") or "").strip()
+            raw_utr = str(cf_r.get("Bank Reference No.") or cf_r.get("UTR No.") or cf_r.get("Reference Id") or "").strip()
+            utr_str = format_payload_utr(raw_utr)
             dt_str = format_payload_datetime(cf_r.get("Transaction Time") or cf_r.get("Transaction Date"))
 
             # If transaction is already in CMS (even if SMMS Sync Status is False), no need to pull!
-            if _is_in_cms(utr_str) or _is_in_cms(order_id):
+            if _is_in_cms(raw_utr) or _is_in_cms(utr_str) or _is_in_cms(order_id):
                 continue
 
             middle_number = extract_cf_middle_number(order_id)
@@ -223,12 +256,13 @@ def build_missing_pg_payloads(
         for eb_r in unmatched_eb:
             order_id = str(eb_r.get("ID") or eb_r.get("UPI tid") or eb_r.get("Matched Transaction ID") or "").strip()
             amount_str = format_payload_amount(eb_r.get("Amount"))
-            utr_str = str(eb_r.get("UTR") or eb_r.get("UPI tid") or "").strip()
+            raw_utr = str(eb_r.get("UTR") or eb_r.get("UPI tid") or "").strip()
+            utr_str = format_payload_utr(raw_utr)
             dt_str = format_payload_datetime(eb_r.get("Transaction Date") or eb_r.get("Date"))
             term_id = str(eb_r.get("Virtual Account Label") or "").strip()
 
             # If transaction is already in CMS, no need to pull!
-            if _is_in_cms(utr_str) or _is_in_cms(order_id):
+            if _is_in_cms(raw_utr) or _is_in_cms(utr_str) or _is_in_cms(order_id):
                 continue
 
             # If terminal ID is numeric, check if it maps to an MMS Terminal ID in terminal_mappings
@@ -261,11 +295,12 @@ def build_missing_pg_payloads(
         for air_r in unmatched_air:
             order_id = str(air_r.get("Transaction Id") or air_r.get("Matched Transaction ID") or "").strip()
             amount_str = format_payload_amount(air_r.get("Original Input Amt") or air_r.get("Amount"))
-            utr_str = str(air_r.get("PARTNER_TXN_ID") or air_r.get("REF_TXN_NO_ORG") or order_id).strip()
+            raw_utr = str(air_r.get("PARTNER_TXN_ID") or air_r.get("REF_TXN_NO_ORG") or order_id).strip()
+            utr_str = format_payload_utr(raw_utr)
             dt_str = format_payload_datetime(air_r.get("Date and Time") or air_r.get("Transaction Date"))
 
             # If transaction is already in CMS, no need to pull!
-            if _is_in_cms(utr_str) or _is_in_cms(order_id):
+            if _is_in_cms(raw_utr) or _is_in_cms(utr_str) or _is_in_cms(order_id):
                 continue
 
             # Extract terminal from Transaction To e.g. spf-2045-xh2vuy@mairtel -> XH2VUY
@@ -342,7 +377,7 @@ def parse_pg_report_records_for_pull(
             gateway = "Cashfree"
             order_id = str(r.get("Order Id") or r.get("Reference Id") or "").strip()
             amount_str = format_payload_amount(r.get("Amount"))
-            utr_str = str(r.get("Bank Reference No.") or r.get("UTR No.") or r.get("Reference Id") or "").strip()
+            utr_str = format_payload_utr(r.get("Bank Reference No.") or r.get("UTR No.") or r.get("Reference Id") or "")
             dt_str = format_payload_datetime(r.get("Transaction Time") or r.get("Transaction Date"))
             status_val = str(r.get("Transaction Status") or r.get("Status") or "SUCCESS").strip()
 
@@ -361,7 +396,7 @@ def parse_pg_report_records_for_pull(
             gateway = "Easebuzz"
             order_id = str(r.get("ID") or r.get("UPI tid") or "").strip()
             amount_str = format_payload_amount(r.get("Amount"))
-            utr_str = str(r.get("UTR") or r.get("UPI tid") or "").strip()
+            utr_str = format_payload_utr(r.get("UTR") or r.get("UPI tid") or "")
             dt_str = format_payload_datetime(r.get("Transaction Date") or r.get("Date"))
             status_val = str(r.get("Status") or "Payment Received").strip()
 
@@ -382,7 +417,7 @@ def parse_pg_report_records_for_pull(
             gateway = "Airtel"
             order_id = str(r.get("Transaction Id") or "").strip()
             amount_str = format_payload_amount(r.get("Original Input Amt") or r.get("Amount") or r.get("Net Amount Payable(CR)"))
-            utr_str = str(r.get("PARTNER_TXN_ID") or r.get("REF_TXN_NO_ORG") or r.get("UTR Num") or order_id).strip()
+            utr_str = format_payload_utr(r.get("PARTNER_TXN_ID") or r.get("REF_TXN_NO_ORG") or r.get("UTR Num") or order_id)
             dt_str = format_payload_datetime(r.get("Date and Time") or r.get("Transaction Date") or r.get("TXN_DATE"))
             status_val = str(r.get("Status") or "SUCCESS").strip()
 
@@ -411,7 +446,7 @@ def parse_pg_report_records_for_pull(
                 if k_low in ("amount", "transaction amount", "amt", "net amount") and amount_str == "0.00":
                     amount_str = format_payload_amount(v)
                 elif k_low in ("utr", "rrn", "bank reference no.", "bank ref", "reference id", "txn id", "rrn/utr") and not utr_str:
-                    utr_str = v_str
+                    utr_str = format_payload_utr(v_str)
                 elif k_low in ("order id", "order_id", "id", "transaction id") and not order_id:
                     order_id = v_str
                 elif k_low in ("terminal id", "terminalid", "mms terminal id", "merchant mms terminal id", "tid") and not term_id:
@@ -427,6 +462,8 @@ def parse_pg_report_records_for_pull(
                     branch_name = term_details.get("branch_name") or ""
                     term_id = term_details.get("mms_terminal_id") or term_id
             middle_number = term_id
+
+        utr_str = format_payload_utr(utr_str)
 
         payload_dict = {
             "amount": amount_str,

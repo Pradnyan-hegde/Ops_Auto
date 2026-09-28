@@ -148,7 +148,7 @@ class TestSyncAndPayloads(unittest.TestCase):
         p = payloads[0]
         self.assertEqual(p["gateway"], "Airtel")
         self.assertEqual(p["terminal_id"], "XH2VUY")
-        self.assertEqual(p["utr"], "RRN11223344")
+        self.assertEqual(p["utr"], "000011223344")
         self.assertEqual(p["amount"], "75.50")
         self.assertEqual(p["date_and_time"], "2026-09-10 14:20:00")
 
