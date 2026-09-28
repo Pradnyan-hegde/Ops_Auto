@@ -44,7 +44,11 @@ from core.pg_payload_builder import (
     parse_pg_report_records_for_pull,
     format_payload_utr,
 )
-from core.network_builder import detect_network_changes, build_change_network_workbook
+from core.network_builder import (
+    detect_network_changes,
+    build_change_network_workbook,
+    NETWORK_CHANGE_INSTRUCTION_MESSAGE,
+)
 from core.recon_parser import parse_reconciliation_workbook, _read_sheet_records
 from core.terminal_mapper import (
     load_and_save_terminal_file,
@@ -372,6 +376,8 @@ def execute_recon_for_files(
             "count": len(network_changes),
             "filename": net_filename,
             "download_url": f"/api/download-network-file/{session_id}",
+            "message": NETWORK_CHANGE_INSTRUCTION_MESSAGE,
+            "instruction": NETWORK_CHANGE_INSTRUCTION_MESSAGE,
             "records": network_changes[:50]
         }
 
@@ -522,6 +528,7 @@ def execute_recon_for_files(
             **xcd_status,
             "dates": dates_with_counts,
             "network_changes": network_changes,
+            "network_change_message": NETWORK_CHANGE_INSTRUCTION_MESSAGE if network_changes else "",
             "outlet_count": outlet_count,
             "missing_pg_payloads": missing_pg_payloads,
             "status_mismatches": getattr(engine, "status_mismatches", []),
@@ -577,6 +584,7 @@ def execute_recon_for_files(
         "sync_file": sync_file_info,
         "network_file": network_file_info,
         "network_changes": network_changes,
+        "network_change_message": NETWORK_CHANGE_INSTRUCTION_MESSAGE if network_changes else "",
         "missing_pg_payloads": missing_pg_payloads,
         "missing_pg_discrepancies": missing_pg_discrepancies,
         "airtel_invoice_summary": airtel_invoice_summary,
@@ -950,6 +958,8 @@ def upload_recon_file(
             "count": len(parsed["network_changes"]),
             "filename": net_filename,
             "download_url": f"/api/download-network-file/{session_id}",
+            "message": NETWORK_CHANGE_INSTRUCTION_MESSAGE,
+            "instruction": NETWORK_CHANGE_INSTRUCTION_MESSAGE,
             "records": parsed["network_changes"][:50]
         }
 
@@ -961,6 +971,7 @@ def upload_recon_file(
             "source_recon_file": recon_file.filename,
             "dates": parsed["dates"],
             "network_changes": parsed["network_changes"],
+            "network_change_message": NETWORK_CHANGE_INSTRUCTION_MESSAGE if parsed["network_changes"] else "",
             "outlet_count": outlet_count,
             "parsed_mode": True
         }, f, indent=2)
@@ -1031,6 +1042,7 @@ def upload_recon_file(
         "sync_file": sync_file_info,
         "network_file": network_file_info,
         "network_changes": parsed["network_changes"],
+        "network_change_message": NETWORK_CHANGE_INSTRUCTION_MESSAGE if parsed["network_changes"] else "",
         "missing_pg_payloads": [],
         "download_url": f"/api/download/{session_id}"
     })

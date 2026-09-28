@@ -2241,12 +2241,50 @@
       </div>
 
       <!-- Change Network Action Card (shown only when network_changes > 0) -->
-      <div id="network-change-card" style="display: none; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border: 1px solid #c7d2fe; border-radius: 14px; padding: 1.5rem 2rem; margin-bottom: 2rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);">
-        <div class="network-change-text">
-          <h3 style="color: #3730a3; font-size: 1.15rem; font-weight: 800; margin-bottom: 0.25rem;">🔄 Network Change Required (<span id="network-count">0</span> Transactions)</h3>
-          <p style="font-size: 0.85rem; color: #4338ca;">Transactions where CMS Network was recorded incorrectly (e.g. <code>RUPAY</code>) and Cashfree report shows the true payment mode (<code>UPI_CREDIT_CARD_OFFLINE_STATIC</code>). Download the <code>Change Network.xlsx</code> file to sync SwinkPay records.</p>
+      <div id="network-change-card" style="display: none; background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%); border: 1.5px solid #a5b4fc; border-radius: 14px; padding: 1.6rem 2rem; margin-bottom: 2rem; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);">
+        <div class="network-change-text" style="flex: 1; min-width: 320px;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+            <span style="background: #e0e7ff; color: #4338ca; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Network Mismatch</span>
+            <h3 style="color: #3730a3; font-size: 1.2rem; font-weight: 800; margin: 0;">🔄 Network Change Required (<span id="network-count">0</span> Transactions)</h3>
+          </div>
+          <p style="font-size: 0.86rem; color: #4338ca; margin-bottom: 0.65rem;">Transactions where CMS Network was recorded incorrectly (e.g. <code>RUPAY</code>) while payment gateway captured the true payment mode (e.g. <code>UPI_CREDIT_CARD_OFFLINE_STATIC</code>).</p>
+
+          <!-- User-Requested Instruction Notice Box -->
+          <div class="network-instruction-box" style="background: #ffffff; border: 1.5px solid #818cf8; border-left: 5px solid #4f46e5; border-radius: 8px; padding: 0.85rem 1.15rem; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.08); display: flex; align-items: flex-start; gap: 0.75rem; margin-top: 0.5rem;">
+            <span style="font-size: 1.35rem; line-height: 1;">📢</span>
+            <div style="flex: 1;">
+              <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #4338ca; margin-bottom: 0.2rem;">CMS Action Required:</div>
+              <div id="network-change-msg-text" style="font-size: 0.92rem; font-weight: 700; color: #1e1b4b; line-height: 1.55;">upload this file in cms to change network if network doesnt change even after uploading there is a new network we need to configure this and reupload the files here</div>
+            </div>
+          </div>
         </div>
-        <a id="btn-download-network" href="#" class="btn btn-primary" style="background: #4f46e5; border-color: #4338ca; color: #ffffff; font-weight: 700;">📥 Download Change Network File (.xlsx)</a>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.65rem;">
+          <a id="btn-download-network" href="#" class="btn btn-primary" style="background: #4f46e5; border-color: #4338ca; color: #ffffff; font-weight: 700; padding: 0.65rem 1.35rem; font-size: 0.95rem; white-space: nowrap; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);" onclick="onDownloadNetworkFile()">📥 Download Change Network File (.xlsx)</a>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-network-preview" onclick="toggleNetworkPreview()" style="font-size: 0.8rem; font-weight: 600; color: #3730a3; background: #e0e7ff; border-color: #c7d2fe;">👁️ View Transactions (<span id="network-count-sub">0</span>)</button>
+        </div>
+
+        <!-- Collapsible Preview Table -->
+        <div id="network-preview-wrap" style="display: none; width: 100%; margin-top: 0.5rem; border-top: 1px solid #c7d2fe; padding-top: 1rem;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #3730a3; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>Transactions Requiring Network Change:</span>
+            <span style="font-size: 0.75rem; color: #6366f1; font-weight: normal;">Showing up to 50 sample records</span>
+          </div>
+          <div style="max-height: 250px; overflow-y: auto; overflow-x: auto; background: #ffffff; border: 1px solid #c7d2fe; border-radius: 8px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+              <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0;">
+                <tr>
+                  <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569;">#</th>
+                  <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569;">SwinkPay Transaction ID</th>
+                  <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569;">Old Network (CMS)</th>
+                  <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569;">New Network (PG Mode)</th>
+                </tr>
+              </thead>
+              <tbody id="network-preview-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Controlled XCD Settlement Downloads Section -->
@@ -4142,11 +4180,35 @@
       }
 
       // 1.6. Change Network File Handling
+      const netMsgText = (data.network_file && (data.network_file.message || data.network_file.instruction)) || data.network_change_message || 'upload this file in cms to change network if network doesnt change even after uploading there is a new network we need to configure this and reupload the files here';
+      const netMsgEl = document.getElementById('network-change-msg-text');
+      if (netMsgEl) netMsgEl.textContent = netMsgText;
+
       if (data.network_file && data.network_file.count > 0) {
         networkChangeCard.style.display = 'flex';
         networkCount.textContent = formatNumber(data.network_file.count);
+        const subCountEl = document.getElementById('network-count-sub');
+        if (subCountEl) subCountEl.textContent = formatNumber(data.network_file.count);
         btnDownloadNetwork.href = data.network_file.download_url;
         btnDownloadNetwork.download = data.network_file.filename || 'Change Network.xlsx';
+
+        // Render preview table records
+        const tbody = document.getElementById('network-preview-tbody');
+        if (tbody) {
+          const recs = data.network_file.records || data.network_changes || [];
+          if (recs.length > 0) {
+            tbody.innerHTML = recs.map((r, i) => `
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 0.4rem 0.75rem; color: #64748b;">${i + 1}</td>
+                <td style="padding: 0.4rem 0.75rem; font-family: monospace; font-weight: 600; color: #1e293b;">${r['SwinkPay Transaction ID'] || r['SwinkPay Txn ID'] || '--'}</td>
+                <td style="padding: 0.4rem 0.75rem; color: #dc2626; font-weight: 600;">${r['Old Network'] || '--'}</td>
+                <td style="padding: 0.4rem 0.75rem; color: #16a34a; font-weight: 600;">${r['New Network'] || '--'}</td>
+              </tr>
+            `).join('');
+          } else {
+            tbody.innerHTML = '<tr><td colspan="4" style="padding: 1rem; text-align: center; color: #64748b;">No preview records available.</td></tr>';
+          }
+        }
       } else {
         networkChangeCard.style.display = 'none';
       }
@@ -5282,6 +5344,25 @@
 
       emailCard.style.display = 'block';
     }
+
+    window.toggleNetworkPreview = function() {
+      const wrap = document.getElementById('network-preview-wrap');
+      const btn = document.getElementById('btn-toggle-network-preview');
+      if (!wrap) return;
+      if (wrap.style.display === 'none' || !wrap.style.display) {
+        wrap.style.display = 'block';
+        if (btn) btn.textContent = '🙈 Hide Transactions';
+      } else {
+        wrap.style.display = 'none';
+        const cnt = document.getElementById('network-count') ? document.getElementById('network-count').textContent : '0';
+        if (btn) btn.textContent = `👁️ View Transactions (${cnt})`;
+      }
+    };
+
+    window.onDownloadNetworkFile = function() {
+      const msg = "upload this file in cms to change network if network doesnt change even after uploading there is a new network we need to configure this and reupload the files here";
+      console.log("Downloading Change Network file: " + msg);
+    };
 
     window.copyEmailRichHtml = async function(btn) {
       if (!currentEmailData) return;

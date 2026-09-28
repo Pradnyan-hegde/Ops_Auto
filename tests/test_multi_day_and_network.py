@@ -14,7 +14,8 @@ from core.network_builder import (
     detect_network_changes,
     build_change_network_workbook,
     normalize_network_name,
-    are_networks_equivalent
+    are_networks_equivalent,
+    NETWORK_CHANGE_INSTRUCTION_MESSAGE,
 )
 from core.xcd_builder import (
     get_distinct_dates_with_counts,
@@ -312,6 +313,53 @@ class TestMultiDayAndNetwork(unittest.TestCase):
             counts = Counter((c["Old Network"], c["New Network"]) for c in changes)
             self.assertEqual(counts[("RUPAY", "UPI_CREDIT_CARD_OFFLINE_STATIC")], 77)
             self.assertEqual(counts[("WA", "UPI_PPI_OFFLINE_STATIC")], 14)
+
+    def test_network_change_instruction_message(self):
+        """
+        Verify that NETWORK_CHANGE_INSTRUCTION_MESSAGE matches the exact required message,
+        and is included in network_file info and API responses whenever network changes exist.
+        """
+        expected_msg = (
+            "upload this file in cms to change network if network doesnt change even after uploading "
+            "there is a new network we need to configure this and reupload the files here"
+        )
+        self.assertEqual(NETWORK_CHANGE_INSTRUCTION_MESSAGE, expected_msg)
+
+        # Create mock reconciliation workbook with network changes and test upload_recon_file
+        wb = openpyxl.Workbook()
+        ws_cf = wb.active
+        ws_cf.title = "CMS_CF_Matched"
+        ws_cf.append([
+            "Sl. No.", "SwinkPay Txn ID", "RRN/UTR", "CMS Amount", "Partner Amount",
+            "Amount Difference", "CMS Status", "Partner Status", "Reconciliation Status",
+            "Exception Reason", "Cashfree Payment Mode", "Network", "Transaction Date & Time"
+        ])
+        ws_cf.append([
+            1, "SP_NET_001", "129761680101", 100.0, 100.0,
+            0.0, "SUCCESS", "SUCCESS", "Matched",
+            "", "UPI_CREDIT_CARD_OFFLINE_STATIC", "RUPAY", "2026-09-28 10:00:00"
+        ])
+        temp_file = os.path.join(self.test_dir, "CCD_Reconciliation_2026-09-28.xlsx")
+        wb.save(temp_file)
+
+        class DummyUpload:
+            def __init__(self, filename, path):
+                self.filename = filename
+                self.file = open(path, "rb")
+
+        up_file = DummyUpload("CCD_Reconciliation_2026-09-28.xlsx", temp_file)
+        try:
+            res = upload_recon_file(recon_file=up_file)
+            self.assertEqual(res.status_code, 200)
+            data = json.loads(res.body.decode("utf-8"))
+            self.assertTrue(len(data["network_changes"]) > 0)
+            self.assertEqual(data["network_change_message"], expected_msg)
+            self.assertIsNotNone(data["network_file"])
+            self.assertEqual(data["network_file"]["message"], expected_msg)
+            self.assertEqual(data["network_file"]["instruction"], expected_msg)
+            self.assertEqual(data["network_file"]["count"], len(data["network_changes"]))
+        finally:
+            up_file.file.close()
 
 
 if __name__ == "__main__":

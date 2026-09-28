@@ -16,6 +16,11 @@ from openpyxl.styles import Font, Alignment
 
 from .normalizer import clean_key
 
+NETWORK_CHANGE_INSTRUCTION_MESSAGE = (
+    "upload this file in cms to change network if network doesnt change even after uploading "
+    "there is a new network we need to configure this and reupload the files here"
+)
+
 
 def normalize_network_name(val: Any) -> str:
     """Normalizes network / payment mode string for accurate comparison."""
